@@ -339,15 +339,11 @@ test('the offer is the Layout commands, COMMANDS_LAYOUT, in the Chat before the 
   )
 })
 
-test('an author floats the offer over the transcript, framed, with COMMANDS_LAYOUT under a name of their own', async () => {
+test('an author floats the offer over the transcript, framed, with one move, and leaves no node before the composer', async () => {
   const { ctx, typed } = await offering({ rows: 10 })
   await authored(ctx, (plugin) => {
-    plugin.binnacle.layout('commands', { column: [] })
-    plugin.binnacle.layout('floating', { ...commands.COMMANDS_LAYOUT, border: true })
-    plugin.binnacle.edit('chat', {
-      replace: 'transcript',
-      with: { over: { place: 'transcript' }, float: { layout: 'floating' }, at: { side: 'center', width: 24 } },
-    })
+    plugin.binnacle.layout('commands', { ...commands.COMMANDS_LAYOUT, border: true })
+    plugin.binnacle.edit('chat', { move: 'commands', over: 'transcript', at: { side: 'center', width: 24 } })
   })
   assert.deepEqual(await typed('/', 'p', 'l'), [
     '',

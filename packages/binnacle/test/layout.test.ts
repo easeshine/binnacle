@@ -1048,6 +1048,67 @@ test('an insert beside the root, an `over` or a `float` does nothing, and a remo
   ])
 })
 
+test("a move over an anchor floats its node over the anchor's, and leaves nothing in its old place", async () => {
+  const layout: Layout = { column: [{ place: 'a', size: 'content', border: ['top'] }, { place: 'b', size: 'fill' }, one('c')] }
+  assert.deepEqual(await edited(10, 4, layout, [editor('author', [{ move: 'a', over: 'b', at: { side: 'bottom', width: 4 } }])]), [
+    'b',
+    '   ────',
+    '   a',
+    'c',
+  ])
+})
+
+test('the node floated over keeps its size and its unless', async () => {
+  const seen: string[][] = []
+  for (const asking of [false, true]) {
+    const { rows } = await drawn(10, 3, (binnacle) => {
+      binnacle.layout('chat', { column: [{ place: 'b', size: { fixed: 1 }, unless: 'n' }, { place: 'c', size: 'fill' }, one('a')] })
+      binnacle.layout('n', asking ? { place: 'n' } : { column: [] })
+      for (const name of ['a', 'b', 'c', 'n']) binnacle.place(name, part(name))
+      binnacle.edit('chat', { move: 'a', over: 'b', at: { side: 'top', width: 4 } })
+    })
+    seen.push(rows)
+  }
+  assert.deepEqual(seen, [
+    ['b  a', 'c', ''],
+    ['c', '', ''],
+  ])
+})
+
+test('a move over an anchor that is not there, of a node that is not there, or over its own node, does nothing', async () => {
+  const layout: Layout = { column: [one('a'), one('b')] }
+  const seen: string[][] = []
+  for (const edits of [[{ move: 'z', over: 'a' }], [{ move: 'a', over: 'z' }], [{ move: 'a', over: 'a' }]] satisfies Edit[][])
+    seen.push(await edited(10, 3, layout, [editor('author', edits)]))
+  assert.deepEqual(seen, [
+    ['a', 'b', ''],
+    ['a', 'b', ''],
+    ['a', 'b', ''],
+  ])
+})
+
+test('a replace of a floated node acts in the float, a remove of the anchor takes the float out with it, and a move of the anchor takes the float with it', async () => {
+  const layout: Layout = { column: [one('a'), one('b'), one('c')] }
+  const seen: string[][] = []
+  for (const edits of [
+    [
+      { move: 'a', over: 'b', at: { width: 4 } },
+      { replace: 'a', with: one('y') },
+    ],
+    [{ move: 'a', over: 'b', at: { width: 4 } }, { remove: 'b' }],
+    [
+      { move: 'a', over: 'b', at: { width: 4 } },
+      { move: 'b', after: 'c' },
+    ],
+  ] satisfies Edit[][])
+    seen.push(await edited(10, 3, layout, [editor('author', edits)]))
+  assert.deepEqual(seen, [
+    ['b  y', 'c', ''],
+    ['c', '', ''],
+    ['c', 'b  a', ''],
+  ])
+})
+
 const plugin = (name: string, apply: (binnacle: Binnacle) => void) => ({
   name,
   inject: ['binnacle'],

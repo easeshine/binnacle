@@ -68,16 +68,12 @@ The Layout is `COMMANDS_LAYOUT`, from `@easeshine/binnacle/plugins/commands`, fr
   ctx.binnacle.edit('chat', { move: 'commands', before: 'transcript' })
   ```
 
-  To float it over the transcript, set the Layout `commands` to draw nothing, and draw `COMMANDS_LAYOUT` under a name of your own:
+  To float it over the transcript as a dialog, move it over the transcript, and frame it:
 
   ```js
   import { COMMANDS_LAYOUT } from '@easeshine/binnacle/plugins/commands'
-  ctx.binnacle.layout('commands', { column: [] })
-  ctx.binnacle.layout('offer', { ...COMMANDS_LAYOUT, border: true })
-  ctx.binnacle.edit('chat', {
-    replace: 'transcript',
-    with: { over: { place: 'transcript' }, float: { layout: 'offer' }, at: { side: 'center' } },
-  })
+  ctx.binnacle.layout('commands', { ...COMMANDS_LAYOUT, border: true })
+  ctx.binnacle.edit('chat', { move: 'commands', over: 'transcript', at: { side: 'center' } })
   ```
 
 - A command that a plugin registers with dsh's `ctx.commands.register` is offered and runs as dsh's own. Its handler can show a Screen of its own with `binnacle.show`, and the Handle's `dispose` goes back to the Chat.
