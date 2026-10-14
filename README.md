@@ -21,6 +21,10 @@ vp run @easeshine/binnacle#build   # in this checkout
 dsh --profile binnacle
 ```
 
+## Docs
+
+The docs are in [`packages/binnacle/docs/`](packages/binnacle/docs/): what a person can do in `use/`, and what an author can change in `author/`. The package carries them, and the website shows them. Run the website with `vp run dev`.
+
 ## Licence
 
 MIT

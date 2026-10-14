@@ -3,13 +3,22 @@ packages:
   - packages/*
   - tools/*
 
+allowBuilds:
+  esbuild: true
+
 catalog:
   '@changesets/cli': ^3.0.3
+  '@content-collections/cli': ^0.1.9
+  '@content-collections/core': ^0.15.3
+  '@content-collections/markdown': ^0.1.4
+  '@content-collections/vite': ^0.3.1
   '@oxlint/plugins': 1.85.0
+  '@tailwindcss/typography': ^0.5.20
   '@types/node': ^24
   typescript: ^7.0.2
   vite: npm:@voidzero-dev/vite-plus-core@1.1.0
   vite-plus: 1.1.0
+  zod: ^4.6.7
 
 catalogMode: prefer
 

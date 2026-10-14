@@ -169,7 +169,7 @@ test("the wheel scrolls the Place under it, a cell's style is read, and the term
   )
 })
 
-// AUTHORING.md's plugin of the turn, as its test of a plugin loads it.
+// The docs' plugin of the turn, as its test of a plugin loads it.
 const elapsed = {
   name: 'elapsed',
   inject: ['binnacle'],
@@ -189,7 +189,7 @@ const elapsed = {
   },
 }
 
-test("AUTHORING.md's test of a plugin mounts it over the built-ins, drives a turn, and reads the rows", async () => {
+test("the docs' test of a plugin mounts it over the built-ins, drives a turn, and reads the rows", async () => {
   const app = await mount({ size: { columns: 30, rows: 5 }, plugins: [elapsed] })
   mounted = app
   await app.agent.status('running')

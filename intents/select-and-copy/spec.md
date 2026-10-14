@@ -60,7 +60,7 @@ An author cannot change how text is copied, cannot copy with a key, and cannot g
 
 ## Decisions
 
-1. **A click acts on the release, on the cell where it was pressed.** A press that moves before its release selects and clicks nothing. *Recommended:* this, as pi does. A press-time click would fold a card under every drag that starts on its first line. An ADR records it, `docs/adr/0006-a-click-acts-on-its-release-and-a-press-that-moves-selects.md`, as it binds every Spec that takes a click. Considered: a drag only with a modifier, which leaves a person's plain drag doing nothing.
+1. **A click acts on the release, on the cell where it was pressed.** A press that moves before its release selects and clicks nothing. *Recommended:* this, as pi does. A press-time click would fold a card under every drag that starts on its first line. An ADR records it, `adr/0006-a-click-acts-on-its-release-and-a-press-that-moves-selects.md`, as it binds every Spec that takes a click. Considered: a drag only with a modifier, which leaves a person's plain drag doing nothing.
 2. **The core holds the Selection; a built-in row copies it.**
    - The core turns on button-motion reports (`?1002h`). It reads a press, a motion and a release. It keeps the Selection in the Place where the press landed, as rows of the Part's wrapped rows and columns, so that the wheel and new output below it do not move it. It draws it over those rows.
    - The core names the model `selection`, as `{ place, text }` or `undefined`. On a release that ends with a Selection, after a drag, a double or a triple click, it fires the gesture `select` to the actions with no Place, as it fires the wheel's.
@@ -110,7 +110,7 @@ An author cannot change how text is copied, cannot copy with a key, and cannot g
 
     The exported mount's clipboard always works, and the core's own kit fakes the route. *Recommended:* this. An author tests their copy action without a system to fake.
 
-13. **The Intent's Constraint 4**, "Each part of the screen that the mouse does nothing in, by an author's choice, is left to the terminal's own selection", is held as far as a terminal allows. A terminal reports the mouse for the whole screen or not at all. So when no Place on view takes the mouse, binnacle stops the reports, and the terminal selects by itself (Behaviour 19). While another Place takes the mouse, a part where it does nothing is left to the terminal's own bypass, such as shift and a drag, which every terminal of the product's list has. *Recommended:* this. Considered: turning the reports off while the pointer is over such a part, which the terminal cannot tell binnacle once the reports are off. It is taken for the Maintainer, so an ADR records it, `docs/adr/0007-the-terminal-selects-by-itself-only-where-binnacle-takes-no-mouse-on-the-whole-screen.md`, in Part 3.
+13. **The Intent's Constraint 4**, "Each part of the screen that the mouse does nothing in, by an author's choice, is left to the terminal's own selection", is held as far as a terminal allows. A terminal reports the mouse for the whole screen or not at all. So when no Place on view takes the mouse, binnacle stops the reports, and the terminal selects by itself (Behaviour 19). While another Place takes the mouse, a part where it does nothing is left to the terminal's own bypass, such as shift and a drag, which every terminal of the product's list has. *Recommended:* this. Considered: turning the reports off while the pointer is over such a part, which the terminal cannot tell binnacle once the reports are off. It is taken for the Maintainer, so an ADR records it, `adr/0007-the-terminal-selects-by-itself-only-where-binnacle-takes-no-mouse-on-the-whole-screen.md`, in Part 3.
 
 ## Edges
 
@@ -122,7 +122,7 @@ An author cannot change how text is copied, cannot copy with a key, and cannot g
   - The Screen changes during a drag: the drag ends, and nothing is copied.
   - A suspend or a quit during a drag ends it, and the terminal is given back as the Host gives it today.
 - **When it is another's:** a stored session's transcript selects and copies as a live one does.
-- **After it:** the Focus and the keys are where they were. A drag moves no Focus, as [ADR 5](../../docs/adr/0005-a-click-takes-the-keys-only-where-a-person-types-or-picks.md) holds. A person goes on typing.
+- **After it:** the Focus and the keys are where they were. A drag moves no Focus, as [ADR 5](../../adr/0005-a-click-takes-the-keys-only-where-a-person-types-or-picks.md) holds. A person goes on typing.
 - **Beside another feature:**
   - a Request's Choices: a click picks on its release, and a drag over them selects their text;
   - a float, such as the offer of commands: a drag begins in the Place under the pointer, the float's first, and a Selection beneath a float is drawn only where its Place shows (Behaviour 18);
@@ -147,11 +147,11 @@ An author cannot change how text is copied, cannot copy with a key, and cannot g
    - `status.copy`, the Tone and `Style.inverse`.
    - The kit's `click`, `drag` and `copied`.
    - ADR 6.
-   - Records: `docs/features/gestures.md`, `docs/features/core.md` and `docs/features/status-line.md`; a new `docs/features/copy.md` and its row in the index; the glossary's Selection; `AUTHORING.md`; a changeset.
+   - Records: the `AGENTS.md` of `src/core/` and of a new `src/plugins/copy/`; the docs' `use/keys.md`, `use/status-line.md`, and a new `use/copy.md` with its row in `use/index.md`; the pages for authors of the Focus, the theme, the status line and a new `author/built-ins/copy.md`, with its row in `author/index.md`; the glossary's Selection; a changeset.
 
    One-way: it adds a Tone, `Style.inverse`, a gesture, a row, and the testing kit's `drag` and `copied`. It changes when a click acts.
-2. **A copy reaches the system's clipboard on each system.** Behaviour 14: the tools of Decision 9, their order, the time each is given, the UTF-8 file for PowerShell, and OSC 52 over SSH or where no tool copied. The core kit's fake system. Records: `docs/features/copy.md`, with where the route differs from pi; credit to pi; a changeset. Two-way: it changes how `binnacle-copy` reaches the clipboard, and nothing an author imports. After Part 1.
-3. **Words, lines, the edge scroll, and the mouse given back.** Behaviour 8's bypass note, and Behaviours 16, 17 and 19. ADR 7 (Decision 13). Records: `docs/features/gestures.md`, `docs/features/core.md`, `AUTHORING.md`'s Layout section for `mouse`, a changeset. One-way: it changes what `mouse: false` on a Screen's root does for an author. After Part 1.
+2. **A copy reaches the system's clipboard on each system.** Behaviour 14: the tools of Decision 9, their order, the time each is given, the UTF-8 file for PowerShell, and OSC 52 over SSH or where no tool copied. The core kit's fake system. Records: `src/plugins/copy/AGENTS.md`, with where the route differs from pi; credit to pi; a changeset. Two-way: it changes how `binnacle-copy` reaches the clipboard, and nothing an author imports. After Part 1.
+3. **Words, lines, the edge scroll, and the mouse given back.** Behaviour 8's bypass note, and Behaviours 16, 17 and 19. ADR 7 (Decision 13). Records: `src/core/AGENTS.md`, the docs' `use/keys.md`, the Layouts page for authors for `mouse`, a changeset. One-way: it changes what `mouse: false` on a Screen's root does for an author. After Part 1.
 
 Part 1 is the thin path through every seam, and a person can copy with it in most terminals. Parts 2 and 3 can be built at the same time: 2 changes the copy row, and 3 changes the core.
 

@@ -12,10 +12,10 @@ intents/<slug>/spec.md      the design of one feature, beside its Intent, until 
 apps/docs/                  the docs website
 packages/binnacle/          the app: a dsh bundle, its core and its plugins
 tools/oxlint/anti-slop/     binnacle's own lint rules, from anti-slop
-docs/adr/                   the decisions that bind more than one change
-docs/glossary.md            binnacle's words, for a person and an author
-docs/features.md            the index of features, their docs and their rows
-docs/features/<feature>.md  how a feature is built so far: the second source, after the code
+packages/binnacle/docs/     the docs for a person (use/) and an author (author/), and the glossary. The website shows them, and the package carries them
+packages/binnacle/skills/   the skill that the package gives an author's agent
+packages/binnacle/src/**/AGENTS.md  how the code beside it is built so far: the second source, after the code
+adr/                        the decisions that bind more than one change
 .agents/skills/             the shared skills
 references.json             the repositories that pnpm refs fetches into .refs/
 .refs/<name>/               each Reference at its pin, to read and never to write
@@ -23,17 +23,17 @@ references.json             the repositories that pnpm refs fetches into .refs/
 
 ## The workflow's words
 
-Each is capitalized wherever it is used in this meaning. binnacle's own words are in [`docs/glossary.md`](docs/glossary.md).
+Each is capitalized wherever it is used in this meaning. binnacle's own words are in [`packages/binnacle/docs/glossary.md`](packages/binnacle/docs/glossary.md).
 
 - **Maintainer**: the person who grills with the agents, approves Intents, tries what is merged, and publishes.
 - **Intent**: what is wanted and why, in the Maintainer's plain words, in `intents/<slug>/intent.md`. The product's Intent holds the Stages; a feature's Intent holds what is wanted of one feature. It holds no design.
 - **Stage**: a part of an Intent that ends in a behaviour the Maintainer can try under dsh.
-- **Spec**: the design of one feature of a Stage, in `intents/<slug>/spec.md` beside its Intent: its behaviours, its seams, its decisions and the parts it is built in. Its Intent links it. Once it is built, the feature's doc in `docs/features/` says how.
+- **Spec**: the design of one feature of a Stage, in `intents/<slug>/spec.md` beside its Intent: its behaviours, its seams, its decisions and the parts it is built in. Its Intent links it. Once it is built, the docs say what it does, and the `AGENTS.md` beside its code says how.
 - **Journey**: what a person does with a feature in a real session, from start to end, as a Spec writes it. It crosses several behaviours, and the features beside them.
-- **ADR**: a decision that binds more than one change, in `docs/adr/`, written once the Maintainer picks it.
+- **ADR**: a decision that binds more than one change, in `adr/`, written once the Maintainer picks it.
 - **Reference**: another repository, fetched at its pin into `.refs/`, to read and never to write. [`CODING-STANDARD.md`](CODING-STANDARD.md) says how to use one.
 
-A change to a feature edits its doc in `docs/features/` in the same commit, and a new feature or row edits the index too. A PR that changes the published package adds a changeset with a short release note: before 1.0, a fix or a feature is a `patch`, and a break of what an author may import is a `minor`. The Maintainer merges the version PR to publish. A concept that is ours, and that could be read two ways, goes in its glossary in the same commit: `docs/glossary.md`, or the list above, capitalized there and wherever it is used in that meaning.
+Before you change code, read the `AGENTS.md` of its folder. A change edits, in the same commit, that `AGENTS.md`, and each page of `packages/binnacle/docs/` that says what the change touches: what a person can do in `use/`, and what an author can change in `author/`. A new row goes in the table of features in `use/index.md`, and in the table of built-ins in `author/index.md`. A PR that changes the published package adds a changeset with a short release note: before 1.0, a fix or a feature is a `patch`, and a break of what an author may import is a `minor`. The Maintainer merges the version PR to publish. A concept that is ours, and that could be read two ways, goes in its glossary in the same commit: `packages/binnacle/docs/glossary.md`, or the list above, capitalized there and wherever it is used in that meaning.
 
 ## Commands
 

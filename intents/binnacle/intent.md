@@ -47,7 +47,7 @@ The first 0.x release is a fully working terminal app. Authoring is the 1.0 rele
 
 ## Stages
 
-Each stage ends in something the Maintainer can try under dsh. The Specs are written for the current stage only. What each feature does so far is in [the feature docs](../../docs/features.md).
+Each stage ends in something the Maintainer can try under dsh. The Specs are written for the current stage only. What each feature does so far is in [the docs](../../packages/binnacle/docs/use/index.md).
 
 1. **Core.** binnacle starts under dsh and takes the terminal. The Maintainer opens a recorded session and scrolls it.
 2. **Chat.** The Maintainer types a prompt, sends it, watches the answer stream, and interrupts it.

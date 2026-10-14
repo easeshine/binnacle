@@ -80,7 +80,7 @@ test("a session that opens while a turn runs takes that turn's start from its ev
   assert.equal(core.ctx.binnacle.modelOf<TurnState>('turn').state?.startedAt, 777)
 })
 
-// AUTHORING.md's example: how long the turn has run, after the state.
+// The docs' example: how long the turn has run, after the state.
 const elapsed = {
   name: 'elapsed',
   inject: ['binnacle'],
@@ -100,7 +100,7 @@ const elapsed = {
   },
 }
 
-test("AUTHORING.md's status line shows how long the turn has run after the state, and nothing while the agent is idle or after the turn ends", async () => {
+test("the docs' status line shows how long the turn has run after the state, and nothing while the agent is idle or after the turn ends", async () => {
   const { app } = await mounted({ size: { columns: 30, rows: 2 }, builtins: ['binnacle-status-line'], plugins: [elapsed] })
   const idle = (await app.screen())[1]
   await app.agent.status('running')
@@ -118,7 +118,7 @@ test("AUTHORING.md's status line shows how long the turn has run after the state
   )
 })
 
-test("AUTHORING.md's elapsed time is `0:00` while the clock is earlier than the turn's start", async () => {
+test("the docs' elapsed time is `0:00` while the clock is earlier than the turn's start", async () => {
   const { app } = await mounted({ size: { columns: 30, rows: 2 }, builtins: ['binnacle-status-line'], plugins: [elapsed] })
   await app.agent.status('running')
   await app.agent.commit({ type: 'turn/start', time: app.clock.now + 5000, data: { turn: 1 } })

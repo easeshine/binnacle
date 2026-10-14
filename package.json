@@ -4,11 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "ready": "vp check && vp run -r test && vp run -r build",
+    "ready": "vp run docs#content && vp check && vp run -r test && vp run -r build",
     "dev": "vp run docs#dev",
     "test": "vp test",
     "refs": "node scripts/refs.mjs",
-    "prepare": "vp config"
+    "prepare": "vp config && vp run docs#content"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",

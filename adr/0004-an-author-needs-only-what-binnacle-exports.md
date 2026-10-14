@@ -2,10 +2,10 @@
 
 **Status:** accepted, 2026-10-11
 
-What binnacle exports, and its guide for authors, `AUTHORING.md`, are all that an author needs to change binnacle, to replace a part of it, and to test the change. An author never needs binnacle's source.
+What binnacle exports, and its docs for authors, are all that an author needs to change binnacle, to replace a part of it, and to test the change. An author never needs binnacle's source.
 
 - A built-in is a default to replace. It uses only what an author can import, so an author can replace any built-in whole, as well as one piece of it.
-- Each name that a built-in sets, a Place, a Look, an action, a model or a Layout, is in `AUTHORING.md`, and a check holds it there.
+- Each name that a built-in sets, a Place, a Look, an action, a model or a Layout, is in the docs for authors.
 - An author tests a change with what binnacle ships: binnacle with no terminal, the built-ins, a fake agent and a fake clock, and the screen as rows.
 - A gap is where an author has to read the source to make a change, or to know what it will do.
 
@@ -30,6 +30,6 @@ pi's footer can only be replaced whole, and what it draws is not given to an ext
 ## Consequences
 
 - A built-in that needs something of the core gets it through the API, so the API grows when a built-in needs more. A check fails on a built-in that imports anything else of binnacle's.
-- A built-in that sets a name edits `AUTHORING.md` in the same commit.
+- A built-in that sets a name edits the docs for authors in the same commit.
 - `@easeshine/binnacle/testing` is what an author imports. A change to it is a one-way door, as a change to the API is.
 - A trial's report counts what the author read in binnacle's source, and why. Each read is a gap, or a line that the guide lacks.

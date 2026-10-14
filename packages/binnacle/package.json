@@ -16,8 +16,10 @@
     "dist",
     "cordis.patch.yml",
     "NOTICE",
-    "AUTHORING.md",
-    "src"
+    "docs",
+    "skills",
+    "src",
+    "!src/**/AGENTS.md"
   ],
   "exports": {
     ".": "./dist/index.mjs",

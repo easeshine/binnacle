@@ -112,6 +112,13 @@ export default defineConfig({
         },
       },
       {
+        // content-collections names a doc's `_meta`, and the router a splat's `_splat`.
+        files: ['apps/docs/**'],
+        rules: {
+          'no-underscore-dangle': 'off',
+        },
+      },
+      {
         files: ['**/vite.config.ts', 'apps/docs/**'],
         rules: {
           'import/no-default-export': 'off',
