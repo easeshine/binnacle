@@ -32,6 +32,7 @@ import { editorActionsOf, tableKeysOf } from './gestures.ts'
 import { drawer } from './looks.ts'
 import type { Make } from './looks.ts'
 import { checkLayer, layered, painter } from './theme.ts'
+import { PACKAGE } from './name.ts'
 
 /** What the service asks of what draws. */
 export interface Drawn {
@@ -79,7 +80,7 @@ interface Fiber {
 function builtIn(fiber: Fiber): boolean {
   for (let at = fiber; ; at = at.parent.fiber) {
     const name = at.entry?.options.name
-    if (name !== undefined) return name === '@easeshine/binnacle' || name.startsWith('@easeshine/binnacle/')
+    if (name !== undefined) return name === PACKAGE || name.startsWith(`${PACKAGE}/`)
     if (at.parent.fiber === at) return false
   }
 }

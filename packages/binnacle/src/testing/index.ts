@@ -10,6 +10,7 @@ import type { Binnacle } from '../api.ts'
 import { agents } from './agents.ts'
 import { mountCore } from './core.ts'
 import { persistence } from './sessions.ts'
+import { PACKAGE } from '../core/name.ts'
 
 /** A plugin as Cordis loads it: a module with `apply`, and a `name` that names its row. */
 export interface Plugin {
@@ -100,14 +101,14 @@ export interface Mounted {
 
 /** The bundle's rows, in its order, and the modules they load. */
 const BUILT_INS: readonly (readonly [string, string, () => Promise<object>])[] = [
-  ['binnacle-transcript', '@easeshine/binnacle/plugins/transcript', () => import('../plugins/transcript/index.ts')],
-  ['binnacle-transcript-view', '@easeshine/binnacle/plugins/transcript-view', () => import('../plugins/transcript-view/index.ts')],
-  ['binnacle-tool-cards', '@easeshine/binnacle/plugins/tool-cards', () => import('../plugins/tool-cards/index.ts')],
-  ['binnacle-composer', '@easeshine/binnacle/plugins/composer', () => import('../plugins/composer/index.ts')],
-  ['binnacle-commands', '@easeshine/binnacle/plugins/commands', () => import('../plugins/commands/index.ts')],
-  ['binnacle-status-line', '@easeshine/binnacle/plugins/status-line', () => import('../plugins/status-line/index.ts')],
-  ['binnacle-requests', '@easeshine/binnacle/plugins/requests', () => import('../plugins/requests/index.ts')],
-  ['binnacle-requests-view', '@easeshine/binnacle/plugins/requests-view', () => import('../plugins/requests-view/index.ts')],
+  ['binnacle-transcript', `${PACKAGE}/plugins/transcript`, () => import('../plugins/transcript/index.ts')],
+  ['binnacle-transcript-view', `${PACKAGE}/plugins/transcript-view`, () => import('../plugins/transcript-view/index.ts')],
+  ['binnacle-tool-cards', `${PACKAGE}/plugins/tool-cards`, () => import('../plugins/tool-cards/index.ts')],
+  ['binnacle-composer', `${PACKAGE}/plugins/composer`, () => import('../plugins/composer/index.ts')],
+  ['binnacle-commands', `${PACKAGE}/plugins/commands`, () => import('../plugins/commands/index.ts')],
+  ['binnacle-status-line', `${PACKAGE}/plugins/status-line`, () => import('../plugins/status-line/index.ts')],
+  ['binnacle-requests', `${PACKAGE}/plugins/requests`, () => import('../plugins/requests/index.ts')],
+  ['binnacle-requests-view', `${PACKAGE}/plugins/requests-view`, () => import('../plugins/requests-view/index.ts')],
 ]
 
 const KEYS: Readonly<Record<string, string>> = {
@@ -180,10 +181,10 @@ async function mounting(options: MountOptions, made: { ctx?: Context; restore?: 
   const ids = new Map<string, string>()
   // The core is the row `binnacle`, as a profile loads it, so that what it registers ranks as a built-in's.
   const loadCore = async (ctx: Context, module: object) => {
-    modules.set('@easeshine/binnacle', module)
+    modules.set(PACKAGE, module)
     await ctx.plugin(Profile)
     const loader = ctx.get('loader')!
-    const id = await loader.create({ name: '@easeshine/binnacle' })
+    const id = await loader.create({ name: PACKAGE })
     ids.set('binnacle', id)
     return { dispose: () => loader.remove(id) }
   }
