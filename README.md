@@ -10,16 +10,14 @@ pnpm refs        # fetches dsh and pi into .refs/, to read
 vp run ready     # check, test and build everything
 ```
 
-To run this checkout under dsh, make a profile that links the package, then build it:
+To run this checkout under dsh, build it and start its command. A `binnacle` run from a checkout links the checkout into binnacle's dsh profile, `~/.dsh/profiles/binnacle`, in place of a version from npm:
 
 ```sh
-mkdir -p ~/.dsh/profiles/binnacle && cd ~/.dsh/profiles/binnacle
-# package.json: "dependencies": { "@easeshine/binnacle": "link:<this checkout>/packages/binnacle" }
-#               "dsh": { "profile": { "bundles": ["@deepseek-ai/dsh-base", "@easeshine/binnacle"] } }
-pnpm install
-vp run @easeshine/binnacle#build   # in this checkout
-dsh --profile binnacle
+vp run @easeshine/binnacle#build
+node packages/binnacle/dist/cli.mjs
 ```
+
+After a change, build again, and start it again.
 
 ## Docs
 

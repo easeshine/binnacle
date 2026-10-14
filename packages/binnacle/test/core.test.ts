@@ -171,7 +171,7 @@ test('a plugin that unloads, as on a reload, takes its Part with it, and the cor
 test('--help prints how to start binnacle, and exits without taking the terminal', async () => {
   const { terminal, out, exits, ready } = await mount({ args: ['--help'] })
   ready()
-  assert.match(out.join(''), /^Usage: dsh --profile binnacle \[options\]/)
+  assert.match(out.join(''), /^Usage: binnacle \[options\]/)
   assert.match(out.join(''), /--session <id>/)
   assert.deepEqual([exits, (await terminal.read()).screen], [[0], 'normal'])
 })

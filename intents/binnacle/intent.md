@@ -13,7 +13,7 @@ People who work in a terminal must use a browser app or a terminal agent that is
 
 ## Proposed outcome
 
-binnacle is a terminal app for dsh. A person starts it with `dsh --profile binnacle`. In binnacle, a person can do these things:
+binnacle is a terminal app for dsh. A person starts it with `binnacle`. In binnacle, a person can do these things:
 
 1. Talk with a dsh agent in a full-screen terminal view, and watch its work as it streams.
 2. Answer the agent's questions and approve its actions with the keyboard.

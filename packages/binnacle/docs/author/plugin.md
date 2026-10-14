@@ -19,7 +19,7 @@ A plugin in TypeScript imports the types with `import type { Binnacle, Part } fr
 
 ## Load it in a profile
 
-A dsh profile is a folder, `~/.dsh/profiles/<profile>/`. A profile runs binnacle when its `package.json` has `@easeshine/binnacle` in its dependencies, and `"dsh": { "profile": { "bundles": ["@deepseek-ai/dsh-base", "@easeshine/binnacle"] } }`.
+A dsh profile is a folder, `~/.dsh/profiles/<profile>/`. A profile runs binnacle when its `package.json` has `@easeshine/binnacle` in its dependencies, and `"dsh": { "profile": { "bundles": ["@deepseek-ai/dsh-base", "@easeshine/binnacle"] } }`. The `binnacle` command makes such a profile, `binnacle`, and keeps only binnacle's own version in it: a plugin that you add there, `binnacle` starts too.
 
 1. Put the plugin in the profile, such as in `plugins/my-change/`.
 2. Add it to the dependencies of the profile's `package.json`: `"my-change": "link:./plugins/my-change"`.

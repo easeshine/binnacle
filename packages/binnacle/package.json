@@ -58,7 +58,8 @@
     "commander": "15.0.0",
     "get-east-asian-width": "1.6.0",
     "marked": "18.0.11",
-    "@xterm/headless": "5.5.0"
+    "@xterm/headless": "5.5.0",
+    "semver": "7.8.5"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "4.0.5-alpha.1",
@@ -92,6 +93,7 @@
     "@deepseek-ai/dsh-user-questions": "0.2.1-alpha.1",
     "@types/node": "catalog:",
     "typescript": "catalog:",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "@types/semver": "7.8.0"
   }
 }

@@ -42,6 +42,6 @@ Before you change code, read the `AGENTS.md` of its folder. A change edits, in t
 | `vp install && pnpm refs` | Installs, and fetches each Reference into `.refs/` |
 | `vp run ready` | Formats and lints with types, then runs every test and every build. CI runs it on each PR. |
 | `vp check --fix` | Formats the tree and fixes what lint can |
-| `vp run @easeshine/binnacle#build` | Builds the bundle. A `binnacle` dsh profile that links `packages/binnacle` then runs it with `dsh --profile binnacle`. |
+| `vp run @easeshine/binnacle#build` | Builds the bundle and its command. `node packages/binnacle/dist/cli.mjs` then links `packages/binnacle` into binnacle's dsh profile and starts it. |
 | `vp run @easeshine/binnacle#test` | Runs the package's tests |
 | `vp run dev` | Runs the docs website |

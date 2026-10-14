@@ -71,6 +71,18 @@ test("the packed package holds the docs, the skill and the built-ins' source, an
   assert.deepEqual([wanted.filter((path) => !files.includes(path)), files.filter((path) => path.endsWith('AGENTS.md'))], [[], []])
 })
 
+test('the packed bin is the `binnacle` command, which says its version with no dsh', () => {
+  const manifest = JSON.parse(read('package.json')) as { version: string; bin: Record<string, string> }
+  assert.deepEqual(manifest.bin, { binnacle: './dist/cli.mjs' })
+  assert.ok(read('dist/cli.mjs').startsWith('#!/usr/bin/env node\n'))
+  const said = execFileSync(process.execPath, [join(unpacked, 'dist/cli.mjs'), '--version'], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env: {},
+  })
+  assert.equal(said, `binnacle ${manifest.version}\n`)
+})
+
 test("the packed export map gives what the Kit keeps, the composer's editor, and not pi-tui's Input", async () => {
   const exports = JSON.parse(read('package.json')).exports as Record<string, string>
   const index = await import(pathToFileURL(join(unpacked, exports['.']!)).href)
