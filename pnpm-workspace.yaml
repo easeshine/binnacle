@@ -1,0 +1,25 @@
+packages:
+  - apps/*
+  - packages/*
+  - tools/*
+
+catalog:
+  '@changesets/cli': ^3.0.3
+  '@oxlint/plugins': 1.85.0
+  '@types/node': ^24
+  typescript: ^7.0.2
+  vite: npm:@voidzero-dev/vite-plus-core@1.1.0
+  vite-plus: 1.1.0
+
+catalogMode: prefer
+
+overrides:
+  vite@*: 'catalog:'
+
+peerDependencyRules:
+  allowAny:
+    - vite
+  allowedVersions:
+    vite: '*'
+
+resolvePeersFromWorkspaceRoot: false

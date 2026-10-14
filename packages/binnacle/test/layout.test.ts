@@ -1,0 +1,1206 @@
+import { test } from 'vite-plus/test'
+import assert from 'node:assert/strict'
+import type { Context } from '@deepseek-ai/cordis'
+import type { Binnacle, Edit, Layout, Point } from '../src/api.ts'
+import { CHAT_LAYOUT, createModel } from '../src/index.ts'
+import { mount } from './support/mount.ts'
+
+const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M`
+
+async function drawn(columns: number, rows: number, author: (binnacle: Binnacle) => void) {
+  const mounted = await mount({ columns, rows })
+  mounted.ready()
+  const plugin = mounted.ctx.plugin({
+    name: 'author',
+    inject: ['binnacle'],
+    apply: (ctx: Context) => {
+      author(ctx.binnacle)
+    },
+  })
+  await plugin
+  return { ...mounted, plugin, rows: (await mounted.terminal.read()).rows }
+}
+
+const part = (...lines: string[]) => ({ lines: () => lines })
+
+const statusLine = (binnacle: Binnacle, text: string) => {
+  binnacle.layout('status', { row: [{ place: 'status.state' }], separator: true })
+  binnacle.place('status.state', part(text))
+}
+
+const composerLine = (binnacle: Binnacle, ...lines: string[]) => {
+  binnacle.layout('composer', { row: [{ place: 'composer.input' }] })
+  binnacle.place('composer.input', part(...lines))
+}
+
+test('the Chat stacks the transcript, the status and the composer: the status and the composer take the rows their lines need, and the transcript the rest', async () => {
+  const { rows } = await drawn(20, 6, (binnacle) => {
+    binnacle.place('transcript', part('t1', 't2', 't3', 't4', 't5'))
+    statusLine(binnacle, 'working')
+    composerLine(binnacle, 'c1', 'c2')
+  })
+  assert.deepEqual(rows, ['t3', 't4', 't5', 'working', 'c1', 'c2'])
+})
+
+test("a plugin replaces the Chat's layout: the composer on top, and a sidebar of a fixed width beside the rest", async () => {
+  const { rows } = await drawn(20, 4, (binnacle) => {
+    binnacle.layout('chat', {
+      row: [{ column: [{ place: 'composer', size: 'content' }, { place: 'transcript' }] }, { place: 'sidebar', size: { fixed: 6 } }],
+    })
+    binnacle.place('transcript', part('t1', 't2', 't3', 't4'))
+    binnacle.place('composer', part('draft'))
+    binnacle.place('sidebar', part('files', 'a.ts'))
+  })
+  assert.deepEqual(rows, ['draft         files', 't2            a.ts', 't3', 't4'])
+})
+
+test('a Screen shown is drawn with its own layout over the Chat, and the Chat is drawn again once the plugin that showed it unloads', async () => {
+  const { ctx, plugin, terminal, rows } = await drawn(20, 2, (binnacle) => {
+    binnacle.place('transcript', part('chat'))
+    binnacle.place('detail', part('a', 'b'))
+    binnacle.show({ name: 'trajectory', layout: { row: [{ place: 'detail', size: { fixed: 4 } }, { place: 'transcript' }] } })
+  })
+  await plugin.dispose()
+  await ctx.plugin({
+    name: 'again',
+    inject: ['binnacle'],
+    apply: (again: Context) => {
+      again.binnacle.place('transcript', part('chat'))
+    },
+  })
+  assert.deepEqual(
+    [rows, (await terminal.read()).rows],
+    [
+      ['a   chat', 'b'],
+      ['chat', ''],
+    ],
+  )
+})
+
+test('a layout goes when the plugin that set it unloads, and the Screen is drawn with the layout beneath', async () => {
+  const { ctx, plugin, terminal, rows } = await drawn(20, 2, (binnacle) => {
+    binnacle.layout('chat', { column: [{ place: 'sidebar' }] })
+    binnacle.place('sidebar', part('side'))
+  })
+  await plugin.dispose()
+  await ctx.plugin({
+    name: 'again',
+    inject: ['binnacle'],
+    apply: (again: Context) => {
+      composerLine(again.binnacle, 'draft')
+    },
+  })
+  assert.deepEqual(
+    [rows, (await terminal.read()).rows],
+    [
+      ['side', ''],
+      ['', 'draft'],
+    ],
+  )
+})
+
+const wheelUpAt = (column: number, row: number) => `\x1b[<64;${column};${row}M`
+
+test('the wheel scrolls the Place under the pointer, and no other', async () => {
+  const { terminal, rows } = await drawn(10, 2, (binnacle) => {
+    binnacle.layout('chat', { row: [{ place: 'transcript' }, { place: 'sidebar', size: { fixed: 5 } }] })
+    binnacle.place('transcript', part('t1', 't2', 't3', 't4', 't5'))
+    binnacle.place('sidebar', part('s1', 's2', 's3', 's4', 's5'))
+  })
+  terminal.type(wheelUpAt(7, 1))
+  assert.deepEqual(
+    [rows, (await terminal.read()).rows],
+    [
+      ['t4   s4', 't5   s5'],
+      ['t4   s1', 't5   s2'],
+    ],
+  )
+})
+
+test('padding keeps blank cells inside a node, on each side or on the sides it names, and a gap keeps them between its children', async () => {
+  const { rows } = await drawn(10, 6, (binnacle) => {
+    binnacle.layout('chat', {
+      column: [
+        { place: 'a', size: 'content' },
+        { place: 'b', size: 'content', padding: { left: 2 } },
+      ],
+      padding: 1,
+      gap: 1,
+    })
+    binnacle.place('a', part('a'))
+    binnacle.place('b', part('b'))
+  })
+  assert.deepEqual(rows, ['', ' a', '', '   b', '', ''])
+})
+
+test('a border is drawn with its edge, the theme’s rounded by default: on every side with a title set in its top, or on one side as a gutter', async () => {
+  const { rows } = await drawn(12, 8, (binnacle) => {
+    binnacle.layout('chat', {
+      column: [
+        { place: 'transcript', size: 'content', border: ['left'] },
+        { place: 'composer', size: 'content', border: true, title: 'you' },
+        { place: 'status', size: 'content', border: true, edge: 'heavy' },
+      ],
+    })
+    binnacle.place('transcript', part('t1'))
+    binnacle.place('composer', part('hi'))
+    binnacle.place('status', part('x'))
+  })
+  assert.deepEqual(rows, ['│t1', '╭─ you ────╮', '│hi        │', '╰──────────╯', '┏━━━━━━━━━━┓', '┃x         ┃', '┗━━━━━━━━━━┛', ''])
+})
+
+test('a terminal too small for the layout loses padding first, then borders, and then the far rows', async () => {
+  const seen: string[][] = []
+  for (const height of [5, 4, 3, 1]) {
+    const { rows } = await drawn(8, height, (binnacle) => {
+      binnacle.layout('chat', {
+        column: [
+          { place: 'transcript' },
+          { place: 'status', size: 'content' },
+          { place: 'composer', size: 'content', border: true, padding: { top: 1 } },
+        ],
+      })
+      binnacle.place('transcript', part('t'))
+      binnacle.place('status', part('s'))
+      binnacle.place('composer', part('c'))
+    })
+    seen.push(rows)
+  }
+  assert.deepEqual(seen, [
+    ['s', '╭──────╮', '│      │', '│c     │', '╰──────╯'],
+    ['s', '╭──────╮', '│c     │', '╰──────╯'],
+    ['t', 's', 'c'],
+    ['s'],
+  ])
+})
+
+test('a wide character never straddles the border between two Places side by side', async () => {
+  const { rows } = await drawn(10, 2, (binnacle) => {
+    binnacle.layout('chat', { row: [{ place: 'a', size: { fixed: 3 } }, { place: 'b' }] })
+    binnacle.place('a', part('日本'))
+    binnacle.place('b', part('b'))
+  })
+  assert.deepEqual(rows, ['日 b', '本'])
+})
+
+test('a column draws every row it is given, so its bottom border closes at its last row and the Place under it stays at the bottom', async () => {
+  const { rows } = await drawn(10, 5, (binnacle) => {
+    binnacle.layout('chat', {
+      column: [
+        { column: [{ place: 'a', size: 'content' }], border: true },
+        { place: 'c', size: 'content' },
+      ],
+    })
+    binnacle.place('a', part('a'))
+    binnacle.place('c', part('c'))
+  })
+  assert.deepEqual(rows, ['╭────────╮', '│a       │', '│        │', '╰────────╯', 'c'])
+})
+
+test('a node given fewer rows than its own box gives up its padding, then its border, before its rows are cut', async () => {
+  const seen: string[][] = []
+  for (const height of [3, 1]) {
+    const { rows } = await drawn(10, height, (binnacle) => {
+      binnacle.layout('chat', { column: [{ place: 'a', border: true, padding: 1 }] })
+      binnacle.place('a', part('a1', 'a2'))
+    })
+    seen.push(rows)
+  }
+  assert.deepEqual(seen, [['╭────────╮', '│a2      │', '╰────────╯'], ['a2']])
+})
+
+test('a title is drawn as plain text, and a title too long for its border is cut at a whole character', async () => {
+  const seen: string[] = []
+  for (const title of ['x\ny\x1b[31mred', 'Transcript title long']) {
+    const { rows } = await drawn(16, 3, (binnacle) => {
+      binnacle.layout('chat', { column: [{ place: 'a', border: true, title }] })
+    })
+    seen.push(rows[0] ?? '')
+  }
+  assert.deepEqual(seen, ['╭─ xyred ──────╮', '╭─ Transcript ─╮'])
+})
+
+test('a size, a padding or a gap of fewer than no cells, or of part of a cell, is drawn as the whole cells it holds, never fewer than none', async () => {
+  const { rows } = await drawn(5, 2, (binnacle) => {
+    binnacle.layout('chat', {
+      column: [
+        { place: 'a', size: { fixed: -3 } },
+        { place: 'b', padding: -1 },
+      ],
+      gap: 0.5,
+    })
+    binnacle.place('a', part('a'))
+    binnacle.place('b', part('b1', 'b2', 'b3'))
+  })
+  assert.deepEqual(rows, ['b2', 'b3'])
+})
+
+test('the wheel over a Place’s border scrolls the Place', async () => {
+  const { terminal } = await drawn(10, 3, (binnacle) => {
+    binnacle.layout('chat', { column: [{ place: 'a', border: true }] })
+    binnacle.place('a', part('a1', 'a2', 'a3', 'a4'))
+  })
+  terminal.type(wheelUpAt(1, 1))
+  assert.deepEqual((await terminal.read()).rows, ['╭────────╮', '│a1      │', '╰────────╯'])
+})
+
+test('a node is of one kind, a Place, a row, a column, a named Layout, a first or a float, never two at once', () => {
+  // @ts-expect-error A node with both a place and a row has no meaning.
+  const mixed: Layout = { place: 'a', row: [] }
+  // @ts-expect-error A float over a named Layout is a node of its own.
+  const floating: Layout = { layout: 'a', over: { place: 'b' }, float: { place: 'c' } }
+  assert.ok(mixed && floating)
+})
+
+test('a gap wider than the room between its children is given up before their rows are cut', async () => {
+  const { rows } = await drawn(6, 3, (binnacle) => {
+    binnacle.layout('chat', { column: [{ place: 'a' }, { place: 'b' }], gap: 5 })
+    binnacle.place('a', part('a'))
+    binnacle.place('b', part('b'))
+  })
+  assert.deepEqual(rows, ['a', '', 'b'])
+})
+
+test("a Part's colour stays inside its Place: its border and the Place beside it are drawn in the default colour", async () => {
+  const { terminal, rows } = await drawn(12, 3, (binnacle) => {
+    binnacle.layout('chat', { row: [{ place: 'a', border: true, size: { fixed: 6 } }, { place: 'b' }] })
+    binnacle.place('a', part('\x1b[31mred'))
+    binnacle.place('b', part('b'))
+  })
+  const colours = await Promise.all([terminal.colourAt(1, 1), terminal.colourAt(5, 1), terminal.colourAt(6, 0)])
+  assert.deepEqual(
+    [rows, colours],
+    [
+      ['╭────╮b', '│red │', '╰────╯'],
+      [1, 'default', 'default'],
+    ],
+  )
+})
+
+test('a Part with the Focus, longer than its Place, shows the row of its cursor, and the terminal cursor is put there', async () => {
+  const { terminal, rows } = await drawn(10, 3, (binnacle) => {
+    binnacle.show({ name: 'editing', focus: 'a', layout: { place: 'a' } })
+    binnacle.place('a', { lines: () => ['1', '2', '3', '4', '5', '6'], key: () => false, cursor: () => ({ line: 1, column: 1 }) })
+  })
+  assert.deepEqual([rows, (await terminal.read()).cursor], [['2', '3', '4'], { x: 1, y: 0 }])
+})
+
+test("a Part that follows its cursor the least, without the Focus, shows its cursor's row, and the terminal's cursor stays with the Part that has the Focus", async () => {
+  const { terminal, rows } = await drawn(10, 4, (binnacle) => {
+    binnacle.show({ name: 'editing', focus: 'b', layout: { column: [{ place: 'a', size: { fixed: 3 } }, { place: 'b' }] } })
+    binnacle.place('a', { lines: () => ['1', '2', '3', '4', '5', '6'], cursor: () => ({ line: 0, column: 0 }), follow: 'least' })
+    binnacle.place('b', { lines: () => ['typed'], key: () => false, cursor: () => ({ line: 0, column: 5 }) })
+  })
+  assert.deepEqual([rows, (await terminal.read()).cursor], [['1', '2', '3', 'typed'], { x: 5, y: 3 }])
+})
+
+test("a cursor in a line that wraps is put on the row and the column it wraps to, inside the Place's box", async () => {
+  const { terminal, rows } = await drawn(12, 4, (binnacle) => {
+    binnacle.show({ name: 'editing', focus: 'a', layout: { place: 'a', border: true } })
+    binnacle.place('a', { lines: () => ['abcdefghijklmno'], key: () => false, cursor: () => ({ line: 0, column: 12 }) })
+  })
+  assert.deepEqual(
+    [rows, (await terminal.read()).cursor],
+    [['╭──────────╮', '│abcdefghij│', '│klmno     │', '╰──────────╯'], { x: 3, y: 2 }],
+  )
+})
+
+async function cursorInWrappedLineAt(column: number) {
+  const { terminal } = await drawn(5, 3, (binnacle) => {
+    binnacle.show({ name: 'editing', focus: 'a', layout: { place: 'a' } })
+    binnacle.place('a', { lines: () => ['aaaa bbbb cccc'], key: () => false, cursor: () => ({ line: 0, column }) })
+  })
+  return (await terminal.read()).cursor
+}
+
+test('a cursor in a line that wraps at its spaces is put on the word it is in, and at the end of the line where it ends it', async () => {
+  assert.deepEqual(
+    [await cursorInWrappedLineAt(11), await cursorInWrappedLineAt(9), await cursorInWrappedLineAt(14)],
+    [
+      { x: 1, y: 2 },
+      { x: 4, y: 1 },
+      { x: 4, y: 2 },
+    ],
+  )
+})
+
+test('a `{ layout: name }` node draws the Layout set by that name, and takes no cells at all, its box included, while that Layout has nothing to draw', async () => {
+  const seen: string[][] = []
+  for (const ask of [undefined, [], ['ask?']]) {
+    const { rows } = await drawn(10, 8, (binnacle) => {
+      binnacle.layout('chat', {
+        column: [
+          { place: 'transcript' },
+          { layout: 'request', size: 'content', border: true, padding: { top: 1 } },
+          { place: 'composer', size: 'content' },
+        ],
+        gap: 1,
+      })
+      if (ask !== undefined) binnacle.layout('request', { place: 'ask' })
+      binnacle.place('transcript', part('t1', 't2', 't3'))
+      binnacle.place('composer', part('c'))
+      binnacle.place('ask', part(...(ask ?? [])))
+    })
+    seen.push(rows)
+  }
+  assert.deepEqual(seen, [
+    ['t1', 't2', 't3', '', '', '', '', 'c'],
+    ['t1', 't2', 't3', '', '', '', '', 'c'],
+    ['t3', '', '╭────────╮', '│        │', '│ask?    │', '╰────────╯', '', 'c'],
+  ])
+})
+
+test('a `{ first: [...] }` node draws only its first child that has a line to draw', async () => {
+  const seen: string[][] = []
+  for (const notice of [[], ['notice']]) {
+    const { rows } = await drawn(10, 2, (binnacle) => {
+      binnacle.layout('chat', {
+        column: [
+          { place: 'transcript' },
+          { first: [{ place: 'notice' }, { place: 'empty' }, { place: 'status' }, { place: 'hint' }], size: 'content' },
+        ],
+      })
+      binnacle.place('transcript', part('t'))
+      binnacle.place('notice', part(...notice))
+      binnacle.place('status', part('working'))
+      binnacle.place('hint', part('hint'))
+    })
+    seen.push(rows)
+  }
+  assert.deepEqual(seen, [
+    ['t', 'working'],
+    ['t', 'notice'],
+  ])
+})
+
+test('an `{ over, float, at }` node draws `float` on top of `over` while `float` has a line to draw, and a click lands on the float before what it covers', async () => {
+  const clicked: string[] = []
+  const clicking = (name: string, lines: () => readonly string[]) => ({
+    lines,
+    models: [menu],
+    click: (at: Point) => {
+      clicked.push(`${name} ${at.line}:${at.column}`)
+      return true
+    },
+  })
+  const menu = createModel<{ lines: readonly string[] }>({ lines: ['m'] })
+  const { terminal, rows } = await drawn(10, 5, (binnacle) => {
+    binnacle.layout('chat', { over: { place: 'transcript' }, float: { place: 'menu', border: true }, at: { width: 6 } })
+    binnacle.place(
+      'transcript',
+      clicking('transcript', () => Array.from({ length: 5 }, () => 'aaaaaaaaaa')),
+    )
+    binnacle.place(
+      'menu',
+      clicking('menu', () => menu.state.lines),
+    )
+  })
+  terminal.type(clickAt(3, 2))
+  terminal.type(clickAt(0, 2))
+  menu.set((state) => {
+    state.lines = []
+  })
+  const covered = (await terminal.read()).rows
+  terminal.type(clickAt(3, 2))
+  assert.deepEqual(
+    [rows, covered, clicked],
+    [
+      ['aaaaaaaaaa', 'aa╭────╮aa', 'aa│m   │aa', 'aa╰────╯aa', 'aaaaaaaaaa'],
+      ['aaaaaaaaaa', 'aaaaaaaaaa', 'aaaaaaaaaa', 'aaaaaaaaaa', 'aaaaaaaaaa'],
+      ['menu 0:0', 'transcript 2:0', 'transcript 2:3'],
+    ],
+  )
+})
+
+test('a node with `unless: name` draws nothing while the Layout or the Place by that name has a line to draw', async () => {
+  const seen: string[][] = []
+  for (const [request, notice] of [
+    [[], []],
+    [['ask?'], []],
+    [[], ['note']],
+  ]) {
+    const { rows } = await drawn(10, 5, (binnacle) => {
+      binnacle.layout('chat', {
+        column: [
+          { place: 'transcript' },
+          { layout: 'request', size: 'content' },
+          { place: 'composer', size: 'content', unless: 'request', border: ['top'] },
+          { place: 'status', size: 'content', unless: 'notice' },
+          { place: 'notice', size: 'content' },
+        ],
+      })
+      binnacle.layout('request', { place: 'ask' })
+      binnacle.place('transcript', part('t'))
+      binnacle.place('ask', part(...(request ?? [])))
+      binnacle.place('composer', part('c'))
+      binnacle.place('status', part('s'))
+      binnacle.place('notice', part(...(notice ?? [])))
+    })
+    seen.push(rows)
+  }
+  assert.deepEqual(seen, [
+    ['t', '', '──────────', 'c', 's'],
+    ['t', '', '', 'ask?', 's'],
+    ['t', '', '──────────', 'c', 'note'],
+  ])
+})
+
+test('a node that takes what its lines need, with less room than that, shrinks the node in it that fills before the screen gives up its borders', async () => {
+  const { rows } = await drawn(10, 5, (binnacle) => {
+    binnacle.layout('chat', {
+      column: [
+        { place: 'transcript' },
+        {
+          column: [
+            { place: 'body', size: 'fill' },
+            { place: 'choices', size: 'content' },
+          ],
+          size: 'content',
+          border: ['bottom'],
+        },
+      ],
+    })
+    binnacle.place('transcript', part('t'))
+    binnacle.place('body', part('b1', 'b2', 'b3', 'b4', 'b5'))
+    binnacle.place('choices', part('c1', 'c2'))
+  })
+  assert.deepEqual(rows, ['b4', 'b5', 'c1', 'c2', '──────────'])
+})
+
+test('in a column, nodes that fill take no more than their lines need while another needs more, then share what is left evenly', async () => {
+  const seen: string[][] = []
+  for (const height of [6, 9]) {
+    const { rows } = await drawn(10, height, (binnacle) => {
+      binnacle.layout('chat', {
+        column: [
+          { place: 'short', size: 'fill' },
+          { place: 'tall', size: 'fill' },
+        ],
+      })
+      binnacle.place('short', part('s1', 's2'))
+      binnacle.place('tall', part('t1', 't2', 't3', 't4', 't5', 't6'))
+    })
+    seen.push(rows)
+  }
+  assert.deepEqual(seen, [
+    ['s1', 's2', 't3', 't4', 't5', 't6'],
+    ['s1', 's2', '', 't1', 't2', 't3', 't4', 't5', 't6'],
+  ])
+})
+
+test('a node with `mouse: false` ignores a click and the wheel inside it, and a click there moves no Focus', async () => {
+  const heard: string[] = []
+  const taking = (name: string) => ({
+    lines: () => ['1', '2', '3', '4'].map((line) => `${name}${line}`),
+    key: (data: string) => {
+      heard.push(`${name} ${data}`)
+      return true
+    },
+    click: () => {
+      heard.push(`${name} click`)
+      return true
+    },
+  })
+  const { terminal, rows } = await drawn(10, 2, (binnacle) => {
+    binnacle.show({
+      name: 'two',
+      focus: 'b',
+      layout: { row: [{ column: [{ place: 'a' }], size: { fixed: 5 }, mouse: false }, { place: 'b' }] },
+    })
+    binnacle.place('a', taking('a'))
+    binnacle.place('b', taking('b'))
+  })
+  terminal.type(clickAt(1, 0))
+  terminal.type(wheelUpAt(2, 1))
+  terminal.type('k')
+  terminal.type(clickAt(6, 0))
+  assert.deepEqual(
+    [rows, (await terminal.read()).rows, heard],
+    [
+      ['a3   b3', 'a4   b4'],
+      ['a3   b3', 'a4   b4'],
+      ['b k', 'b click'],
+    ],
+  )
+})
+
+test("a node with `clickFocus: false` gives a click inside it to its Part and its Place's actions, for each Place inside it, and moves no Focus", async () => {
+  const heard: string[] = []
+  const taking = (name: string) => ({
+    lines: () => [`${name}1`],
+    key: (data: string) => {
+      heard.push(`${name} ${data}`)
+      return true
+    },
+    click: () => {
+      heard.push(`${name} click`)
+      return false
+    },
+  })
+  const { terminal } = await drawn(12, 1, (binnacle) => {
+    binnacle.show({
+      name: 'three',
+      focus: 'c',
+      layout: { row: [{ row: [{ place: 'a' }, { place: 'b' }], size: { fixed: 8 }, clickFocus: false }, { place: 'c' }] },
+    })
+    binnacle.place('a', taking('a'))
+    binnacle.place('b', taking('b'))
+    binnacle.place('c', taking('c'))
+    binnacle.action('b.clicked', { keys: ['click'], place: 'b', run: () => heard.push('b action') })
+  })
+  terminal.type(clickAt(0, 0))
+  terminal.type(clickAt(4, 0))
+  terminal.type('k')
+  terminal.type(clickAt(9, 0))
+  terminal.type('j')
+  await terminal.read()
+  assert.deepEqual(heard, ['a click', 'b click', 'b action', 'c k', 'c click', 'c j'])
+})
+
+test("in a Layout set by name, a node with no size takes what its lines need; in a Screen's own Layout it fills, as before", async () => {
+  const panel: Layout = { column: [{ place: 'a' }, { place: 'b' }] }
+  const seen: string[][] = []
+  for (const chat of [
+    { column: [{ layout: 'panel', size: { fixed: 4 } }, { place: 'c' }] },
+    { column: [{ ...panel, size: { fixed: 4 } }, { place: 'c' }] },
+  ] satisfies Layout[]) {
+    const { rows } = await drawn(10, 5, (binnacle) => {
+      binnacle.layout('chat', chat)
+      binnacle.layout('panel', panel)
+      binnacle.place('a', part('a'))
+      binnacle.place('b', part('b'))
+      binnacle.place('c', part('c'))
+    })
+    seen.push(rows)
+  }
+  assert.deepEqual(seen, [
+    ['a', 'b', '', '', 'c'],
+    ['a', '', 'b', '', 'c'],
+  ])
+})
+
+test("the Chat's own Layout is exported as `CHAT_LAYOUT`, and an author builds on it to move one node", async () => {
+  const { rows } = await drawn(10, 4, (binnacle) => {
+    const composer = CHAT_LAYOUT.column.filter((node) => node.layout === 'composer')
+    binnacle.layout('chat', { ...CHAT_LAYOUT, column: [...composer, ...CHAT_LAYOUT.column.filter((node) => node.layout !== 'composer')] })
+    binnacle.place('transcript', part('t1', 't2', 't3'))
+    statusLine(binnacle, 'working')
+    composerLine(binnacle, 'draft')
+  })
+  assert.deepEqual(rows, ['draft', 't2', 't3', 'working'])
+})
+
+test('a named Layout that draws itself, or hides itself by `unless`, draws nothing the second time, and binnacle still draws', async () => {
+  const { rows } = await drawn(10, 3, (binnacle) => {
+    binnacle.layout('chat', { column: [{ layout: 'loop' }, { place: 'c', size: 'content' }] })
+    binnacle.layout('loop', { column: [{ place: 'a' }, { place: 'x', unless: 'loop' }, { layout: 'loop' }] })
+    binnacle.place('a', part('a'))
+    binnacle.place('x', part('x'))
+    binnacle.place('c', part('c'))
+  })
+  assert.deepEqual(rows, ['a', '', 'c'])
+})
+
+const answering = (name: string, lines: readonly string[], heard: string[]) => ({
+  lines: () => lines,
+  key: (data: string) => {
+    heard.push(`${name} ${data}`)
+    return true
+  },
+  click: (at: Point) => {
+    heard.push(`${name} click ${at.line}:${at.column}`)
+    return true
+  },
+})
+
+test('a click and the wheel on the box of a float, its border included, reach nothing beneath it, and move no Focus', async () => {
+  const heard: string[] = []
+  const { terminal, rows } = await drawn(10, 5, (binnacle) => {
+    binnacle.show({
+      name: 'menu',
+      focus: 'menu',
+      layout: { over: { place: 'base' }, float: { column: [{ place: 'menu' }], border: true }, at: { width: 6 } },
+    })
+    binnacle.place(
+      'base',
+      answering(
+        'base',
+        Array.from({ length: 10 }, (_, line) => `${line}`.repeat(10)),
+        heard,
+      ),
+    )
+    binnacle.place('menu', answering('menu', ['M'], heard))
+  })
+  terminal.type(clickAt(3, 1))
+  terminal.type(wheelUpAt(4, 2))
+  terminal.type('k')
+  terminal.type(clickAt(3, 2))
+  assert.deepEqual(
+    [rows, (await terminal.read()).rows, heard],
+    [
+      ['5555555555', '66╭────╮66', '77│M   │77', '88╰────╯88', '9999999999'],
+      ['5555555555', '66╭────╮66', '77│M   │77', '88╰────╯88', '9999999999'],
+      ['menu k', 'menu click 0:0'],
+    ],
+  )
+})
+
+test('a click lands on the topmost of floats inside floats', async () => {
+  const heard: string[] = []
+  const { terminal, rows } = await drawn(10, 5, (binnacle) => {
+    binnacle.layout('chat', {
+      over: { place: 'base' },
+      float: { over: { place: 'middle' }, float: { place: 'inner' }, at: { width: 2 } },
+      at: { width: 6 },
+    })
+    binnacle.place('base', answering('base', ['7777777777', '7777777777', '7777777777', '7777777777', '7777777777'], heard))
+    binnacle.place('middle', answering('middle', ['bbbbbb', 'bbbbbb', 'bbbbbb'], heard))
+    binnacle.place('inner', answering('inner', ['II'], heard))
+  })
+  terminal.type(clickAt(4, 2))
+  terminal.type(clickAt(2, 2))
+  terminal.type(clickAt(0, 2))
+  await terminal.read()
+  assert.deepEqual([rows[2], heard], ['77bbIIbb77', ['inner click 0:0', 'middle click 1:0', 'base click 2:0']])
+})
+
+test('a float with a line to draw, over what has none, has a line to draw: a named Layout draws it, and a `first` picks it', async () => {
+  const panel: Layout = { size: 'fill', over: { place: 'empty' }, float: { place: 'menu' }, at: { width: 6 } }
+  const seen: string[][] = []
+  for (const chat of [{ layout: 'panel' }, { first: [panel, { place: 'fallback' }] }] satisfies Layout[]) {
+    const { rows } = await drawn(10, 3, (binnacle) => {
+      binnacle.layout('chat', chat)
+      binnacle.layout('panel', panel)
+      binnacle.place('menu', part('M'))
+      binnacle.place('fallback', part('fallback'))
+    })
+    seen.push(rows)
+  }
+  assert.deepEqual(seen, [
+    ['', '  M', ''],
+    ['', '  M', ''],
+  ])
+})
+
+test('a float with no size in a named Layout takes the width its lines need, with the margin that a float keeps on each side', async () => {
+  const { rows } = await drawn(10, 2, (binnacle) => {
+    binnacle.layout('chat', { layout: 'panel' })
+    binnacle.layout('panel', {
+      row: [
+        { over: { place: 'empty' }, float: { place: 'menu' } },
+        { place: 'rest', size: 'fill' },
+      ],
+    })
+    binnacle.place('menu', part('M'))
+    binnacle.place('rest', part('rest'))
+  })
+  assert.deepEqual(rows, ['  M  rest', ''])
+})
+
+test('a float is as high as a fixed node in it is fixed, not as what the node holds', async () => {
+  const { rows } = await drawn(10, 8, (binnacle) => {
+    binnacle.show({
+      name: 'menu',
+      focus: 'menu',
+      layout: {
+        over: { place: 'base' },
+        float: { column: [{ place: 'title' }, { place: 'items', size: { fixed: 2 } }], border: true },
+        at: { width: 6 },
+      },
+    })
+    binnacle.place('base', part(...Array.from({ length: 10 }, (_, line) => `${line}`.repeat(10))))
+    binnacle.place('title', part('T'))
+    binnacle.place('items', part(...Array.from({ length: 10 }, (_, line) => `i${line}`)))
+  })
+  assert.deepEqual(rows, ['2222222222', '33╭────╮33', '44│T   │44', '55│i8  │55', '66│i9  │66', '77╰────╯77', '8888888888', '9999999999'])
+})
+
+test('a node of `{ most: n }` takes the rows its lines need, its box included, up to n, and its Place scrolls in what it takes', async () => {
+  const lines = createModel({ a: ['a1'] })
+  const { rows, terminal } = await drawn(6, 6, (binnacle) => {
+    binnacle.layout('chat', { column: [{ place: 'a', size: { most: 3 }, border: ['top'] }, { place: 'rest' }] })
+    binnacle.place('a', { models: [lines], lines: () => lines.state.a })
+    binnacle.place('rest', part('r1', 'r2', 'r3', 'r4', 'r5'))
+  })
+  lines.set((state) => (state.a = ['a1', 'a2', 'a3', 'a4', 'a5']))
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  assert.deepEqual(
+    [rows, (await terminal.read()).rows],
+    [
+      ['──────', 'a1', 'r2', 'r3', 'r4', 'r5'],
+      ['──────', 'a4', 'a5', 'r3', 'r4', 'r5'],
+    ],
+  )
+})
+
+test('a named Layout whose node is of `{ most: n }` takes no more than n rows where its lines are needed, and none while it has no line', async () => {
+  const lines = createModel({ offer: ['o1', 'o2', 'o3', 'o4'] })
+  const { rows, terminal } = await drawn(6, 5, (binnacle) => {
+    binnacle.layout('chat', {
+      column: [{ place: 'transcript' }, { layout: 'offer', size: 'content' }, { place: 'draft', size: 'content' }],
+    })
+    binnacle.layout('offer', { place: 'offer', size: { most: 3 }, border: ['top'] })
+    binnacle.place('transcript', part('t1', 't2', 't3', 't4'))
+    binnacle.place('offer', { models: [lines], lines: () => lines.state.offer })
+    binnacle.place('draft', part('d'))
+  })
+  lines.set((state) => (state.offer = []))
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  assert.deepEqual(
+    [rows, (await terminal.read()).rows],
+    [
+      ['t4', '──────', 'o3', 'o4', 'd'],
+      ['t1', 't2', 't3', 't4', 'd'],
+    ],
+  )
+})
+
+test('a node of `{ most: n }` in a row takes the width its lines need, up to n cells', async () => {
+  const { rows } = await drawn(10, 3, (binnacle) => {
+    binnacle.layout('chat', {
+      column: [
+        { row: [{ place: 'a', size: { most: 4 } }, { place: 'b' }], size: 'content' },
+        { row: [{ place: 'c', size: { most: 4 } }, { place: 'd' }], size: 'content' },
+      ],
+    })
+    binnacle.place('a', part('aaaaaaa'))
+    binnacle.place('b', part('b'))
+    binnacle.place('c', part('cc'))
+    binnacle.place('d', part('d'))
+  })
+  assert.deepEqual(rows, ['aaaab', 'aaa', 'ccd'])
+})
+
+test('a named Layout in a row is as wide as a fixed node in it is fixed, not as what the node holds', async () => {
+  const { rows } = await drawn(10, 1, (binnacle) => {
+    binnacle.layout('chat', { row: [{ layout: 'side', size: 'content' }, { place: 'main' }] })
+    binnacle.layout('side', { row: [{ place: 'a', size: { fixed: 2 } }, { place: 'b' }] })
+    binnacle.place('a', part('AAAAAA'))
+    binnacle.place('b', part('B'))
+    binnacle.place('main', part('mmmmmmmmmm'))
+  })
+  assert.deepEqual(rows, ['AABmmm'])
+})
+
+test("`binnacle.edit` moves the status line above the transcript with two edits, and the rest of the Chat's Layout draws as before", async () => {
+  const { rows } = await drawn(10, 4, (binnacle) => {
+    binnacle.edit('chat', { remove: 'status' })
+    binnacle.edit('chat', { insert: { layout: 'status', size: 'content' }, before: 'transcript' })
+    binnacle.place('transcript', part('t1', 't2', 't3'))
+    statusLine(binnacle, 'working')
+    composerLine(binnacle, 'draft')
+  })
+  assert.deepEqual(rows, ['working', 't2', 't3', 'draft'])
+})
+
+const one = (place: string): Layout => ({ place, size: 'content' })
+
+test('an edit inserts a node after or before its anchor, the name of a Place or of a named Layout, removes its node, or replaces it with another, and keeps the rest', async () => {
+  const seen: string[][] = []
+  for (const edit of [
+    { insert: one('x'), after: 'a' },
+    { insert: one('x'), before: 'n' },
+    { insert: one('x'), after: 'n' },
+    { remove: 'a' },
+    { remove: 'n' },
+    { replace: 'c', with: one('x') },
+  ] satisfies Edit[]) {
+    const { rows } = await drawn(10, 4, (binnacle) => {
+      binnacle.layout('chat', { column: [one('a'), { layout: 'n', size: 'content' }, one('c')] })
+      binnacle.layout('n', { place: 'in n' })
+      for (const name of ['a', 'in n', 'c', 'x']) binnacle.place(name, part(name))
+      binnacle.edit('chat', edit)
+    })
+    seen.push(rows)
+  }
+  assert.deepEqual(seen, [
+    ['a', 'x', 'in n', 'c'],
+    ['a', 'x', 'in n', 'c'],
+    ['a', 'in n', 'x', 'c'],
+    ['in n', 'c', '', ''],
+    ['a', 'c', '', ''],
+    ['a', 'in n', 'x', ''],
+  ])
+})
+
+const editor = (name: string, edits: readonly Edit[]) => ({
+  name,
+  inject: ['binnacle'],
+  apply: (ctx: Context) => {
+    for (const edit of edits) ctx.binnacle.edit('chat', edit)
+  },
+})
+
+async function edited(columns: number, rows: number, layout: Layout, plugins: readonly ReturnType<typeof editor>[]) {
+  const { ctx, terminal } = await drawn(columns, rows, (binnacle) => {
+    binnacle.layout('chat', layout)
+    for (const name of ['a', 'b', 'c', 'p', 'pb', 'q', 'qb', 'x', 'y']) binnacle.place(name, part(name))
+  })
+  for (const plugin of plugins) await ctx.plugin(plugin)
+  return (await terminal.read()).rows
+}
+
+test('two plugins that each insert beside one Place both draw, in one order whichever loads first: after the anchor the first is next to it, and before it the last is', async () => {
+  const p = editor('p', [
+    { insert: one('p'), after: 'a' },
+    { insert: one('pb'), before: 'a' },
+  ])
+  const q = editor('q', [
+    { insert: one('q'), after: 'a' },
+    { insert: one('qb'), before: 'a' },
+  ])
+  const layout: Layout = { column: [one('a')] }
+  assert.deepEqual(
+    [await edited(10, 5, layout, [p, q]), await edited(10, 5, layout, [q, p])],
+    [
+      ['pb', 'qb', 'a', 'p', 'q'],
+      ['pb', 'qb', 'a', 'p', 'q'],
+    ],
+  )
+})
+
+test('inserts apply before replaces, and replaces before removes, on the nodes of the Layout as set: an insert beside a removed node stays, a remove takes out what a replace put, and a node an insert added is never replaced or removed', async () => {
+  const layout: Layout = { column: [one('a'), one('b')] }
+  const seen: string[][] = []
+  for (const edits of [
+    [{ remove: 'a' }, { insert: one('x'), after: 'a' }],
+    [{ remove: 'b' }, { replace: 'b', with: one('y') }],
+    [{ remove: 'x' }, { replace: 'x', with: one('y') }, { insert: one('x'), after: 'a' }],
+  ] satisfies Edit[][])
+    seen.push(await edited(10, 3, layout, [editor('author', edits)]))
+  assert.deepEqual(seen, [
+    ['x', 'b', ''],
+    ['a', '', ''],
+    ['a', 'x', 'b'],
+  ])
+})
+
+test('an insert finds its anchor among the nodes that other inserts added, whichever loads first', async () => {
+  const beside = editor('a-beside', [{ insert: one('y'), after: 'x' }])
+  const adds = editor('b-adds', [{ insert: { row: [one('x')], size: 'content' }, after: 'a' }])
+  const layout: Layout = { column: [one('a'), one('b')] }
+  assert.deepEqual(
+    [await edited(10, 3, layout, [beside, adds]), await edited(10, 3, layout, [adds, beside])],
+    [
+      ['a', 'xy', 'b'],
+      ['a', 'xy', 'b'],
+    ],
+  )
+})
+
+test('inserts beside a node that another insert added keep their order, after it and before it, though one waits for that node and the other does not', async () => {
+  const adds = editor('b', [{ insert: one('x'), after: 'a' }])
+  const seen: string[][] = []
+  for (const side of ['after', 'before'] as const) {
+    const beside = (place: string): Edit => (side === 'after' ? { insert: one(place), after: 'x' } : { insert: one(place), before: 'x' })
+    seen.push(await edited(10, 4, { column: [one('a')] }, [editor('a', [beside('p')]), adds, editor('c', [beside('q')])]))
+  }
+  assert.deepEqual(seen, [
+    ['a', 'x', 'p', 'q'],
+    ['a', 'p', 'q', 'x'],
+  ])
+})
+
+test("`binnacle.edit` moves the composer above the transcript with one edit, and its size and `unless: 'request'` come with it", async () => {
+  const { ctx, terminal, rows } = await drawn(10, 4, (binnacle) => {
+    binnacle.edit('chat', { move: 'composer', before: 'transcript' })
+    binnacle.place('transcript', part('t1', 't2', 't3'))
+    statusLine(binnacle, 'working')
+    composerLine(binnacle, 'draft')
+  })
+  await ctx.plugin(
+    plugin('requests', (binnacle) => {
+      binnacle.layout('request', { place: 'request' })
+      binnacle.place('request', part('asking'))
+    }),
+  )
+  assert.deepEqual(
+    [rows, (await terminal.read()).rows],
+    [
+      ['draft', 't2', 't3', 'working'],
+      ['t2', 't3', 'working', 'asking'],
+    ],
+  )
+})
+
+test('a move takes its node, with its box, out of its place and puts it after or before the other anchor, among the nodes as set or that inserts added', async () => {
+  const layout: Layout = { column: [{ place: 'a', size: 'content', border: ['top'] }, one('b'), one('c')] }
+  const seen: string[][] = []
+  for (const edits of [
+    [{ move: 'a', after: 'c' }],
+    [{ move: 'c', before: 'a' }],
+    [
+      { move: 'b', after: 'x' },
+      { insert: one('x'), after: 'c' },
+    ],
+  ] satisfies Edit[][])
+    seen.push(await edited(10, 5, layout, [editor('author', edits)]))
+  assert.deepEqual(seen, [
+    ['b', 'c', '──────────', 'a', ''],
+    ['c', '──────────', 'a', 'b', ''],
+    ['──────────', 'a', 'c', 'x', 'b'],
+  ])
+})
+
+test('a move whose node or place is not there, or whose place is beside itself, the root, an `over` or a `float`, does nothing', async () => {
+  const seen: string[][] = []
+  for (const [layout, edits] of [
+    [{ column: [one('a'), one('b')] }, [{ move: 'z', before: 'a' }]],
+    [{ column: [one('a'), one('b')] }, [{ move: 'a', after: 'z' }]],
+    [{ column: [one('a'), one('b')] }, [{ move: 'a', after: 'a' }]],
+    [{ over: { column: [one('a'), one('b')] }, float: one('c'), at: { side: 'bottom', width: 4 } }, [{ move: 'a', after: 'c' }]],
+  ] satisfies [Layout, Edit[]][])
+    seen.push(await edited(10, 3, layout, [editor('author', edits)]))
+  assert.deepEqual(seen, [
+    ['a', 'b', ''],
+    ['a', 'b', ''],
+    ['a', 'b', ''],
+    ['a', 'b', '   c'],
+  ])
+})
+
+test('moves apply after inserts and before replaces and removes: an insert beside the moved node stays in its old place, and a replace or a remove acts on the node where it was moved', async () => {
+  const layout: Layout = { column: [one('a'), one('b'), one('c')] }
+  const seen: string[][] = []
+  for (const edits of [
+    [
+      { move: 'a', after: 'c' },
+      { insert: one('x'), after: 'a' },
+    ],
+    [
+      { replace: 'a', with: one('y') },
+      { move: 'a', after: 'c' },
+    ],
+    [{ remove: 'a' }, { move: 'a', after: 'c' }, { insert: one('x'), before: 'b' }],
+  ] satisfies Edit[][])
+    seen.push(await edited(10, 4, layout, [editor('author', edits)]))
+  assert.deepEqual(seen, [
+    ['x', 'b', 'c', 'a'],
+    ['b', 'c', 'y', ''],
+    ['x', 'b', 'c', ''],
+  ])
+})
+
+test('of two nodes by one name, a move, a replace and a remove each act on the first of the Layout as set, where a move put it', async () => {
+  const layout: Layout = { column: [{ place: 'a', size: 'content', border: ['top'] }, one('b'), one('a')] }
+  const seen: string[][] = []
+  for (const edits of [
+    [{ move: 'a', after: 'b' }, { remove: 'a' }],
+    [
+      { move: 'a', after: 'b' },
+      { replace: 'a', with: one('y') },
+    ],
+    [
+      { move: 'a', after: 'b' },
+      { move: 'a', before: 'b' },
+    ],
+  ] satisfies Edit[][])
+    seen.push(await edited(10, 4, layout, [editor('author', edits)]))
+  assert.deepEqual(seen, [
+    ['b', 'a', '', ''],
+    ['b', 'y', 'a', ''],
+    ['──────────', 'a', 'b', 'a'],
+  ])
+})
+
+test('an edit looks through rows, columns, `first`, `over` and `float`, the first node found by the name first, and never inside a named Layout that the Layout draws', async () => {
+  const { rows } = await drawn(10, 5, (binnacle) => {
+    binnacle.layout('chat', {
+      over: {
+        column: [
+          { row: [{ place: 'a' }, { place: 'b' }], size: 'content' },
+          { first: [{ place: 'c' }], size: 'content' },
+          { layout: 'n', size: 'content' },
+        ],
+      },
+      float: { column: [{ place: 'a' }, { place: 'f' }] },
+      at: { side: 'bottom', width: 4 },
+    })
+    binnacle.layout('n', { column: [{ place: 'inner' }, { place: 'nn' }] })
+    for (const name of ['a', 'b', 'c', 'f', 'inner', 'nn', 'B', 'C', 'F']) binnacle.place(name, part(name))
+    binnacle.edit('chat', { remove: 'a' })
+    binnacle.edit('chat', { replace: 'b', with: { place: 'B' } })
+    binnacle.edit('chat', { replace: 'c', with: { place: 'C' } })
+    binnacle.edit('chat', { replace: 'f', with: { place: 'F' } })
+    binnacle.edit('chat', { remove: 'inner' })
+  })
+  assert.deepEqual(rows, ['B', 'C', 'inner', 'nn a', '   F'])
+})
+
+test('an insert beside the root, an `over` or a `float` does nothing, and a removed root draws nothing', async () => {
+  const seen: string[][] = []
+  for (const [layout, edits] of [
+    [{ place: 'a' }, [{ insert: one('x'), after: 'a' }]],
+    [
+      { over: { place: 'a' }, float: { place: 'b' }, at: { side: 'bottom', width: 4 } },
+      [
+        { insert: one('x'), before: 'a' },
+        { insert: one('x'), after: 'b' },
+      ],
+    ],
+    [{ place: 'a' }, [{ remove: 'a' }]],
+  ] satisfies [Layout, Edit[]][])
+    seen.push(await edited(10, 2, layout, [editor('author', edits)]))
+  assert.deepEqual(seen, [
+    ['a', ''],
+    ['a', '   b'],
+    ['', ''],
+  ])
+})
+
+const plugin = (name: string, apply: (binnacle: Binnacle) => void) => ({
+  name,
+  inject: ['binnacle'],
+  apply: (ctx: Context) => {
+    apply(ctx.binnacle)
+  },
+})
+
+test('an edit applies to the newest Layout by its name, whoever set it, does nothing while its anchor is not there, and applies again when the anchor comes back', async () => {
+  const { ctx, terminal, rows } = await drawn(10, 3, (binnacle) => {
+    binnacle.layout('chat', { layout: 'panel' })
+    for (const name of ['a', 'b', 'x']) binnacle.place(name, part(name))
+  })
+  await ctx.plugin(plugin('panel', (binnacle) => binnacle.layout('panel', { column: [{ place: 'a' }, { place: 'b' }] })))
+  await ctx.plugin(plugin('editor', (binnacle) => binnacle.edit('panel', { insert: { place: 'x' }, after: 'b' })))
+  const seen = [rows, (await terminal.read()).rows]
+  const newer = ctx.plugin(plugin('newer', (binnacle) => binnacle.layout('panel', { column: [{ place: 'a' }] })))
+  await newer
+  seen.push((await terminal.read()).rows)
+  await newer.dispose()
+  seen.push((await terminal.read()).rows)
+  assert.deepEqual(seen, [
+    ['', '', ''],
+    ['a', 'b', 'x'],
+    ['a', '', ''],
+    ['a', 'b', 'x'],
+  ])
+})
+
+test('an edit goes when the plugin that made it unloads, and the Layout draws again', async () => {
+  const { ctx, terminal } = await drawn(10, 3, (binnacle) => {
+    binnacle.place('transcript', part('t1'))
+    statusLine(binnacle, 'working')
+    composerLine(binnacle, 'draft')
+  })
+  const author = ctx.plugin(plugin('author', (binnacle) => binnacle.edit('chat', { remove: 'status' })))
+  await author
+  const seen = [(await terminal.read()).rows]
+  await author.dispose()
+  seen.push((await terminal.read()).rows)
+  assert.deepEqual(seen, [
+    ['t1', '', 'draft'],
+    ['t1', 'working', 'draft'],
+  ])
+})
+
+test("a row with `separator: true` draws one line: the first line of each child that draws one, joined by the theme's `divider` glyph, and a child that draws nothing or an empty line takes no divider", async () => {
+  const { rows } = await drawn(24, 3, (binnacle) => {
+    binnacle.layout('chat', {
+      column: [
+        {
+          row: [{ place: 'a' }, { place: 'b' }, { place: 'c' }, { place: 'd', border: true }, { layout: 'n' }],
+          separator: true,
+          size: 'content',
+        },
+        { place: 'z' },
+      ],
+    })
+    binnacle.layout('n', { column: [{ place: 'e' }, { place: 'f' }] })
+    binnacle.place('a', part('a1', 'a2'))
+    binnacle.place('b', part())
+    binnacle.place('c', part(''))
+    binnacle.place('d', part('d'))
+    binnacle.place('e', part('e1', 'e2'))
+    binnacle.place('f', part('f1'))
+    binnacle.place('z', part('z'))
+  })
+  assert.deepEqual(rows, ['a1 · d · e1', 'z', ''])
+})
+
+test('a separated row wider than its width is cut at its end with the `more` glyph, and never wraps; too narrow for `more`, it draws empty', async () => {
+  const seen: string[][] = []
+  for (const more of ['…', '...']) {
+    const { rows } = await drawn(20, 2, (binnacle) => {
+      binnacle.theme({ glyphs: { more } })
+      binnacle.layout('chat', {
+        column: [
+          { row: [{ row: [{ place: 'a' }, { place: 'b' }], separator: true }], size: 'content' },
+          { row: [{ row: [{ place: 'a' }, { place: 'b' }], separator: true, size: { fixed: 2 } }, { place: 'z' }], size: 'content' },
+        ],
+      })
+      binnacle.place('a', part('alpha alpha alpha'))
+      binnacle.place('b', part('beta'))
+      binnacle.place('z', part('z'))
+    })
+    seen.push(rows)
+  }
+  assert.deepEqual(seen, [
+    ['alpha alpha alpha ·…', 'a…z'],
+    ['alpha alpha alpha...', '  z'],
+  ])
+})
+
+test("a separated row's children are joined by the `divider` glyph that the theme sets", async () => {
+  const { rows } = await drawn(20, 1, (binnacle) => {
+    binnacle.theme({ glyphs: { divider: ' │ ' } })
+    binnacle.layout('chat', { row: [{ place: 'a' }, { place: 'b' }], separator: true })
+    binnacle.place('a', part('a'))
+    binnacle.place('b', part('b'))
+  })
+  assert.deepEqual(rows, ['a │ b'])
+})
+
+test('a click on a separated row lands on the child under it, and a click on a divider or past the cut does nothing', async () => {
+  const heard: string[] = []
+  const { terminal } = await drawn(12, 1, (binnacle) => {
+    binnacle.layout('chat', { row: [{ place: 'a' }, { place: 'b' }, { place: 'c' }], separator: true })
+    binnacle.place('a', answering('a', ['aa'], heard))
+    binnacle.place('b', answering('b', ['bb'], heard))
+    binnacle.place('c', answering('c', ['cccc'], heard))
+  })
+  for (const x of [1, 3, 5, 10, 11]) terminal.type(clickAt(x, 0))
+  await terminal.read()
+  assert.deepEqual(heard, ['a click 0:1', 'b click 0:0', 'c click 0:0'])
+})
+
+test("a click on a separated row reaches a child's Part at the row's whole width, and a nested child takes no click past its own line", async () => {
+  const heard: string[] = []
+  const { terminal } = await drawn(20, 1, (binnacle) => {
+    binnacle.layout('chat', { row: [{ place: 'wide' }, { layout: 'nested' }, { place: 'b' }], separator: true })
+    binnacle.layout('nested', { column: [{ place: 'a' }] })
+    binnacle.place('wide', { ...answering('wide', ['ww'], heard), lines: (width: number) => (width === 20 ? ['ww'] : []) })
+    binnacle.place('a', answering('a', ['aa'], heard))
+    binnacle.place('b', answering('b', ['bb'], heard))
+  })
+  for (const x of [0, 5, 10]) terminal.type(clickAt(x, 0))
+  assert.deepEqual([(await terminal.read()).rows, heard], [['ww · aa · bb'], ['wide click 0:0', 'a click 0:0', 'b click 0:0']])
+})
+
+test("`binnacle.linesShown(place)` gives how many of the Part's lines the Place shows now, a wrapped line counted once, or `undefined` while the Place is not drawn", async () => {
+  const { ctx, rows } = await drawn(6, 5, (binnacle) => {
+    binnacle.layout('chat', { column: [{ place: 'list', size: { fixed: 4 } }, { place: 'rest' }] })
+    binnacle.place('list', part('one', 'two', 'a long one'))
+    binnacle.place('hidden', part('nowhere'))
+  })
+  assert.deepEqual(
+    [rows.slice(0, 4), ctx.binnacle.linesShown('list'), ctx.binnacle.linesShown('hidden'), ctx.binnacle.linesShown('none')],
+    [['one', 'two', 'a long', 'one'], 3, undefined, undefined],
+  )
+})
+
+const takes = (text: string) => ({ lines: () => [text], key: () => true })
+
+test('`binnacle.focusMovedLast()` gives the Place that a person or an author last moved the Focus to, on the Screen on view, and nothing before a move', async () => {
+  const { ctx, terminal } = await drawn(10, 4, (binnacle) => {
+    binnacle.layout('chat', { column: [{ place: 'a' }, { place: 'b' }] })
+    binnacle.place('a', takes('a'))
+    binnacle.place('b', takes('b'))
+  })
+  const before = ctx.binnacle.focusMovedLast()
+  ctx.binnacle.focus('b')
+  const moved = ctx.binnacle.focusMovedLast()
+  terminal.type(clickAt(0, 0))
+  await terminal.read()
+  assert.deepEqual([before, moved, ctx.binnacle.focusMovedLast()], [undefined, 'b', 'a'])
+})

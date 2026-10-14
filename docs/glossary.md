@@ -1,0 +1,41 @@
+# Glossary
+
+One canonical term for each concept that is binnacle's own, for a person who uses binnacle and an author who changes it. A term is capitalized wherever it is used in that meaning, so it reads apart from the plain word. A word that dsh or Cordis owns keeps their meaning: see dsh's glossary. What the author API does is in `packages/binnacle/src/api.ts`, and what each feature does so far is in [the feature docs](features.md). The words of the agents who build binnacle are in [`AGENTS.md`](../AGENTS.md).
+
+## Screens
+
+- **Screen** — a layout tree that fills the terminal. The newest Screen shown is drawn. Not the terminal's alternate screen, which binnacle draws every Screen on. <a id="screen"></a>
+- **Chat** — the first Screen, in dsh's word: the transcript, the status and the composer. <a id="chat"></a>
+- **Place** — a leaf of a Screen's layout tree, by its name. A plugin fills it with a Part, and the wheel scrolls the Place under the pointer. <a id="place"></a>
+- **Part** — what a plugin puts in a Place: its lines at a width, in colour if it likes. A Part that has the Focus also takes keys and says where its cursor is. A click reaches the Part drawn under the pointer, with or without the Focus. The newest Part placed in a Place is drawn. <a id="part"></a>
+
+## Gestures
+
+- **Focus** — the Place whose Part takes each key first. A Screen names where it starts, a person moves it by a click or shift+tab, and the Chat's starts on the composer. A key that the Part does not take goes to the actions. Not the focus of the terminal's window. <a id="focus"></a>
+- **Gesture Table** — the core's table of the editor's actions, the `tui.` ids: each has an id, its default gestures — a key, as the terminal sends it, or a mouse gesture by name — and a description. The copied editor reads its keys from it. The core's own gestures are actions, which `binnacle.gestures.actionsOf` names beside it. <a id="gesture-table"></a>
+
+## The Kit
+
+- **Model** — an author's state, made with `createModel`, which tells its watchers after each change. A Part that lists its Models is drawn again after each change. Not dsh's model, the LLM that runs the agent. <a id="model"></a>
+- **Tone** — a colour of the theme, named by what is drawn in it, as pi names it: `accent`, `muted`, `border` and the rest. A Tone is a colour and attributes, and a theme layer changes it for everything drawn in it. Not a colour itself, such as `cyan`. <a id="tone"></a>
+- **Look** — how one piece of a component is drawn, such as a List's row, set by the component's kind, such as `list.row`, or by an instance's name, such as `request.choices.row`. A Look is handed the Look beneath it, and can draw that Look and add to it. An instance's Looks lie on its kind's, and those on the component's default. Not how the whole Screen looks, which is the theme. <a id="look"></a>
+- **List** — a component of the Kit: items that a person marks with up and down and picks with enter or a click. Made with `list`. <a id="list"></a>
+- **Title** — a component of the Kit: a rule across the width with its text in it. Made with `title`. Not a box's title, which a node of a Layout sets in its top edge. <a id="title"></a>
+- **Line** — a component of the Kit: one line that a person types in, which takes every key while it is shown. Enter submits its text and escape escapes. Made with `line`. Not a line of a Part's lines. <a id="line"></a>
+- **Tabs** — a component of the Kit: a row of labels, one current, that tab and shift+tab or a click move between. Made with `tabs`. Not the tab key itself. <a id="tabs"></a>
+
+## The transcript
+
+- **Fold** — an event of the transcript drawn short: its first line, then how many more lines it has, or raw, its one header line, which ends with how many of its lines it hides. Enter folds and unfolds the Marked event, and a click on an event's first line folds that event. <a id="fold"></a>
+- **Mark** — the event of the transcript that its keys act on, which up and down move. The transcript Marks its newest event when it first has the Focus, and a click Marks the event it hits. Drawn in inverse video while the transcript has the Focus. Not the terminal's cursor. <a id="mark"></a>
+
+## Waiting on a person
+
+- **Request** — a box that the agent waits on: an approval or a question, in dsh's words. Never an "ask" or an "offer". <a id="request"></a>
+- **Choice** — a thing that a person picks in a Request. <a id="choice"></a>
+- **Menu** — a picker that a person opens. The agent does not wait on it, so it is not a Request. <a id="menu"></a>
+
+## The terminal
+
+- **Untrusted Text** — text from a model, a tool or a stored session. A plugin makes it plain with `toPlainText` before it goes in a Part's lines, as the core keeps their colour and style. The core makes a title plain itself. <a id="untrusted-text"></a>
+- **Held-back Output** — text that other code writes to the terminal while binnacle draws, printed once binnacle gives the terminal back. Not a notice, which binnacle draws on the Screen. <a id="held-back-output"></a>

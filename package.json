@@ -1,0 +1,28 @@
+{
+  "name": "binnacle",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "ready": "vp check && vp run -r test && vp run -r build",
+    "dev": "vp run docs#dev",
+    "test": "vp test",
+    "refs": "node scripts/refs.mjs",
+    "prepare": "vp config"
+  },
+  "devDependencies": {
+    "@changesets/cli": "catalog:",
+    "@oxlint/plugins": "catalog:",
+    "vite-plus": "catalog:"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.11.2",
+      "onFail": "download"
+    }
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

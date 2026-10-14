@@ -1,0 +1,499 @@
+import { test } from 'vite-plus/test'
+import assert from 'node:assert/strict'
+import type { Context } from '@deepseek-ai/cordis'
+import type { Handle } from '../src/api.ts'
+import { Loader } from '@deepseek-ai/cordis-plugin-loader'
+import { mount } from './support/mount.ts'
+
+const probe = (lines: readonly string[]) => ({
+  name: 'probe',
+  inject: ['binnacle'],
+  apply: (plugin: Context) => {
+    plugin.binnacle.place('transcript', { lines: () => lines })
+  },
+})
+
+test('binnacle takes the alternate screen, raw mode and the mouse when dsh is ready, and gives them back when it unloads', async () => {
+  const { terminal, ready, fiber } = await mount()
+  assert.equal((await terminal.read()).screen, 'normal')
+  ready()
+  assert.deepEqual(await terminal.read().then(({ screen, mouse }) => ({ screen, mouse, raw: terminal.raw })), {
+    screen: 'alternate',
+    mouse: 'vt200',
+    raw: true,
+  })
+  await fiber.dispose()
+  assert.deepEqual(await terminal.read().then(({ screen, mouse }) => ({ screen, mouse, raw: terminal.raw })), {
+    screen: 'normal',
+    mouse: 'none',
+    raw: false,
+  })
+})
+
+test('a Part placed in the transcript is drawn line by line, each line wrapped at the width', async () => {
+  const { ctx, terminal, ready } = await mount({ columns: 20, rows: 6 })
+  ready()
+  await ctx.plugin(probe(['first', 'a line too long for twenty columns', 'last']))
+  assert.deepEqual((await terminal.read()).rows, ['first', 'a line too long for', 'twenty columns', 'last', '', ''])
+})
+
+test('a line keeps its colour and style, and loses every other control sequence', async () => {
+  const { ctx, terminal, ready } = await mount({ columns: 40, rows: 3 })
+  ready()
+  const before = terminal.written.length
+  await ctx.plugin(probe(['plain \x1b[31mred\x1b[0m \x1b]0;title\x07 bell\x07 back\bspace\r end\x1b[2J']))
+  const { rows } = await terminal.read()
+  assert.deepEqual(
+    [rows, await terminal.colourAt(0, 0), await terminal.colourAt(6, 0), await terminal.colourAt(10, 0)],
+    [['plain red  bell backspace end', '', ''], 'default', 1, 'default'],
+  )
+  for (const control of ['\x1b]0;', '\x07', '\x1b[2J'])
+    assert.ok(!terminal.written.slice(before).includes(control), JSON.stringify(control))
+})
+
+const WHEEL_UP = '\x1b[<64;5;2M'
+const WHEEL_DOWN = '\x1b[<65;5;2M'
+
+test('a Part longer than its Place starts at its end, and the wheel scrolls it three rows a notch, stopping at each end', async () => {
+  const { ctx, terminal, ready } = await mount({ columns: 20, rows: 4 })
+  ready()
+  await ctx.plugin(probe(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']))
+  const seen: string[][] = [(await terminal.read()).rows]
+  for (const notch of [WHEEL_UP, WHEEL_UP, WHEEL_UP, WHEEL_DOWN, WHEEL_DOWN, WHEEL_DOWN]) {
+    terminal.type(notch)
+    seen.push((await terminal.read()).rows)
+  }
+  assert.deepEqual(seen, [
+    ['7', '8', '9', '10'],
+    ['4', '5', '6', '7'],
+    ['1', '2', '3', '4'],
+    ['1', '2', '3', '4'],
+    ['4', '5', '6', '7'],
+    ['7', '8', '9', '10'],
+    ['7', '8', '9', '10'],
+  ])
+})
+
+test('a Part drawn again writes only the rows that changed', async () => {
+  const { ctx, terminal, ready } = await mount({ columns: 20, rows: 4 })
+  ready()
+  const lines = ['alpha', 'beta', 'gamma']
+  let handle: Handle | undefined
+  await ctx.plugin({
+    name: 'probe',
+    inject: ['binnacle'],
+    apply: (plugin: Context) => {
+      handle = plugin.binnacle.place('transcript', { lines: () => lines })
+    },
+  })
+  const before = terminal.written.length
+  lines[1] = 'BETA'
+  handle?.redraw()
+  const after = terminal.written.slice(before)
+  assert.deepEqual((await terminal.read()).rows, ['alpha', 'BETA', 'gamma', ''])
+  assert.ok(after.includes('BETA'))
+  assert.ok(!after.includes('alpha') && !after.includes('gamma'), JSON.stringify(after))
+})
+
+test('a terminal that changes size has its Parts drawn again at the new width', async () => {
+  const { ctx, terminal, ready } = await mount({ columns: 30, rows: 4 })
+  ready()
+  await ctx.plugin(probe(['one two three four five', 'six']))
+  terminal.resize(12, 4)
+  assert.deepEqual((await terminal.read()).rows, ['one two', 'three four', 'five', 'six'])
+})
+
+test('ctrl+z gives the terminal back and stops binnacle, and a resume takes the terminal again and draws the whole Screen', async () => {
+  const { ctx, terminal, process, ready } = await mount({ columns: 20, rows: 3 })
+  ready()
+  await ctx.plugin(probe(['shown']))
+  terminal.type('\x1a')
+  assert.deepEqual(await terminal.read().then(({ screen }) => ({ screen, raw: terminal.raw, stopCount: process.stopCount })), {
+    screen: 'normal',
+    raw: false,
+    stopCount: 1,
+  })
+  process.emit('SIGCONT')
+  assert.deepEqual(await terminal.read().then(({ screen, rows }) => ({ screen, rows, raw: terminal.raw })), {
+    screen: 'alternate',
+    rows: ['shown', '', ''],
+    raw: true,
+  })
+})
+
+test('a stop signal from outside gives the terminal back before binnacle stops', async () => {
+  const { terminal, process, ready } = await mount()
+  ready()
+  process.emit('SIGTSTP')
+  assert.deepEqual(await terminal.read().then(({ screen }) => ({ screen, raw: terminal.raw, stopCount: process.stopCount })), {
+    screen: 'normal',
+    raw: false,
+    stopCount: 1,
+  })
+})
+
+test('a process that exits while binnacle holds the terminal, as on a crash, gives the terminal back', async () => {
+  const { terminal, process, ready } = await mount()
+  ready()
+  process.emit('exit')
+  assert.deepEqual(await terminal.read().then(({ screen, mouse }) => ({ screen, mouse, raw: terminal.raw })), {
+    screen: 'normal',
+    mouse: 'none',
+    raw: false,
+  })
+})
+
+test('text other code writes while binnacle draws stays off the Screen, and is printed once the terminal is given back', async () => {
+  const { terminal, stdout, stderr, printed, ready, fiber } = await mount({ columns: 20, rows: 3 })
+  stdout.write('before\n')
+  ready()
+  stdout.write('stray out\n')
+  stderr.write('stray err\n')
+  assert.deepEqual(await terminal.read().then(({ rows }) => ({ rows, printed: [...printed] })), {
+    rows: ['', '', ''],
+    printed: ['stdout: before\n'],
+  })
+  await fiber.dispose()
+  assert.deepEqual(printed, ['stdout: before\n', 'stdout: stray out\n', 'stderr: stray err\n'])
+})
+
+test('a plugin that unloads, as on a reload, takes its Part with it, and the core keeps the terminal for the plugin loaded again', async () => {
+  const { ctx, terminal, ready } = await mount({ columns: 20, rows: 2 })
+  ready()
+  const first = ctx.plugin(probe(['first']))
+  await first
+  await first.dispose()
+  const gone = await terminal.read()
+  await ctx.plugin(probe(['again']))
+  assert.deepEqual([gone.screen, gone.rows, (await terminal.read()).rows], ['alternate', ['', ''], ['again', '']])
+})
+
+test('--help prints how to start binnacle, and exits without taking the terminal', async () => {
+  const { terminal, out, exits, ready } = await mount({ args: ['--help'] })
+  ready()
+  assert.match(out.join(''), /^Usage: dsh --profile binnacle \[options\]/)
+  assert.match(out.join(''), /--session <id>/)
+  assert.deepEqual([exits, (await terminal.read()).screen], [[0], 'normal'])
+})
+
+test('a plugin reads the actions of the Gesture Table that a key is bound to, in each form a terminal sends it', async () => {
+  const { ctx } = await mount()
+  const read: string[][] = []
+  await ctx.plugin({
+    name: 'author',
+    inject: ['binnacle'],
+    apply: (plugin: Context) => {
+      for (const key of ['\x03', '\x1b[99;5u', '\x1b[27;5;99~', 'x']) read.push([...plugin.binnacle.gestures.actionsOf(key)])
+    },
+  })
+  assert.deepEqual(read, [['binnacle.clear'], ['binnacle.clear'], ['binnacle.clear'], []])
+})
+
+test("gestures.actionsOf('wheelup') names binnacle.scroll.up, and the wheel scrolls the Place under the pointer, as it does today", async () => {
+  const { ctx, terminal, ready } = await mount({ columns: 20, rows: 4 })
+  ready()
+  await ctx.plugin(probe(['1', '2', '3', '4', '5', '6', '7', '8']))
+  const actions = ctx.binnacle.gestures.actionsOf('wheelup')
+  terminal.type(WHEEL_UP)
+  assert.deepEqual([actions, (await terminal.read()).rows], [['binnacle.scroll.up'], ['2', '3', '4', '5']])
+})
+
+test("a Part is asked for its lines once at a width, until it redraws: another Part's redraw does not ask it again", async () => {
+  const { ctx, ready } = await mount({ columns: 20, rows: 4 })
+  ready()
+  let asked = 0
+  let composer: Handle | undefined
+  let transcript: Handle | undefined
+  await ctx.plugin({
+    name: 'author',
+    inject: ['binnacle'],
+    apply: (plugin: Context) => {
+      transcript = plugin.binnacle.place('transcript', {
+        lines: () => {
+          asked++
+          return ['a line']
+        },
+      })
+      plugin.binnacle.layout('composer', { place: 'composer.input' })
+      composer = plugin.binnacle.place('composer.input', { lines: () => ['draft'] })
+    },
+  })
+  const placed = asked
+  composer?.redraw()
+  composer?.redraw()
+  const afterOthers = asked
+  transcript?.redraw()
+  assert.deepEqual([placed > 0, afterOthers - placed, asked - afterOthers > 0], [true, 0, true])
+})
+
+test('while a person reads scrolled up, rows added at the end leave what they read in place; at the end, the Part follows them', async () => {
+  const { ctx, terminal, ready } = await mount({ columns: 20, rows: 4 })
+  ready()
+  const lines = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
+  let transcript: Handle | undefined
+  await ctx.plugin({
+    name: 'author',
+    inject: ['binnacle'],
+    apply: (plugin: Context) => {
+      transcript = plugin.binnacle.place('transcript', { lines: () => lines })
+    },
+  })
+  terminal.type(WHEEL_UP)
+  lines.push('11', '12')
+  transcript?.redraw()
+  const scrolledUp = (await terminal.read()).rows
+  terminal.type(WHEEL_DOWN)
+  terminal.type(WHEEL_DOWN)
+  lines.push('13')
+  transcript?.redraw()
+  assert.deepEqual(
+    [scrolledUp, (await terminal.read()).rows],
+    [
+      ['4', '5', '6', '7'],
+      ['10', '11', '12', '13'],
+    ],
+  )
+})
+
+test('ctrl+c pressed twice within half a second quits; once, or twice further apart, does not', async () => {
+  const { terminal, ready, exits, clock } = await mount()
+  ready()
+  const pressed = (at: number) => {
+    clock.now = at
+    terminal.type('\x03')
+    return [...exits]
+  }
+  assert.deepEqual([pressed(0), pressed(600), pressed(900)], [[], [], [0]])
+})
+
+test('ctrl+c twice asks the process to end within 5 seconds, though a socket keeps it alive; once does not', async () => {
+  const { terminal, ready, process } = await mount()
+  ready()
+  terminal.type('\x03')
+  const once = [...process.endsWithin]
+  terminal.type('\x03')
+  assert.deepEqual([once, process.endsWithin], [[], [5000]])
+})
+
+const part = (lines: readonly string[]) => ({ lines: () => lines })
+
+test('a Part, a Layout or a Screen registered twice by one name goes only with the plugin whose registration unloads, and the one beneath it is drawn again', async () => {
+  const { ctx, terminal, ready } = await mount({ columns: 12, rows: 1 })
+  ready()
+  const sharedPart = part(['shared'])
+  const sharedLayout = { place: 'a' }
+  const sharedScreen = { name: 'mine', layout: { place: 'a' } }
+  const registered = (name: string, register: (binnacle: Context['binnacle']) => void) =>
+    ctx.plugin({
+      name,
+      inject: ['binnacle'],
+      apply: (plugin: Context) => {
+        register(plugin.binnacle)
+      },
+    })
+  const drawnAfter = async (register: (binnacle: Context['binnacle'], shared: boolean) => void) => {
+    await registered('first', (binnacle) => register(binnacle, true))
+    await registered('second', (binnacle) => register(binnacle, false))
+    const third = registered('third', (binnacle) => register(binnacle, true))
+    await third
+    await third.dispose()
+    return (await terminal.read()).rows[0]
+  }
+  await registered('places', (binnacle) => {
+    binnacle.place('a', part(['in a']))
+    binnacle.place('b', part(['in b']))
+  })
+  const drawn = [
+    await drawnAfter((binnacle, shared) => binnacle.place('transcript', shared ? sharedPart : part(['middle']))),
+    await drawnAfter((binnacle, shared) => binnacle.layout('chat', shared ? sharedLayout : { place: 'b' })),
+    await drawnAfter((binnacle, shared) => binnacle.show(shared ? sharedScreen : { name: 'theirs', layout: { place: 'transcript' } })),
+  ]
+  assert.deepEqual(drawn, ['middle', 'in b', 'middle'])
+})
+
+/** The rows of a profile, loaded as dsh loads them: each row's plugin is the module its name imports. */
+async function loaded(ctx: Context, rows: readonly { name: string; plugin: object }[]) {
+  const modules = new Map(rows.map(({ name, plugin }) => [name, plugin]))
+  class Profile extends Loader {
+    override import(name: string) {
+      return Promise.resolve(modules.get(name))
+    }
+  }
+  await ctx.plugin(Profile)
+  const loader = ctx.get('loader')!
+  const ids: string[] = []
+  for (const { name } of rows) ids.push(await loader.create({ name }))
+  return { remove: (nth: number) => loader.remove(ids[nth]!) }
+}
+
+test('what a built-in row registers ranks beneath anything an author registers, whichever loads first; among the built-ins, and among the authors, the newest wins', async () => {
+  const { ctx, terminal, ready } = await mount({ columns: 30, rows: 1 })
+  ready()
+  const ran: string[] = []
+  const row = (name: string, said: string) => ({
+    name,
+    plugin: {
+      name: said,
+      inject: ['binnacle'],
+      apply: (plugin: Context) => {
+        plugin.binnacle.place('said', { lines: () => [said] })
+        plugin.binnacle.action('say', { run: () => ran.push(said) })
+      },
+    },
+  })
+  const profile = await loaded(ctx, [
+    row('./plugins/author', 'author'),
+    row('binnacle-foo', 'newer author'),
+    row('@easeshine/binnacle/plugins/said', 'built-in'),
+    row('@easeshine/binnacle/plugins/newer', 'newer built-in'),
+  ])
+  ctx.binnacle.layout('chat', { place: 'said' })
+  const seen = async () => {
+    const [first] = (await terminal.read()).rows
+    ctx.binnacle.run('say')
+    return first
+  }
+  const shown = [await seen()]
+  profile.remove(1)
+  shown.push(await seen())
+  profile.remove(0)
+  shown.push(await seen())
+  profile.remove(3)
+  shown.push(await seen())
+  assert.deepEqual(
+    [shown, ran],
+    [
+      ['newer author', 'author', 'newer built-in', 'built-in'],
+      ['newer author', 'author', 'newer built-in', 'built-in'],
+    ],
+  )
+})
+
+/** A row whose plugin draws its name in a Place of its own, and replaces the node `said` with that Place. */
+const replacing = (name: string, said: string, place: string) => ({
+  name,
+  plugin: {
+    name: said,
+    inject: ['binnacle'],
+    apply: (plugin: Context) => {
+      plugin.binnacle.place(place, { lines: () => [said] })
+      plugin.binnacle.edit('chat', { replace: 'said', with: { place } })
+    },
+  },
+})
+
+test("of two replaces of one node, the one applied last holds: an author's over a built-in's, and among the authors, the plugin's name orders them, whichever loads first", async () => {
+  const { ctx, terminal, ready } = await mount({ columns: 30, rows: 1 })
+  ready()
+  const profile = await loaded(ctx, [
+    replacing('./plugins/zed', 'zed', 'one'),
+    replacing('binnacle-alpha', 'alpha', 'two'),
+    replacing('@easeshine/binnacle/plugins/built', 'built-in', 'three'),
+  ])
+  ctx.binnacle.layout('chat', { place: 'said' })
+  const shown = [(await terminal.read()).rows[0]]
+  profile.remove(0)
+  shown.push((await terminal.read()).rows[0])
+  profile.remove(1)
+  shown.push((await terminal.read()).rows[0])
+  assert.deepEqual(shown, ['zed', 'alpha', 'built-in'])
+})
+
+test('a Part placed while its plugin unloads is not held: the call throws, and the Place draws as before', async () => {
+  const { ctx, terminal, ready } = await mount({ columns: 20, rows: 2 })
+  ready()
+  const thrown: unknown[] = []
+  const late = ctx.plugin({
+    name: 'late',
+    inject: ['binnacle'],
+    apply: (plugin: Context) => {
+      plugin.effect(
+        () => () => {
+          try {
+            plugin.binnacle.place('transcript', { lines: () => ['late'] })
+          } catch (error) {
+            thrown.push(error)
+          }
+        },
+        'late: places as it unloads',
+      )
+    },
+  })
+  await late
+  await late.dispose()
+  assert.deepEqual([(await terminal.read()).rows, thrown.length], [['', ''], 1])
+})
+
+const clockReader = (models: 'part' | 'look') => ({
+  name: 'clock-reader',
+  inject: ['binnacle'],
+  apply: (plugin: Context) => {
+    const clock = plugin.binnacle.modelOf<{ readonly now: number }>('clock')
+    const since = (): string => `${Math.floor((clock.state?.now ?? 0) / 1000)}s`
+    if (models === 'part') {
+      plugin.binnacle.place('transcript', { models: [clock], lines: () => [since()] })
+    } else {
+      const time = plugin.binnacle.lookOf(['probe.time'], since)
+      plugin.binnacle.look('probe.time', () => since, { models: [clock] })
+      plugin.binnacle.place('transcript', { lines: () => [time()] })
+    }
+  },
+})
+
+test('the model clock holds now, and a Part that names it is drawn again each second while it is drawn', async () => {
+  const { ctx, terminal, ready, clock } = await mount({ rows: 3 })
+  ready()
+  clock.now = 5_000
+  await ctx.plugin(clockReader('part'))
+  assert.equal((await terminal.read()).rows[0], '5s')
+  await clock.pass(1_000)
+  assert.equal((await terminal.read()).rows[0], '6s')
+  await clock.pass(2_000)
+  assert.equal((await terminal.read()).rows[0], '8s')
+})
+
+test('a Look that names the model clock is drawn again each second while it is drawn', async () => {
+  const { ctx, terminal, ready, clock } = await mount({ rows: 3 })
+  ready()
+  await ctx.plugin(clockReader('look'))
+  assert.equal((await terminal.read()).rows[0], '0s')
+  await clock.pass(3_000)
+  assert.equal((await terminal.read()).rows[0], '3s')
+})
+
+test('once a second passes with no read of the clock, nothing ticks, and a read starts it again', async () => {
+  const { ctx, terminal, ready, clock } = await mount({ rows: 3 })
+  ready()
+  const ticks: number[] = []
+  await ctx.plugin({
+    name: 'clock-watcher',
+    inject: ['binnacle'],
+    apply: (plugin: Context) => {
+      plugin.binnacle.modelOf('clock').watch(() => ticks.push(clock.now))
+    },
+  })
+  await clock.pass(5_000)
+  assert.deepEqual(ticks, [])
+  assert.equal(clock.timers(), 0)
+  const reader = await ctx.plugin(clockReader('part'))
+  await clock.pass(2_000)
+  assert.deepEqual(ticks, [1_000 + 5_000, 2_000 + 5_000])
+  await reader.dispose()
+  await clock.pass(5_000)
+  assert.deepEqual(ticks, [6_000, 7_000, 8_000])
+  assert.equal(clock.timers(), 0)
+  assert.equal((await terminal.read()).rows[0], '')
+})
+
+test('set on the clock does nothing, and its timer stops with the core', async () => {
+  const { ctx, fiber, clock } = await mount()
+  const model = ctx.binnacle.modelOf<{ now: number }>('clock')
+  clock.now = 2_000
+  model.set((state) => {
+    state.now = 0
+  })
+  assert.equal(model.state?.now, 2_000)
+  assert.equal(clock.timers(), 1)
+  await fiber.dispose()
+  assert.equal(clock.timers(), 0)
+})
