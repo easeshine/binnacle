@@ -295,18 +295,36 @@ test('an author who sets commands.open to do nothing stops the offer, and a comm
   assert.deepEqual([rows.slice(0, 5), dshCommands.ran.map(({ line }) => line)], [['', '', '', '', ''], ['/plan']])
 })
 
-test('commands.close, commands.pick and commands.complete are the actions that esc, enter and tab run, and a pick or a completion closes through commands.close', async () => {
+test('commands.dismiss, commands.pick and commands.complete are the actions that esc, enter and tab run, and each closes through commands.close', async () => {
   const { ctx, typed } = await offering()
   const ran: string[] = []
   await authored(ctx, (plugin) => {
-    for (const id of ['commands.close', 'commands.pick', 'commands.complete'])
+    for (const id of ['commands.dismiss', 'commands.close', 'commands.pick', 'commands.complete'])
       plugin.binnacle.action(id, { run: (_at, beneath) => (ran.push(id), beneath()) })
   })
   await typed('/')
   await esc(typed)
   await typed('p', '\t')
   await typed('\x7f', '\x7f', '\x7f', '\x7f', '\x7f', 'g', '\r')
-  assert.deepEqual(ran, ['commands.close', 'commands.complete', 'commands.close', 'commands.pick', 'commands.close'])
+  assert.deepEqual(ran, ['commands.dismiss', 'commands.close', 'commands.complete', 'commands.close', 'commands.pick', 'commands.close'])
+})
+
+test('an author clears the draft at esc with commands.dismiss, and the offer that closes as the draft changes keeps it', async () => {
+  const { ctx, typed, draft } = await offering()
+  await authored(ctx, (plugin) => {
+    const composer = plugin.binnacle.modelOf<ComposerState>('composer')
+    plugin.binnacle.action('commands.dismiss', {
+      run: (_at, beneath) => {
+        beneath()
+        composer.set((state) => (state.text = ''))
+      },
+    })
+  })
+  await typed('/', 'p', ' ')
+  const kept = draft()
+  await typed('\x7f')
+  await esc(typed)
+  assert.deepEqual([kept, draft(), ctx.binnacle.modelOf<CommandsState>('commands').state?.open], ['/p ', '', false])
 })
 
 test('the offer is the Layout commands, COMMANDS_LAYOUT, in the Chat before the composer, which an author moves with an edit of the Chat', async () => {

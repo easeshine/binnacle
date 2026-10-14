@@ -26,9 +26,10 @@ The Layout is `COMMANDS_LAYOUT`, from `@easeshine/binnacle/plugins/commands`, fr
   ```
 
 - The row opens the offer when the draft becomes `/` and a name, with nothing after it. It sets `query` to the name as the person types. It closes the offer when the draft stops being one. It acts only when the draft changes. So an offer closed with esc stays closed until the person types, and an offer that you open stays open until it is closed. While a command runs, the row closes the offer, and does not open it.
-- The offer opens, closes, picks and completes through four actions. Set one to change what it does, or to take it out:
+- The offer opens, closes, picks and completes through five actions. Set one to change what it does, or to take it out:
   - `commands.open`: the row runs it. It sets `open`, and a `query` of `''`.
-  - `commands.close`: esc, in `composer.input`, before the draft, while the offer draws a line. It clears `open`.
+  - `commands.dismiss`: esc, in `composer.input`, before the draft, while the offer draws a line. It runs `commands.close`. Only a person's esc runs it, so set it to act at esc alone.
+  - `commands.close`: no keys. The row runs it when the draft stops being `/` and a name, and each other action runs it to close the offer. It clears `open`.
   - `commands.pick`: enter, and a click on a command, through the List. It takes the marked command. With a `hint`, it sets the draft to `/<name> `. With none, it sets the draft to `/<name>`, and runs `composer.send`. Then it runs `commands.close`.
   - `commands.complete`: tab, as esc. It sets the draft to `/<name> ` for the marked command, then runs `commands.close`.
 
@@ -36,6 +37,18 @@ The Layout is `COMMANDS_LAYOUT`, from `@easeshine/binnacle/plugins/commands`, fr
 
   ```js
   ctx.binnacle.action('commands.open', { run: () => {} })
+  ```
+
+  This one clears the draft when the person presses esc, and keeps it when the offer closes as the person types:
+
+  ```js
+  const composer = ctx.binnacle.modelOf('composer')
+  ctx.binnacle.action('commands.dismiss', {
+    run: (_at, beneath) => {
+      beneath()
+      composer.set((state) => (state.text = ''))
+    },
+  })
   ```
 
 - The List `commands.list` takes its keys in `composer.input` with `keysIn`, so up, down, page up and page down move its mark while the person types. Its Model, `{ mark }`, and its actions, `commands.list.up` and the rest, are named apart from the model `commands` and its actions. Its mark goes back to the first command when `query` changes.
