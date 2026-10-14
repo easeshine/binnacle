@@ -33,14 +33,14 @@ import { toPlainText, truncateToWidth, visibleWidth } from '@easeshine/binnacle'
 const lineOf = (untrusted, width) => truncateToWidth(toPlainText(untrusted), width, '…')
 ```
 
-- `toPlainText(text)` takes every control sequence out of the text.
+- `toPlainText(text)` takes every control sequence out of the text, its line breaks too. To keep the line breaks, wrap it with `plain: true`.
 - `visibleWidth(text)` is the cells that the text takes in the terminal, with its colour and style not counted.
 - `truncateToWidth(text, width, ellipsis)` cuts the text to that many cells, and ends it with `ellipsis` where it is cut, `...` if you give none.
-- `wrap(text, width, { first, rest })` wraps the text at that many cells, with `first` before its first line and `rest` before each line after it. With no `rest`, the lines after the first start under the text. A style that spans a wrap is carried to the next line. An empty text gives `first` alone. A prefix wider than the width draws as wide as it is, and the text gets one cell a line. This wraps a prompt with a `> ` before each line:
+- `wrap(text, width, { first, rest, plain })` wraps the text at that many cells, with `first` before its first line and `rest` before each line after it. With no `rest`, the lines after the first start under the text. With `plain: true`, the text is made plain first, and its own line breaks stay: give it Untrusted Text as it came. The prefixes are not made plain. A style that spans a wrap is carried to the next line. An empty text gives `first` alone. A prefix wider than the width draws as wide as it is, and the text gets one cell a line. Its options' type is `WrapOptions`. This wraps a prompt with a `> ` before each line:
 
   ```js
-  import { toPlainText, wrap } from '@easeshine/binnacle'
-  const lines = wrap(toPlainText(untrusted), width, { first: '> ', rest: '> ' })
+  import { wrap } from '@easeshine/binnacle'
+  const lines = wrap(untrusted, width, { first: '> ', rest: '> ', plain: true })
   ```
 
 - `markdown(binnacle, text, width)` gives the lines of a markdown text, wrapped at that many cells. It makes the text plain itself, so give it the text as it came. The transcript's view draws each answer with it. It draws headings, bold, italic, inline code, code blocks, lists, quotes, links and rules. Any other token, such as a table, raw HTML, a strikethrough or an image, draws as its source text. An empty text gives no line. Blocks are joined by one blank line, and the items of a list by none.

@@ -25,3 +25,11 @@ test('wrap of an empty text gives first alone', () => {
 test('a first wider than the width draws as wide as it is, and the text gets one cell a line', () => {
   assert.deepEqual(wrap('ab', 2, { first: '>>> ' }), ['>>> a', '    b'])
 })
+
+test('wrap with plain makes the text plain and keeps its own line breaks', () => {
+  assert.deepEqual(wrap('\x1b[31mone\x1b[0m\r\ntwo\x07\rthree', 10, { first: '> ', plain: true }), ['> one', '  two', '  three'])
+})
+
+test('wrap with plain leaves the prefixes as they are', () => {
+  assert.deepEqual(wrap('one', 10, { first: '\x1b[1m>\x1b[22m ', plain: true }), ['\x1b[1m>\x1b[22m one'])
+})

@@ -136,9 +136,9 @@ The row `binnacle-transcript-view` draws the transcript a person reads. A prompt
 - A piece is given its text as it came, Untrusted Text: make it plain before you draw it. A Look that returns no line takes the piece out. An event left with no line takes no row, its blank line included. This draws each prompt with a `> ` before each of its lines, and takes the reasoning out:
 
   ```js
-  import { toPlainText, wrap } from '@easeshine/binnacle'
+  import { wrap } from '@easeshine/binnacle'
   ctx.binnacle.look('transcript.prompt', () => (text, { width }) =>
-    wrap(toPlainText(text), width, { first: '> ', rest: '> ' }).map((line) => ctx.binnacle.paint('accent', line)),
+    wrap(text, width, { first: '> ', rest: '> ', plain: true }).map((line) => ctx.binnacle.paint('accent', line)),
   )
   ctx.binnacle.look('transcript.reasoning', () => () => [])
   ```
