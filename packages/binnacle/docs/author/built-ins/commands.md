@@ -76,5 +76,18 @@ The Layout is `COMMANDS_LAYOUT`, from `@easeshine/binnacle/plugins/commands`, fr
   ctx.binnacle.edit('chat', { move: 'commands', over: 'transcript', at: { side: 'center' } })
   ```
 
-- A command that a plugin registers with dsh's `ctx.commands.register` is offered and runs as dsh's own. Its handler can show a Screen of its own with `binnacle.show`, and the Handle's `dispose` goes back to the Chat.
+- A command that a plugin registers with dsh's `ctx.commands.register` is offered and runs as dsh's own. `register` throws when a command of that name is registered already, so you never replace one of dsh's by chance. Its handler can show a Screen of its own with `screen`, which esc leaves, back to the Chat:
+
+  ```js
+  import { screen } from '@easeshine/binnacle'
+  ctx.binnacle.place('settings', { lines: () => Object.keys(ctx.binnacle.tokens.colors) })
+  ctx.commands.register({
+    name: 'settings',
+    description: 'Show the Tones',
+    handler: () => {
+      screen(ctx.binnacle, { name: 'settings', title: 'Settings' })
+      return { kind: 'success' }
+    },
+  })
+  ```
 - On a stored session, or before the session opens, nothing is offered: there is no agent to list the commands for.

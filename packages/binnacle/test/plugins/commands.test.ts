@@ -4,7 +4,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import * as commands from '../../src/plugins/commands/index.ts'
 import type { CommandsState } from '../../src/plugins/commands/index.ts'
 import type { ComposerState } from '../../src/plugins/composer/index.ts'
-import { line as searchLine } from '../../src/index.ts'
+import { line as searchLine, screen } from '../../src/index.ts'
 import type { ListPiece } from '../../src/index.ts'
 import { mounted } from '../support/mounted.ts'
 
@@ -402,8 +402,8 @@ test("a command that a plugin registers with dsh's register is offered and runs,
       name: 'settings',
       description: 'Show the Tones',
       handler: () => {
-        const screen = plugin.binnacle.show({ name: 'settings', layout: { place: 'settings' } })
-        plugin.binnacle.action('settings.back', { keys: ['ctrl+b'], run: () => screen.dispose() })
+        const shown = plugin.binnacle.show({ name: 'settings', layout: { place: 'settings' } })
+        plugin.binnacle.action('settings.back', { keys: ['ctrl+b'], run: () => shown.dispose() })
         return { kind: 'success' }
       },
     })
@@ -412,6 +412,34 @@ test("a command that a plugin registers with dsh's register is offered and runs,
   const shown = await typed('\r')
   const back = await typed('\x02')
   assert.deepEqual([offered, shown[0], back.slice(5)], [['› settings — Show the Tones'], 'the Tones', [RULE, ' ', RULE]])
+})
+
+test('a command shows a Screen of its own with screen, framed and titled, with the Focus in it, and esc goes back to the Chat with the Focus in the composer', async () => {
+  const { ctx, typed, draft, commands: dshCommands } = await offering({ definitions: [] })
+  await authored(ctx, (plugin) => {
+    plugin.binnacle.place('settings', { lines: () => ['the Tones'] })
+    dshCommands.service.register({
+      name: 'settings',
+      description: 'Show the Tones',
+      handler: () => {
+        screen(plugin.binnacle, { name: 'settings', title: 'Settings' })
+        return { kind: 'success' }
+      },
+    })
+  })
+  await typed('/')
+  const shown = await typed('\r')
+  const back = await esc(typed)
+  const typing = await typed('h')
+  assert.deepEqual(
+    [shown.slice(0, 3), back.slice(5), typing.slice(5), draft()],
+    [
+      ['╭─ Settings ───────────────────────────╮', '│the Tones                             │', '│                                      │'],
+      [RULE, ' ', RULE],
+      [RULE, 'h ', RULE],
+      'h',
+    ],
+  )
 })
 
 test('an author who changes what commands.list.pick does keeps its gate, so enter runs it only while the offer draws', async () => {

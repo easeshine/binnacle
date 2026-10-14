@@ -22,6 +22,13 @@ A Screen is a Layout that fills the terminal. The Chat is the first Screen, by t
 
 - `binnacle.show(screen)` shows a Screen: `{ name, layout, focus }`. Only the newest Screen shown is drawn. `focus` names the Place where the Focus starts. Dispose its Handle to show the Screen beneath it again.
 - `binnacle.layout(name, layout)` replaces a Screen's Layout by its name, as [Layouts](layouts.md) says.
+- `screen(binnacle, { name, title })` shows a Screen of one Place, `name`, in a box of the theme's edge, with `title` in its top edge, and the Focus in it. Esc runs its action `<name>.back`, of the kind `screen.back`, which goes back to the Screen beneath. It returns a Handle, whose `dispose` goes back too. Fill the Place as any other, such as with a List by that name. This shows a Screen of settings:
+
+  ```js
+  import { screen } from '@easeshine/binnacle'
+  ctx.binnacle.place('settings', { lines: () => Object.keys(ctx.binnacle.tokens.colors) })
+  screen(ctx.binnacle, { name: 'settings', title: 'Settings' })
+  ```
 
 ## Text
 
