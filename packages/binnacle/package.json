@@ -53,7 +53,7 @@
     "prepack": "vp pack"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=24.11.0"
   },
   "dependencies": {
     "commander": "15.0.0",

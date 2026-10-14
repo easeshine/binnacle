@@ -44,3 +44,15 @@ test('an assertion through unknown is reported', () => {
 test('a const assertion needs no comment', () => {
   assert.deepEqual(fired('export const n = [1] as const\n', COMMENTED), [])
 })
+
+const MOCKING = { 'anti-slop/no-module-mocking': 'error' }
+
+test('a module mock through the vi of Vite+ is reported', () => {
+  const source = "import { vi } from 'vite-plus/test'\nvi.mock('node:fs')\n"
+  assert.deepEqual(fired(source, MOCKING), ['anti-slop(no-module-mocking)'])
+})
+
+test('a module mock through the vi of Vitest is reported', () => {
+  const source = "import { vi } from 'vitest'\nvi.mock('node:fs')\n"
+  assert.deepEqual(fired(source, MOCKING), ['anti-slop(no-module-mocking)'])
+})

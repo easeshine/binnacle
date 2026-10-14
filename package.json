@@ -12,7 +12,8 @@
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",
-    "@oxlint/plugins": "catalog:",
+    "@commitlint/cli": "catalog:",
+    "@commitlint/config-conventional": "catalog:",
     "semver": "catalog:",
     "vite-plus": "catalog:"
   },
@@ -24,6 +25,6 @@
     }
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=24.11.0"
   }
 }

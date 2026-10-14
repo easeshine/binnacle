@@ -119,7 +119,7 @@ export default defineConfig({
         },
       },
       {
-        files: ['**/vite.config.ts', 'apps/docs/**'],
+        files: ['**/vite.config.ts', 'commitlint.config.mjs', 'apps/docs/**'],
         rules: {
           'import/no-default-export': 'off',
         },
