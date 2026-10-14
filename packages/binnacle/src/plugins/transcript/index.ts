@@ -50,6 +50,9 @@ export interface EventAt {
 /** The Look `transcript.event.<type>`, beneath it `transcript.event`: an event's lines, given whether it is folded and the transcript's width. No line, and the event takes no row. */
 export type EventLook = (event: SessionEvent, at: EventAt) => Line[]
 
+/** The Look `transcript.head`: lines drawn above the first event, given the transcript's width, such as a notice. They scroll with the events, and are never Marked. */
+export type HeadLook = (width: number) => Line[]
+
 /** The Look `transcript.live`: the lines of the answer that streams, given its blocks and the transcript's width. */
 export type LiveLook = (blocks: readonly LiveBlock[], width: number) => Line[]
 
@@ -159,6 +162,7 @@ export function apply(plugin: Context): void {
           lines.push(line.text)
         }
       }
+      push(binnacle.lookOf<HeadLook>(['transcript.head'], () => [])(width), undefined)
       for (const event of shown) {
         const look = binnacle.lookOf<EventLook>([`transcript.event.${event.type}`, 'transcript.event'], eventLines)
         const own = look(event, { folded: isFolded(regionOf(event.seq)), isFolded, width })

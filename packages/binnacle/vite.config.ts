@@ -1,6 +1,16 @@
 import { defineConfig } from 'vite-plus'
 
-const plugins = ['transcript', 'transcript-view', 'tool-cards', 'composer', 'commands', 'status-line', 'requests', 'requests-view']
+const plugins = [
+  'transcript',
+  'transcript-view',
+  'notice',
+  'tool-cards',
+  'composer',
+  'commands',
+  'status-line',
+  'requests',
+  'requests-view',
+]
 
 export default defineConfig({
   pack: {

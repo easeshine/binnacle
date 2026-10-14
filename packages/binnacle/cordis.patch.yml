@@ -24,6 +24,9 @@
     # The transcript's view: what a person reads, each piece a Look. Off, the transcript draws each event raw.
     - id: binnacle-transcript-view
       name: '@easeshine/binnacle/plugins/transcript-view'
+    # The notice of a new version: once for each, above the transcript's first event. Off, binnacle asks npm nothing.
+    - id: binnacle-notice
+      name: '@easeshine/binnacle/plugins/notice'
     # The tool cards: each tool call and its result as one card, drawn from the views dsh's tools give. Off, the view draws a call and its result as two lines.
     - id: binnacle-tool-cards
       name: '@easeshine/binnacle/plugins/tool-cards'

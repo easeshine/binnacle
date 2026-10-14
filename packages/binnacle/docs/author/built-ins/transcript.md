@@ -108,6 +108,12 @@ The row `binnacle-transcript` places its Part in the Place `transcript`, which t
   ctx.binnacle.look('transcript.live', (beneath) => (blocks, width) => beneath(blocks.filter((block) => block.kind !== 'reasoning'), width))
   ```
 
+- Lines above the first event draw through the Look `transcript.head`, of the type `HeadLook`: `(width) => Line[]`, none by default. They scroll with the events, and are never Marked. A click on a line marked `run` runs that action. The row `binnacle-notice` draws the notice of a new version here. This adds a line of its own after what is beneath:
+
+  ```js
+  ctx.binnacle.look('transcript.head', (beneath) => (width) => [...beneath(width), 'Welcome back', ''])
+  ```
+
 - The transcript calls each Look at each draw, so a Look follows the theme, and the models it names in `binnacle.look`'s `{ models }`.
 
 ## The transcript's view

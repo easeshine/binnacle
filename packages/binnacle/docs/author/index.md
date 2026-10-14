@@ -9,6 +9,7 @@ binnacle's own features are plugins too, and they import only what the package e
 | `binnacle` | the core: the terminal, Layouts, Places, the Focus, gestures, and the Kit | `src/index.ts`, `src/core/`, `src/kit/` |
 | `binnacle-transcript` | the session's events | `src/plugins/transcript/index.ts` |
 | `binnacle-transcript-view` | the transcript a person reads: prompts, answers and what the agent did | `src/plugins/transcript-view/index.ts` |
+| `binnacle-notice` | the notice of a new version, above the transcript's first event | `src/plugins/notice/index.ts` |
 | `binnacle-tool-cards` | each tool call and its result as one card, from the views dsh's tools give | `src/plugins/tool-cards/index.ts` |
 | `binnacle-composer` | what a person types, before it is sent | `src/plugins/composer/index.ts` |
 | `binnacle-commands` | the offer of dsh's commands while a person types `/` | `src/plugins/commands/index.ts` |

@@ -45,6 +45,7 @@ The core, row `binnacle`, cannot be turned off: it owns the terminal, and every 
 | Gestures | `binnacle` | [keys.md](keys.md) |
 | Kit | `binnacle` | [keys.md](keys.md) |
 | Transcript | `binnacle-transcript`, `binnacle-transcript-view` | [transcript.md](transcript.md) |
+| Notice | `binnacle-notice` | [notice.md](notice.md) |
 | Tool cards | `binnacle-tool-cards` | [tool-cards.md](tool-cards.md) |
 | Composer | `binnacle-composer` | [composer.md](composer.md) |
 | Commands | `binnacle-commands` | [commands.md](commands.md) |

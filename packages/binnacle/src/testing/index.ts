@@ -99,10 +99,12 @@ export interface Mounted {
   close(): Promise<void>
 }
 
-/** The bundle's rows, in its order, and the modules they load. */
-const BUILT_INS: readonly (readonly [string, string, () => Promise<object>])[] = [
+/** The bundle's rows, in its order, the modules they load, and a row's config in a test. */
+const BUILT_INS: readonly (readonly [string, string, () => Promise<object>, unknown?])[] = [
   ['binnacle-transcript', `${PACKAGE}/plugins/transcript`, () => import('../plugins/transcript/index.ts')],
   ['binnacle-transcript-view', `${PACKAGE}/plugins/transcript-view`, () => import('../plugins/transcript-view/index.ts')],
+  // A test asks npm nothing.
+  ['binnacle-notice', `${PACKAGE}/plugins/notice`, () => import('../plugins/notice/index.ts'), { latest: '' }],
   ['binnacle-tool-cards', `${PACKAGE}/plugins/tool-cards`, () => import('../plugins/tool-cards/index.ts')],
   ['binnacle-composer', `${PACKAGE}/plugins/composer`, () => import('../plugins/composer/index.ts')],
   ['binnacle-commands', `${PACKAGE}/plugins/commands`, () => import('../plugins/commands/index.ts')],
@@ -220,9 +222,9 @@ async function mounting(options: MountOptions, made: { ctx?: Context; restore?: 
   const named =
     options.builtins === undefined || options.builtins === 'all' ? BUILT_INS : BUILT_INS.filter(([id]) => options.builtins!.includes(id))
   const rows: { id: string; name: string; config?: unknown }[] = []
-  for (const [id, name, load] of named) {
+  for (const [id, name, load, config] of named) {
     modules.set(name, await load())
-    rows.push({ id, name })
+    rows.push(config === undefined ? { id, name } : { id, name, config })
   }
   for (const [index, given] of (options.plugins ?? []).entries()) {
     // Array.isArray does not narrow a union with a readonly tuple.

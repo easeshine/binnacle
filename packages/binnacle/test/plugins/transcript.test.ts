@@ -2,7 +2,7 @@ import { test } from 'vite-plus/test'
 import assert from 'node:assert/strict'
 import type { Context } from '@deepseek-ai/cordis'
 import * as transcript from '../../src/plugins/transcript/index.ts'
-import type { EventLook, LiveBlock, LiveLook, TranscriptState } from '../../src/plugins/transcript/index.ts'
+import type { EventLook, HeadLook, LiveBlock, LiveLook, TranscriptState } from '../../src/plugins/transcript/index.ts'
 import {
   callOf,
   failed,
@@ -701,6 +701,22 @@ test('up, down and enter act from where the Mark is drawn, and set marked to the
   terminal.type(UP)
   await terminal.read()
   assert.equal(stateOf(ctx).state?.marked, 0)
+})
+
+test('the Look transcript.head draws above the first event, given the width; its lines are never Marked, and up and down pass them', async () => {
+  const { ctx, terminal } = await reading([three], ['--session', 'session-stored'], 12)
+  const widths: number[] = []
+  ctx.binnacle.look<HeadLook>('transcript.head', (beneath) => (width) => {
+    widths.push(width)
+    return [...beneath(width), 'a notice', '']
+  })
+  await settled()
+  assert.deepEqual((await terminal.read()).rows.slice(0, 4), ['a notice', '', '▾ #0 test/one', '{}'])
+  assert.equal(widths.at(-1), 40)
+  terminal.type(UP)
+  terminal.type(UP)
+  terminal.type(UP)
+  assert.deepEqual([await terminal.inverseAt(0, 0), await terminal.inverseAt(0, 2)], [false, true])
 })
 
 test('the live block draws through the Look transcript.live, given its blocks and the width', async () => {
