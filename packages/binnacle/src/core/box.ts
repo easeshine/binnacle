@@ -2,15 +2,27 @@ import type { Layout, Side } from '../api.ts'
 import { sliceByColumn, truncateToWidth, visibleWidth } from '../terminal/pi/utils.ts'
 import type { Edge, Theme } from './theme.ts'
 import { toPlainText } from './view.ts'
-import type { Reach } from './arranged.ts'
+import type { Cells, Hit, Placed, Reach } from './arranged.ts'
 
 export const blank = (width: number): string => ' '.repeat(Math.max(0, width))
 export const fit = (row: string, width: number): string => truncateToWidth(row, width, '', true)
 
-/** What reaches a Place inside a node: the node's own `mouse: false` and `clickFocus: false` hold for each Place in it. */
-export const reachInside = (outer: Reach, node: { readonly mouse?: boolean; readonly clickFocus?: boolean }): Reach => ({
+/** What reaches a Place inside a node: the node's own `mouse: false`, `clicks: false` and `clickFocus: false` hold for each Place in it. */
+export const reachInside = (
+  outer: Reach,
+  node: { readonly mouse?: boolean; readonly clickFocus?: boolean; readonly clicks?: boolean },
+): Reach => ({
   mouse: outer.mouse && node.mouse !== false,
   clickFocus: outer.clickFocus && node.clickFocus !== false,
+  clicks: outer.clicks && node.clicks !== false,
+})
+
+/** The cells of a Place drawn, which a click and the wheel land on as its node's reach says. */
+export const hitOf = (cells: Cells, placed: Placed, reach: Reach): Hit => ({
+  ...cells,
+  placed: reach.mouse ? placed : undefined,
+  clickFocus: reach.clickFocus,
+  clicks: reach.clicks,
 })
 
 export type Insets = { readonly [side in Side]: number }

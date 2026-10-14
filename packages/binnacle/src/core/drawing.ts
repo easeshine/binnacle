@@ -126,7 +126,7 @@ export class Drawing {
     const view = this.#onView()
     const hit = this.#hitAt(x, y)
     const under = hit?.placed
-    if (under === undefined) return false
+    if (under === undefined || hit?.clicks === false) return false
     const part = view.partIn(under.place)
     if (hit?.clickFocus === true && view.takesKeys(under.place)) view.moveFocus(under.place)
     const at = this.#pointIn(under, part, x, y)

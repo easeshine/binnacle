@@ -1,6 +1,7 @@
 import type { Glyph } from '../api.ts'
 import { truncateToWidth, visibleWidth } from '../terminal/pi/utils.ts'
 import { clipped } from './arranged.ts'
+import { hitOf } from './box.ts'
 import type { Cells, Hit, Placed, Reach } from './arranged.ts'
 
 /** A child of a separated row, drawn as one line, with what a click lands on in it. */
@@ -39,7 +40,7 @@ export function placeSegment(place: string, line: string, at: Cells, reach: Reac
   const placed: Placed = { place, top, left, width, height: 1, maxScroll: 0, content: { ...at, height: 1 }, shownFrom: 0 }
   return {
     line,
-    hits: [{ top, left, width, height: 1, placed: reach.mouse ? placed : undefined, clickFocus: reach.clickFocus }],
+    hits: [hitOf({ top, left, width, height: 1 }, placed, reach)],
     placed: [placed],
   }
 }
@@ -50,7 +51,7 @@ export function nestedSegment(line: string, hits: readonly Hit[], placed: readon
   return {
     line,
     hits: hits.flatMap((hit) => clipped(hit, own) ?? []),
-    placed: placed.filter((each) => clipped({ ...each, placed: each, clickFocus: true }, own) !== undefined),
+    placed: placed.filter((each) => clipped({ ...each, placed: each, clickFocus: true, clicks: true }, own) !== undefined),
   }
 }
 
@@ -70,7 +71,7 @@ export function cut(
     line: whole ? line : fits ? truncateToWidth(line, width, glyphs.more) : '',
     hits: segments.flatMap((segment) => segment.hits.flatMap((hit) => clipped(hit, kept) ?? [])),
     placed: segments.flatMap((segment) =>
-      segment.placed.filter((placed) => clipped({ ...placed, placed, clickFocus: true }, kept) !== undefined),
+      segment.placed.filter((placed) => clipped({ ...placed, placed, clickFocus: true, clicks: true }, kept) !== undefined),
     ),
   }
 }

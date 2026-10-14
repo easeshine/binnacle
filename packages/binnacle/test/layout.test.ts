@@ -524,6 +524,43 @@ test('a node with `mouse: false` ignores a click and the wheel inside it, and a 
   )
 })
 
+test('a node with `clicks: false` ignores a click inside it, moves no Focus, and keeps the wheel', async () => {
+  const heard: string[] = []
+  const taking = (name: string) => ({
+    lines: () => ['1', '2', '3', '4'].map((line) => `${name}${line}`),
+    key: (data: string) => {
+      heard.push(`${name} ${data}`)
+      return true
+    },
+    click: () => {
+      heard.push(`${name} click`)
+      return true
+    },
+  })
+  const { terminal, rows } = await drawn(10, 2, (binnacle) => {
+    binnacle.show({
+      name: 'two',
+      focus: 'b',
+      layout: { row: [{ column: [{ place: 'a' }], size: { fixed: 5 }, clicks: false }, { place: 'b' }] },
+    })
+    binnacle.place('a', taking('a'))
+    binnacle.place('b', taking('b'))
+    binnacle.action('a.clicked', { keys: ['click'], place: 'a', run: () => heard.push('a action') })
+  })
+  terminal.type(clickAt(1, 0))
+  terminal.type(wheelUpAt(2, 1))
+  terminal.type('k')
+  terminal.type(clickAt(6, 0))
+  assert.deepEqual(
+    [rows, (await terminal.read()).rows, heard],
+    [
+      ['a3   b3', 'a4   b4'],
+      ['a1   b3', 'a2   b4'],
+      ['b k', 'b click'],
+    ],
+  )
+})
+
 test("a node with `clickFocus: false` gives a click inside it to its Part and its Place's actions, for each Place inside it, and moves no Focus", async () => {
   const heard: string[] = []
   const taking = (name: string) => ({

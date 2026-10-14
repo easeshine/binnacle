@@ -3,7 +3,7 @@ import type { Layout } from '../api.ts'
 import type { Arranged, Hit, Placed, Places, Position, Reach } from './arranged.ts'
 import { cut, joined, nestedSegment, placeSegment, segmentsOf } from './separated.ts'
 import type { Drawn, Segment } from './separated.ts'
-import { blank, bordersOf, edgeRow, fit, gapOf, insetsOf, paddingOf, reachInside } from './box.ts'
+import { blank, bordersOf, edgeRow, fit, gapOf, hitOf, insetsOf, paddingOf, reachInside } from './box.ts'
 import type { Spare } from './box.ts'
 import { withoutBlankEnd } from './row-end.ts'
 import { coverWidthOf, floatAt, floatWidthOf, grow, share, wantedOf } from './tree.ts'
@@ -29,7 +29,7 @@ class Arrangement {
   // The names whose lines are being asked for: an `unless` that names a Layout it is in has no lines there.
   readonly #asking = new Set<string>()
   // Whether a click and the wheel reach the Places being laid out, and whether a click moves the Focus there.
-  #reach: Reach = { mouse: true, clickFocus: true }
+  #reach: Reach = { mouse: true, clickFocus: true, clicks: true }
 
   constructor(places: Places, spare: Spare, theme: Theme) {
     this.#places = places
@@ -75,7 +75,7 @@ class Arrangement {
         shownFrom: this.#shownFrom.get(tree.place) ?? 0,
       }
       this.placed.push(placed)
-      this.hits.push({ top, left, width, height, placed: this.#reach.mouse ? placed : undefined, clickFocus: this.#reach.clickFocus })
+      this.hits.push(hitOf({ top, left, width, height }, placed, this.#reach))
     }
     const paddedWidth = Math.max(0, width - borders.left - borders.right)
     const padded = [
@@ -193,7 +193,7 @@ class Arrangement {
     this.hits = [
       ...outside,
       ...this.hits,
-      { top: top + y, left: left + x, width: floatWidth, height: floatHeight, placed: undefined, clickFocus: true },
+      { top: top + y, left: left + x, width: floatWidth, height: floatHeight, placed: undefined, clickFocus: true, clicks: true },
       ...beneath,
     ]
     const covered = (at: Position) =>
@@ -267,7 +267,7 @@ class Arrangement {
     }
   }
 
-  /** Lays out what is inside the node with the node's `mouse` and `clickFocus` holding for each Place in it. */
+  /** Lays out what is inside the node with the node's `mouse`, `clicks` and `clickFocus` holding for each Place in it. */
   #within<T>(tree: Tree, draw: () => T): T {
     const outer = this.#reach
     this.#reach = reachInside(outer, tree.node)

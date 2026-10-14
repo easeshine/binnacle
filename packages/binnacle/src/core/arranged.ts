@@ -48,12 +48,15 @@ export interface Hit extends Cells {
   readonly placed: Placed | undefined
   /** Whether a click here moves the Focus to the Place: `false` inside a node with `clickFocus: false`. */
   readonly clickFocus: boolean
+  /** Whether a click here reaches the Place: `false` inside a node with `clicks: false`, where the wheel still does. */
+  readonly clicks: boolean
 }
 
-/** Whether a click and the wheel reach a Place, and whether a click moves the Focus to it. */
+/** Whether a click and the wheel reach a Place, whether a click alone does, and whether a click moves the Focus to it. */
 export interface Reach {
   readonly mouse: boolean
   readonly clickFocus: boolean
+  readonly clicks: boolean
 }
 
 export interface Cells {
