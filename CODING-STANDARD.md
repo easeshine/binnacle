@@ -14,7 +14,8 @@ These rules apply to every file that is committed, and to issues and PRs. `vp ru
 | Record | Home |
 |---|---|
 | What is wanted, why, and in which Stages | the Intent |
-| The design of one feature of a Stage | its Spec |
+| The design of one feature of a Stage, before it is built | its Spec, `intents/<slug>/spec.md` |
+| How a feature is built so far | its doc in `docs/features/` |
 | One change to make | its GitHub issue |
 | A decision that binds more than one change | an ADR in `docs/adr/` |
 | What one change did, and why | its commit message, in Conventional Commits |

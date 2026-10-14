@@ -47,7 +47,7 @@ An author can:
 
 ## Specs
 
-- A drag selects in one Place, a release copies, and a click acts on its release.
+- [A drag selects in one Place, a release copies, and a click acts on its release](spec.md).
 
 ## Open questions
 
