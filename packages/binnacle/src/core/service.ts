@@ -185,6 +185,10 @@ export class BinnacleService extends Service implements Binnacle {
     return this.actions.click(gesture, place, at)
   }
 
+  select(): void {
+    this.actions.fire('select')
+  }
+
   get layoutOnView(): Layout {
     const screen = this.screenOnView
     return this.edited(screen.name, this.layouts.get(screen.name)?.at(-1)?.item ?? screen.layout)

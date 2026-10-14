@@ -16,7 +16,7 @@ import { mounted } from '../support/mounted.ts'
 
 const ENTER = '\r'
 const UP = '\x1b[A'
-const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M`
+const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M\x1b[<0;${x + 1};${y + 1}m`
 const RED = 1
 const GREEN = 2
 const YELLOW = 3

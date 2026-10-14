@@ -10,7 +10,7 @@ import { mounted } from '../support/mounted.ts'
 const ENTER = '\r'
 const UP = '\x1b[A'
 const DOWN = '\x1b[B'
-const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M`
+const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M\x1b[<0;${x + 1};${y + 1}m`
 const CYAN = 6
 const BRIGHT_BLACK = 8
 const YELLOW = 3

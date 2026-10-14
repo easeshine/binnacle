@@ -48,6 +48,10 @@ ctx.binnacle.look('status.state', (beneath) => (value) => `${beneath(value)} ${M
 - `set` on the clock does nothing.
 - The type of its state is `ClockState`.
 
+## The Selection
+
+The core names the model `selection`. Its state's `selected` is the Selection, `{ place, text }`, or `undefined` while there is none. `set` on it does nothing. The type of its state is `SelectionState` ([Copying](../built-ins/copy.md)).
+
 ## The turn
 
 The core names the model `turn`. Its state's `startedAt` is when the turn that runs started, in epoch milliseconds, or `undefined` while the agent does not run.

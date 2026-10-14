@@ -1,7 +1,7 @@
 # Spec: select and copy
 
 - **Intent:** [Select and copy](intent.md), for the product's Stage 4, *Polish*: "The Maintainer selects and copies text with the mouse, as in a plain terminal." It serves outcome 3 of the [product Intent](../binnacle/intent.md): "Read, fold, search and copy everything in the session."
-- **Status:** agreed, not built
+- **Status:** built
 
 ## Problem
 

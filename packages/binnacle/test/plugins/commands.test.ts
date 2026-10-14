@@ -97,7 +97,7 @@ const esc = async (typed: (...keys: string[]) => Promise<string[]>) => {
   await new Promise((resolve) => setTimeout(resolve, 80))
   return typed()
 }
-const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M`
+const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M\x1b[<0;${x + 1};${y + 1}m`
 
 test("a draft of / offers the commands above the composer, each with its description in the muted Tone, in the registry's order, the first marked", async () => {
   const { typed, terminal } = await offering()

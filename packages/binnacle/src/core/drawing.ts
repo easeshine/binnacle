@@ -1,11 +1,14 @@
-import type { Layout, Part, Point, Screen } from '../api.ts'
+import type { Layout, Model, Part, Point, Screen, SelectionState } from '../api.ts'
+import type { Pointer } from './actions.ts'
 import { Display } from './display.ts'
 import type { Size } from './host.ts'
 import { arrange } from './layout.ts'
+import { createModel } from './model.ts'
 import type { Hit, Placed } from './arranged.ts'
 import type { Moved } from './service.ts'
 import type { Theme } from './theme.ts'
 import { Scroll } from './scroll.ts'
+import { Selecting } from './selecting.ts'
 import { Rows } from './view.ts'
 
 /** The service, read through this: the service draws through Drawing, so neither is whole when the other is made. */
@@ -25,28 +28,66 @@ export interface OnView extends Theme {
   takesKeys(place: string): boolean
   /** A click that the Part in the Place did not take goes to the Place's actions bound to it. True when one took it. */
   clickActions(gesture: string, place: string, at: Point | undefined): boolean
+  /** A release that ends with a Selection, to the actions with no Place. */
+  select(): void
+}
+
+/** The terminal, while binnacle holds it. */
+export interface Held {
+  /** None while binnacle does not hold the terminal. */
+  readonly size: Size | undefined
+  write(data: string): void
+  /** Whether a Place on view takes the mouse, so that the terminal reports it. */
+  mouse(on: boolean): void
 }
 
 /** The Focus, the wheel and a click need where each Place was last drawn, so what draws keeps it. */
 export class Drawing {
-  readonly #size: () => Size | undefined
+  readonly #held: Held
   readonly #onView: () => OnView
   readonly #display: Display
   readonly #rows = new Rows()
   readonly #scroll = new Scroll()
+  readonly #selecting: Selecting
+  readonly #selected = createModel<{ selected: SelectionState['selected'] }>({ selected: undefined })
+  /** The model `selection`: an author reads it, and only a drag changes it. */
+  readonly selection: Model<SelectionState> = { state: this.#selected.state, watch: this.#selected.watch, set: () => {} }
   #placed: readonly Placed[] = []
   #hits: readonly Hit[] = []
   // The Part last told it has the Focus.
   #focusTold: Part | undefined
 
-  constructor(size: () => Size | undefined, write: (data: string) => void, onView: () => OnView) {
-    this.#size = size
+  constructor(held: Held, onView: () => OnView) {
+    this.#held = held
     this.#onView = onView
-    this.#display = new Display(write)
+    this.#display = new Display((data) => held.write(data))
+    this.#selecting = new Selecting({
+      get screen() {
+        return onView().screenOnView
+      },
+      placed: (place) => this.#placed.find((drawn) => drawn.place === place),
+      hitAt: (x, y) => this.#hitAt(x, y),
+      partIn: (place) => onView().partIn(place),
+      rowsOf: (part, width) => this.#rows.of(part, width),
+      lineRowsAt: (part, width, row) => this.#rows.lineRowsAt(part, width, row),
+      scroll: (place, rows) => {
+        this.#scroll.by(place, rows)
+        this.draw()
+      },
+      click: (x, y, gesture) => {
+        this.#click(x, y, gesture)
+      },
+      select: () => onView().select(),
+      changed: (selected) =>
+        this.#selected.set((state) => {
+          state.selected = selected
+        }),
+      draw: () => this.draw(),
+    })
   }
 
   readonly draw = (): void => {
-    const size = this.#size()
+    const size = this.#held.size
     if (size === undefined) return
     const view = this.#onView()
     this.#scroll.startDraw()
@@ -86,7 +127,9 @@ export class Drawing {
     this.#scroll.clamp(this.#placed)
     for (const { place, maxScroll, shownFrom } of this.#placed)
       if (view.partIn(place)?.follow === 'least') this.#scroll.keep(place, maxScroll - shownFrom)
-    this.#display.draw(arranged.rows, arranged.cursor)
+    const rows = this.#selecting.drawn(arranged.rows, this.#placed, this.#hits, (text) => view.paint('selection', text))
+    this.#display.draw(rows, arranged.cursor)
+    this.#held.mouse(this.#hits.some((hit) => hit.placed !== undefined))
   }
 
   readonly redrawAll = (): void => {
@@ -121,8 +164,22 @@ export class Drawing {
     this.draw()
   }
 
-  /** A press of the left button at the cell under the pointer, by its gesture's name. The Focus moves first, then the click reaches the Part, then the Place's actions. */
-  click(x: number, y: number, gesture: string): boolean {
+  /** A press of the left button, by the name of the click it can be: it clears the Selection, and starts a drag or a click. */
+  press(at: Pointer, gesture: string): void {
+    this.#selecting.press(at, gesture)
+  }
+
+  motion(at: Pointer): void {
+    this.#selecting.motion(at)
+  }
+
+  /** The left button let go: a press that did not move clicks, and a drag that selected fires `select`. */
+  release(at: Pointer): void {
+    this.#selecting.release(at)
+  }
+
+  /** A click at the cell under the pointer, by its gesture's name. The Focus moves first, then the click reaches the Part, then the Place's actions. */
+  #click(x: number, y: number, gesture: string): boolean {
     const view = this.#onView()
     const hit = this.#hitAt(x, y)
     const under = hit?.placed

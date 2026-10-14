@@ -5,7 +5,7 @@ import type { Part, Point } from '../src/api.ts'
 import { mount } from './support/mount.ts'
 
 /** A left-button press at the cell under the pointer, both counted from 0, as a terminal sends it. */
-const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M`
+const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M\x1b[<0;${x + 1};${y + 1}m`
 const wheelUpAt = (x: number, y: number) => `\x1b[<64;${x + 1};${y + 1}M`
 const SHIFT_TAB = '\x1b[Z'
 
@@ -336,7 +336,7 @@ test("a click on a Place's box, or on a row below the Part's lines, does not rea
 
 test('a click on a Part reaches that Part with the line of its lines and the column, in cells, under the pointer', async () => {
   const clicks: Point[] = []
-  const { terminal } = await gestures(10, 5, (plugin) => {
+  const { terminal, clock } = await gestures(10, 5, (plugin) => {
     plugin.binnacle.layout('chat', {
       column: [{ place: 'head', size: 'content', border: ['left'] }, { place: 'list' }],
     })
@@ -369,6 +369,7 @@ test('a click on a Part reaches that Part with the line of its lines and the col
   await terminal.read()
   for (const [x, y] of atItsStart) terminal.type(clickAt(x, y))
   terminal.type(clickAt(0, 0))
+  await clock.pass(600)
   terminal.type(clickAt(1, 0))
   assert.deepEqual(clicks, [
     { line: 2, column: 3 },

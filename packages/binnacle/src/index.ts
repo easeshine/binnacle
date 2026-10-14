@@ -15,6 +15,7 @@ import { StdinBuffer } from './terminal/pi/stdin-buffer.ts'
 
 export type * from './api.ts'
 export type { Process } from './core/host.ts'
+export type { System } from './core/system.ts'
 export { toPlainText } from './core/view.ts'
 export { CHAT_LAYOUT } from './core/chat.ts'
 export * from './kit/index.ts'
@@ -39,11 +40,7 @@ export function apply(ctx: Context): void {
     (data) => input.process(data),
     () => drawing.redrawAll(),
   )
-  const drawing = new Drawing(
-    () => host.size,
-    (data) => host.write(data),
-    () => service,
-  )
+  const drawing = new Drawing(host, () => service)
   const service = new BinnacleService(ctx, {
     redraw: drawing.draw,
     forget: (part) => drawing.forget(part),
@@ -62,6 +59,7 @@ export function apply(ctx: Context): void {
   })
   for (const [id, action] of Object.entries(core.actions)) service.action(id, action)
   for (const [named, model] of coreModels(ctx)) service.model(named, model)
+  service.model('selection', drawing.selection)
   route(input, {
     answered: (sequence) => host.answered(sequence),
     focused: () => drawing.focused(),
@@ -69,9 +67,9 @@ export function apply(ctx: Context): void {
       drawing.forget(part)
       drawing.draw()
     },
-    click: (x, y, gesture) => drawing.click(x, y, gesture),
+    pointer: drawing,
     actions: (data, first) => service.actions.key(data, drawing.focusedPlace(), first),
-    wheel: (gesture, at) => core.wheel(at, () => service.actions.wheel(gesture)),
+    wheel: (gesture, at) => core.wheel(at, () => service.actions.fire(gesture)),
   })
   openChat(ctx, commandLine.session, (why) => {
     internals.streams.stderr.write(`binnacle: ${why}\n`)

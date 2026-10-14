@@ -7,6 +7,7 @@ const plugins = [
   'tool-cards',
   'composer',
   'commands',
+  'copy',
   'status-line',
   'requests',
   'requests-view',

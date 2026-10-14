@@ -25,7 +25,7 @@ A key goes, in this order, to:
 3. The other actions of the Place with the Focus.
 4. The actions with no Place. binnacle's own gestures are here, such as ctrl+c and escape, beneath each action that an author sets.
 
-A click goes to the Part under it, then to its Place's actions bound to `click`. The wheel goes to the actions with no Place. In one step, the newest enabled action by an id takes the gesture, and of two ids, the action set last wins.
+A click goes to the Part under it, then to its Place's actions bound to `click`. It acts on the release, on the cell where it was pressed, and a press that moves selects instead ([Copying](../built-ins/copy.md)). The wheel goes to the actions with no Place, and so does `select`, which a release fires when it ends with a Selection. In one step, the newest enabled action by an id takes the gesture, and of two ids, the action set last wins.
 
 `binnacle.gestures.actionsOf(gesture)` gives the ids of the actions that a gesture is bound to now. It takes a key, as the terminal sent it. It gives the editor's keys of the Gesture Table, and each enabled action, binnacle's own or a plugin's, that acts wherever the Focus is or in the Place with the Focus. A Part that takes keys can pass on each key that another action is bound to, as the composer does. Read it also to keep a key of your own off a key that binnacle uses.
 

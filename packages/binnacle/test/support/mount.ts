@@ -1,1 +1,1 @@
-export { FakeProcess, mountCore as mount } from '../../src/testing/core.ts'
+export { FakeProcess, FakeSystem, mountCore as mount } from '../../src/testing/core.ts'

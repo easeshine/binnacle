@@ -24,6 +24,7 @@ Your settings, such as the model, go in the profile's `cordis.patch.yml`. `dsh -
 ## What you can do
 
 - Scroll the Place under the pointer with the wheel.
+- Select text with a drag, a double click or a triple click, and copy it when you let go ([Select and copy](copy.md)).
 - Keep your place in a Place that follows a cursor, such as a List's: its view moves only as far as the cursor needs. The transcript keeps its Marked event's header on the top row.
 - Suspend binnacle with ctrl+z, and come back to it.
 - Get the terminal back as it was when binnacle exits, crashes or is suspended. What other code wrote while binnacle drew is written after, in order.
@@ -49,5 +50,6 @@ The core, row `binnacle`, cannot be turned off: it owns the terminal, and every 
 | Tool cards | `binnacle-tool-cards` | [tool-cards.md](tool-cards.md) |
 | Composer | `binnacle-composer` | [composer.md](composer.md) |
 | Commands | `binnacle-commands` | [commands.md](commands.md) |
+| Select and copy | `binnacle`, `binnacle-copy` | [copy.md](copy.md) |
 | Status line | `binnacle-status-line` | [status-line.md](status-line.md) |
 | Requests | `binnacle-requests`, `binnacle-requests-view` | [requests.md](requests.md) |

@@ -7,8 +7,9 @@ const ALTERNATE_SCREEN_ON = '\x1b[?1049h'
 const ALTERNATE_SCREEN_OFF = '\x1b[?1049l'
 const CURSOR_HIDE = '\x1b[?25l'
 const CURSOR_SHOW = '\x1b[?25h'
-const MOUSE_ON = '\x1b[?1000h\x1b[?1006h'
-const MOUSE_OFF = '\x1b[?1006l\x1b[?1000l'
+// A press, a release, and a motion while a button is held, in SGR's form.
+const MOUSE_ON = '\x1b[?1000h\x1b[?1002h\x1b[?1006h'
+const MOUSE_OFF = '\x1b[?1006l\x1b[?1002l\x1b[?1000l'
 
 export type ProcessEvent = 'exit' | 'SIGTSTP' | 'SIGCONT'
 
@@ -34,6 +35,8 @@ export class Host {
   readonly #keyboard: Keyboard
   #terminal: Terminal | undefined
   #holding = false
+  // Whether a Place on view takes the mouse: while none does, the terminal selects by itself.
+  #mouse = true
   #printHeldBack: (() => void) | undefined
 
   constructor(streams: readonly Stream[], process: Process, onInput: (data: string) => void, onResize: () => void) {
@@ -59,6 +62,13 @@ export class Host {
     this.#terminal?.write(data)
   }
 
+  /** Asks the terminal for mouse reports, or for none, so that it selects by itself. */
+  mouse(on: boolean): void {
+    if (on === this.#mouse) return
+    this.#mouse = on
+    if (this.#holding) this.write(on ? MOUSE_ON : MOUSE_OFF)
+  }
+
   /** A reply of the terminal to what the keyboard asked, which is no key. */
   answered(sequence: string): boolean {
     return this.#keyboard.answered(sequence)
@@ -74,7 +84,7 @@ export class Host {
     this.#holding = true
     this.#printHeldBack = capture(this.#streams)
     this.#terminal.start(this.#onInput, this.#onResize)
-    this.#terminal.write(ALTERNATE_SCREEN_ON + CURSOR_HIDE + MOUSE_ON)
+    this.#terminal.write(ALTERNATE_SCREEN_ON + CURSOR_HIDE + (this.#mouse ? MOUSE_ON : ''))
     this.#keyboard.take()
     this.#onResize()
   }
@@ -83,7 +93,7 @@ export class Host {
     if (this.#terminal === undefined || !this.#holding) return
     this.#holding = false
     this.#keyboard.giveBack()
-    this.#terminal.write(MOUSE_OFF + CURSOR_SHOW + ALTERNATE_SCREEN_OFF)
+    this.#terminal.write((this.#mouse ? MOUSE_OFF : '') + CURSOR_SHOW + ALTERNATE_SCREEN_OFF)
     this.#terminal.stop()
     this.#printHeldBack?.()
     this.#printHeldBack = undefined

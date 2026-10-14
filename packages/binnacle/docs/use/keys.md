@@ -2,8 +2,10 @@
 
 - Use the keyboard and the mouse through actions: each action has an id, its default keys and a description. The editor's keys are in the Gesture Table, and the core's own gestures are actions, as an author's are, and as the composer's submit and new line are.
 - Move the Focus to the next Place that takes keys with shift+tab, or with a click on a Place that takes keys: one whose Part takes keys, or that an action acts in. A click on a Place inside a node with `clickFocus: false`, such as the Chat's transcript, acts there and moves no Focus. A Screen shown over another has its own Focus, and the one under it gets its Focus back.
-- Click a Part: the click reaches the Part under the pointer, with or without the Focus. Only the left button clicks.
+- Click a Part: the click reaches the Part under the pointer, with or without the Focus. Only the left button clicks. A click acts when you let go, on the cell where you pressed. A press that moves selects, and clicks nothing ([Select and copy](copy.md)).
+- Double-click a word or triple-click a line to select it. Only the first click of the run acts as a click.
 - Scroll with the wheel.
+- Select with shift and a drag, as the terminal selects, where binnacle takes the mouse.
 
 ## Lists, Lines and Tabs
 

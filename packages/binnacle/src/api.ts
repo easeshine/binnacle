@@ -53,6 +53,15 @@ export interface TurnState {
   readonly startedAt: number | undefined
 }
 
+/** The state of the core's model `selection`. */
+export interface SelectionState {
+  /**
+   * The Selection that a drag, a double click or a triple click made: the Place it is in, and its text as drawn, plain, one line for each row, with no blanks at a row's end.
+   * `undefined` while there is none.
+   */
+  readonly selected: { readonly place: string; readonly text: string } | undefined
+}
+
 /** A colour of the theme's, named by what is drawn in it, as pi's themes name it. */
 export type Tone =
   | 'text'
@@ -68,6 +77,7 @@ export type Tone =
   | 'heading'
   | 'code'
   | 'link'
+  | 'selection'
 
 export type Glyph = 'mark' | 'unmarked' | 'checked' | 'unchecked' | 'rule' | 'separator' | 'divider' | 'more'
 
@@ -100,6 +110,8 @@ export interface Style {
   readonly dim?: boolean
   readonly italic?: boolean
   readonly underline?: boolean
+  /** The colours swapped, the text's and the background's. */
+  readonly inverse?: boolean
 }
 
 /** What everything binnacle draws is drawn with, as the theme's layers make it. */

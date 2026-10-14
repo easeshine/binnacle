@@ -68,7 +68,7 @@ const ENTER = '\r'
 const ESC = '\x1b'
 const PAGE_UP = '\x1b[5~'
 const PAGE_DOWN = '\x1b[6~'
-const clickAt = (y: number) => `\x1b[<0;3;${y + 1}M`
+const clickAt = (y: number) => `\x1b[<0;3;${y + 1}M\x1b[<0;3;${y + 1}m`
 const wheelDownAt = (y: number) => `\x1b[<65;1;${y + 1}M`
 const RULE = '─'.repeat(40)
 const ruleWith = (title: string): string => `── ${title} ${'─'.repeat(40 - title.length - 4)}`

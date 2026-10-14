@@ -127,8 +127,8 @@ export class Actions {
       .map(({ item }) => item.id)
   }
 
-  /** A notch of the wheel, by its gesture's name, to the actions with no Place. */
-  wheel(name: string): void {
+  /** A mouse gesture that lands on no Part, by its name, such as a notch of the wheel or `select`, to the actions with no Place. */
+  fire(name: string): void {
     const taker = this.#tops().find((entry) => this.#placeOf(entry).place === undefined && this.#keysOf(entry).includes(name))
     if (taker !== undefined) this.#run(taker, undefined)
   }

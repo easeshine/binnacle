@@ -5,7 +5,7 @@ import type { Binnacle, Edit, Layout, Point } from '../src/api.ts'
 import { CHAT_LAYOUT, createModel } from '../src/index.ts'
 import { mount } from './support/mount.ts'
 
-const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M`
+const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M\x1b[<0;${x + 1};${y + 1}m`
 
 async function drawn(columns: number, rows: number, author: (binnacle: Binnacle) => void) {
   const mounted = await mount({ columns, rows })
@@ -384,7 +384,7 @@ test('an `{ over, float, at }` node draws `float` on top of `over` while `float`
     },
   })
   const menu = createModel<{ lines: readonly string[] }>({ lines: ['m'] })
-  const { terminal, rows } = await drawn(10, 5, (binnacle) => {
+  const { terminal, rows, clock } = await drawn(10, 5, (binnacle) => {
     binnacle.layout('chat', { over: { place: 'transcript' }, float: { place: 'menu', border: true }, at: { width: 6 } })
     binnacle.place(
       'transcript',
@@ -401,6 +401,7 @@ test('an `{ over, float, at }` node draws `float` on top of `over` while `float`
     state.lines = []
   })
   const covered = (await terminal.read()).rows
+  await clock.pass(600)
   terminal.type(clickAt(3, 2))
   assert.deepEqual(
     [rows, covered, clicked],

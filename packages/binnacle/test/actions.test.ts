@@ -8,7 +8,7 @@ const TAB = '\t'
 const SHIFT_TAB = '\x1b[Z'
 const ENTER = '\r'
 const CTRL_N = '\x0e'
-const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M`
+const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M\x1b[<0;${x + 1};${y + 1}m`
 
 async function booted(columns = 20, rows = 4) {
   const mounted = await mount({ columns, rows })
