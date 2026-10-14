@@ -4,12 +4,14 @@ import type { Context } from '@deepseek-ai/cordis'
 import * as transcript from '../../src/plugins/transcript/index.ts'
 import type { EventLook, HeadLook, LiveBlock, LiveLook, TranscriptState } from '../../src/plugins/transcript/index.ts'
 import {
+  callFor,
   callOf,
   failed,
   isPrompt,
   noticeOf,
   producerOf,
   reasoningOf,
+  resultFor,
   textOf,
   withoutReasoning,
 } from '../../src/plugins/transcript/index.ts'
@@ -823,6 +825,34 @@ test("callOf gives a tool call's name and its arguments as the model wrote them,
     [callOf(call), callOf(noArguments), callOf(noName), callOf(answer), ...odd.map(callOf)],
     [{ name: 'read', args: '{"path":"a.ts"}' }, { name: 'ls', args: '' }, undefined, undefined, undefined, undefined, undefined, undefined],
   )
+})
+
+test("callFor gives a tool result's call among the events, by dsh's call id, and resultFor gives a call's result", () => {
+  const other = anEvent(4, 'tool/call', { turn: 1, step: 1, callId: 'c2', name: 'ls', arguments: '{}' })
+  const events = [call, other, result(10, false)]
+  assert.deepEqual([callFor(result(10, false), events), resultFor(call, events), resultFor(other, events)], [call, events[2], undefined])
+})
+
+test('callFor and resultFor give undefined for an event of another kind, or one whose pair is not among the events', () => {
+  const events = [call, result(10, false)]
+  assert.deepEqual(
+    [
+      callFor(call, events),
+      resultFor(result(10, false), events),
+      callFor(answer, events),
+      callFor(result(10, false), []),
+      ...odd.map((event) => callFor(event, events)),
+    ],
+    Array(8).fill(undefined),
+  )
+})
+
+test('callFor finds a call in events that grew since the last read, and in a new list of events', () => {
+  const events: SessionEvent[] = [result(10, false)]
+  assert.equal(callFor(events[0]!, events), undefined)
+  events.push(call)
+  assert.equal(callFor(events[0]!, events), call)
+  assert.equal(callFor(events[0]!, [events[0]!]), undefined)
 })
 
 test("producerOf gives the producer of context the person did not type, 'unknown' when it names none, and undefined for a prompt or another event", () => {

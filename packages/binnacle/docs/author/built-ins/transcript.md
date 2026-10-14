@@ -72,6 +72,8 @@ The row `binnacle-transcript` places its Part in the Place `transcript`, which t
   - `textOf(event)`: the text of a person's message, an answer's or a tool result's, its text blocks joined, or `''`.
   - `reasoningOf(event)`: an answer's reasoning, its reasoning blocks joined, or `''`.
   - `callOf(event)`: a tool call's `{ name, args }`, its arguments as the model wrote them, or `''` with none. It is `undefined` for another event, or a call with no name.
+  - `callFor(event, events)`: a tool result's call among the events, found by dsh's call id. It is `undefined` for another event, or a result whose call is not among them. Give it the model `transcript`'s `events`: it reads each new event once.
+  - `resultFor(event, events)`: a tool call's result among the events, or `undefined` while the call has none.
   - `producerOf(event)`: the producer of context that the person did not type, such as `agent-instructions`, or `'unknown'` when it names none. It is `undefined` for a prompt or another event.
   - `noticeOf(event)`: what a command, a retry, a compaction or a turn's end says, as a `Notice`: `{ kind, text, severity }`. The `kind` is `command`, `retry`, `compaction` or `turn`, and the `severity` is `info`, `warning` or `error`. It is `undefined` for another event, such as a turn that completed.
   - `isPrompt(event)`: whether the event is a prompt the person typed, not context that dsh added, such as a file's change.
