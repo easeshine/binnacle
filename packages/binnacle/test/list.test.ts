@@ -10,7 +10,7 @@ const DOWN = '\x1b[B'
 const PAGE_UP = '\x1b[5~'
 const PAGE_DOWN = '\x1b[6~'
 const ENTER = '\r'
-const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M`
+const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M\x1b[<0;${x + 1};${y + 1}m`
 const settled = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 const items = (...labels: string[]): ListItem[] => labels.map((label) => ({ label }))

@@ -8,7 +8,8 @@ import { UserQuestionError } from '@deepseek-ai/dsh-user-questions'
 import type { AskUserQuestionAnswer, AskUserQuestionItem } from '@deepseek-ai/dsh-user-questions'
 import type { Binnacle } from '../api.ts'
 import { agents } from './agents.ts'
-import { mountCore } from './core.ts'
+import { FakeSystem, mountCore } from './core.ts'
+import { ESCAPE_WAIT_MS, MOTION, mouse, sequenceOf } from './keys.ts'
 import { persistence } from './sessions.ts'
 import { PACKAGE } from '../core/name.ts'
 
@@ -42,6 +43,12 @@ export interface MountOptions {
   readonly provide?: (ctx: Context) => void
 }
 
+/** A cell of the terminal, counted from 0. */
+export interface Cell {
+  readonly x: number
+  readonly y: number
+}
+
 /** How a cell's text is drawn. A colour is a palette index, `#rrggbb`, or `default`. */
 export interface CellStyle {
   readonly colour: number | string
@@ -63,8 +70,13 @@ export interface Mounted {
   /** A key by name: `enter`, `escape`, `tab`, `shift+tab`, `backspace`, `delete`, `space`, `up`, `down`, `left`, `right`, `home`, `end`, `pageup`, `pagedown`, or `ctrl+<letter>`. */
   press(key: string): Promise<void>
   type(text: string): Promise<void>
-  /** A click on a cell, counted from 0. */
+  /** A press and its release on a cell, counted from 0. A second click on the same word within 500 ms on the fake clock is a double click. */
   click(x: number, y: number, gesture?: 'click' | 'shift+click'): Promise<void>
+  /**
+   * A press on `from`, a motion to `to`, or to each cell of a list in turn, and a release on the last, each a cell counted from 0, as a terminal sends a drag.
+   * `held` keeps the button down there for that many ms on the fake clock before the release, as a drag held past a Place's edge scrolls it.
+   */
+  drag(from: Cell, to: Cell | readonly Cell[], held?: number): Promise<void>
   /** Notches of the wheel over a cell: up while positive. */
   wheel(x: number, y: number, notches: number): Promise<void>
   resize(columns: number, rows: number): Promise<void>
@@ -88,6 +100,8 @@ export interface Mounted {
     options?: { callId?: string; reason?: string; signal?: AbortSignal; agent?: Subagent },
   ): Promise<ApprovalOutcome>
   readonly clock: { readonly now: number; pass(ms: number): Promise<void> }
+  /** Each text that reached the clipboard, oldest first. The mount's clipboard always copies. */
+  readonly copied: readonly string[]
   readonly binnacle: Binnacle
   /** The Context that dsh's services and events live on, for what the methods above do not drive. */
   readonly ctx: Context
@@ -108,42 +122,11 @@ const BUILT_INS: readonly (readonly [string, string, () => Promise<object>, unkn
   ['binnacle-tool-cards', `${PACKAGE}/plugins/tool-cards`, () => import('../plugins/tool-cards/index.ts')],
   ['binnacle-composer', `${PACKAGE}/plugins/composer`, () => import('../plugins/composer/index.ts')],
   ['binnacle-commands', `${PACKAGE}/plugins/commands`, () => import('../plugins/commands/index.ts')],
+  ['binnacle-copy', `${PACKAGE}/plugins/copy`, () => import('../plugins/copy/index.ts')],
   ['binnacle-status-line', `${PACKAGE}/plugins/status-line`, () => import('../plugins/status-line/index.ts')],
   ['binnacle-requests', `${PACKAGE}/plugins/requests`, () => import('../plugins/requests/index.ts')],
   ['binnacle-requests-view', `${PACKAGE}/plugins/requests-view`, () => import('../plugins/requests-view/index.ts')],
 ]
-
-const KEYS: Readonly<Record<string, string>> = {
-  enter: '\r',
-  escape: '\x1b',
-  tab: '\t',
-  'shift+tab': '\x1b[Z',
-  backspace: '\x7f',
-  delete: '\x1b[3~',
-  space: ' ',
-  up: '\x1b[A',
-  down: '\x1b[B',
-  right: '\x1b[C',
-  left: '\x1b[D',
-  home: '\x1b[H',
-  end: '\x1b[F',
-  pageup: '\x1b[5~',
-  pagedown: '\x1b[6~',
-}
-
-function sequenceOf(key: string): string {
-  const letter = /^ctrl\+([a-z])$/.exec(key)?.[1]
-  if (letter !== undefined) return String.fromCharCode(letter.charCodeAt(0) - 96)
-  const sequence = KEYS[key]
-  if (sequence === undefined) throw new Error(`binnacle/testing: no key is named ${key}`)
-  return sequence
-}
-
-// Longer than the input's wait for the rest of a sequence that starts with escape.
-const ESCAPE_WAIT_MS = 60
-
-// SGR mouse reports: a press, at a cell counted from 1.
-const mouse = (button: number, x: number, y: number): string => `\x1b[<${button};${x + 1};${y + 1}M`
 
 let open = false
 
@@ -190,7 +173,10 @@ async function mounting(options: MountOptions, made: { ctx?: Context; restore?: 
     ids.set('binnacle', id)
     return { dispose: () => loader.remove(id) }
   }
+  // The mount's system is a Mac whose clipboard tool always works.
+  const system = new FakeSystem({ platform: 'darwin', tools: { pbcopy: '' } })
   const core = await mountCore({
+    system,
     load: loadCore,
     columns: options.size?.columns ?? 80,
     rows: options.size?.rows ?? 24,
@@ -286,7 +272,23 @@ async function mounting(options: MountOptions, made: { ctx?: Context; restore?: 
       }
     },
     type: (text) => driven(() => terminal.type(text)),
-    click: (x, y, gesture = 'click') => driven(() => terminal.type(mouse(gesture === 'shift+click' ? 4 : 0, x, y))),
+    click: (x, y, gesture = 'click') =>
+      driven(() => {
+        const button = gesture === 'shift+click' ? 4 : 0
+        terminal.type(mouse(button, x, y))
+        terminal.type(mouse(button, x, y, true))
+      }),
+    drag: async (from, to, held = 0) => {
+      // Array.isArray does not narrow a readonly list, and only a cell has `x`.
+      const path = 'x' in to ? [to] : (to as readonly Cell[])
+      const end = path.at(-1) ?? from
+      await driven(() => {
+        terminal.type(mouse(0, from.x, from.y))
+        for (const { x, y } of path) terminal.type(mouse(MOTION, x, y))
+      })
+      if (held > 0) await clock.pass(held)
+      await driven(() => terminal.type(mouse(0, end.x, end.y, true)))
+    },
     wheel: (x, y, notches) =>
       driven(() => {
         for (let notch = 0; notch < Math.abs(notches); notch++) terminal.type(mouse(notches > 0 ? 64 : 65, x, y))
@@ -332,6 +334,9 @@ async function mounting(options: MountOptions, made: { ctx?: Context; restore?: 
         await clock.pass(ms)
         await settled()
       },
+    },
+    get copied() {
+      return system.ran.filter(({ command }) => command === 'pbcopy').map(({ input }) => input ?? '')
     },
     get binnacle() {
       return ctx.binnacle

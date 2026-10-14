@@ -19,7 +19,7 @@ test('binnacle takes the alternate screen, raw mode and the mouse when dsh is re
   ready()
   assert.deepEqual(await terminal.read().then(({ screen, mouse }) => ({ screen, mouse, raw: terminal.raw })), {
     screen: 'alternate',
-    mouse: 'vt200',
+    mouse: 'drag',
     raw: true,
   })
   await fiber.dispose()
@@ -28,6 +28,22 @@ test('binnacle takes the alternate screen, raw mode and the mouse when dsh is re
     mouse: 'none',
     raw: false,
   })
+})
+
+test('`mouse: false` on the root of the Layout on view stops the mouse reports, so the terminal selects by itself, and they start again when a Place takes the mouse', async () => {
+  const { ctx, terminal, ready } = await mount({ columns: 20, rows: 3 })
+  ready()
+  let given: Handle | undefined
+  await ctx.plugin({
+    name: 'author',
+    inject: ['binnacle'],
+    apply: (plugin: Context) => {
+      given = plugin.binnacle.layout('chat', { place: 'transcript', mouse: false })
+    },
+  })
+  const off = (await terminal.read()).mouse
+  given!.dispose()
+  assert.deepEqual([off, (await terminal.read()).mouse], ['none', 'drag'])
 })
 
 test('a Part placed in the transcript is drawn line by line, each line wrapped at the width', async () => {

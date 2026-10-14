@@ -115,6 +115,17 @@ export class Rows {
     return { line, column: (starts[row - before] ?? 0) + column }
   }
 
+  /** The first and the last of the Part's rows that the line on that row wraps to. */
+  lineRowsAt(part: Part, width: number, row: number): { readonly first: number; readonly last: number } | undefined {
+    if (width < 1) return undefined
+    let first = 0
+    for (const rows of this.#wrapped(part, width).rowsOfLines) {
+      if (row < first + rows.length) return { first, last: first + rows.length - 1 }
+      first += rows.length
+    }
+    return undefined
+  }
+
   #startsOf(lines: readonly string[], rowsOfLines: readonly (readonly string[])[], line: number): readonly number[] {
     const plain = toPlainText(lines[line] ?? '')
     let from = 0

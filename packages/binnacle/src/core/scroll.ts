@@ -16,8 +16,13 @@ export class Scroll {
   }
 
   wheel(place: string, notches: number): void {
+    this.by(place, notches * ROWS_PER_WHEEL_NOTCH)
+  }
+
+  /** Moves the Place up by rows, or down while `rows` is negative, as a drag held past its edge does. */
+  by(place: string, rows: number): void {
     this.#pages.delete(place)
-    this.#up.set(place, Math.max(0, this.up(place) + notches * ROWS_PER_WHEEL_NOTCH))
+    this.#up.set(place, Math.max(0, this.up(place) + rows))
   }
 
   /** Moves the Place by rows toward its end, from `shownUp`, the rows below the ones it showed; the next draw stops it at its start. The rows paged to are shown until its Part's cursor moves. */

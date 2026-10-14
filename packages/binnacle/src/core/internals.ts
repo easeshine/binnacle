@@ -2,6 +2,8 @@ import type { Stream } from './capture.ts'
 import type { Process } from './host.ts'
 import type { TerminalColorMode } from '../terminal/pi/colors.ts'
 import { ProcessTerminal } from '../terminal/process-terminal.ts'
+import { processSystem } from './system.ts'
+import type { System } from './system.ts'
 import type { Terminal } from '../terminal/terminal.ts'
 
 /** What the core touches of the process, the terminal and the clock; a test puts its own in their place. */
@@ -13,6 +15,8 @@ export const internals: {
   /** Runs `run` once after `ms`, and returns what cancels it. */
   later: (ms: number, run: () => void) => () => void
   colorMode: () => TerminalColorMode
+  /** The system's tools, files and terminal, that a copy reaches the clipboard through. */
+  system: System
 } = {
   terminal: () => new ProcessTerminal(),
   now: () => Date.now(),
@@ -38,4 +42,5 @@ export const internals: {
     },
   },
   streams: { stdout: process.stdout, stderr: process.stderr },
+  system: processSystem,
 }

@@ -1,6 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
-import type { ChatSession, Layout } from '../../index.ts'
+import type { ChatSession, ClockState, Layout, Tone } from '../../index.ts'
 import { toPlainText } from '../../index.ts'
+import type { CopyState } from '../copy/index.ts'
 
 export const name = 'binnacle-status-line'
 
@@ -16,9 +17,19 @@ const deepFrozen = <T extends object>(value: T): T => {
 
 /** The Layout `status`: the segments, joined by the theme's `divider`. Frozen, as an author builds on it. */
 export const STATUS_LAYOUT: Layout & { readonly row: readonly Layout[] } = deepFrozen({
-  row: [{ place: 'status.state' }, { place: 'status.model' }],
+  row: [{ place: 'status.state' }, { place: 'status.model' }, { place: 'status.copy' }],
   separator: true,
 })
+
+// pi flashes a copy's notice for two seconds, and an error for five.
+const SHOWN_MS = 2000
+const FAILURE_SHOWN_MS = 5000
+
+const NOTICES: { readonly [outcome in NonNullable<CopyState['last']>['outcome']]: readonly [string, Tone] } = {
+  copied: ['copied', 'success'],
+  sent: ['sent to the terminal', 'muted'],
+  failed: ['copy failed', 'error'],
+}
 
 const valuesOf = ({ id, agent }: ChatSession): { readonly [place: string]: string | undefined } =>
   agent === undefined
@@ -41,6 +52,22 @@ export function apply(plugin: Context): void {
         },
       }),
     )
+    const copy = binnacle.modelOf<CopyState>('copy')
+    const clock = binnacle.modelOf<ClockState>('clock')
+    binnacle.place('status.copy', {
+      models: [copy, clock],
+      lines: () => {
+        const last = copy.state?.last
+        // The clock is read only while a notice can show, so that it stops after.
+        const now = last === undefined ? undefined : clock.state?.now
+        if (last === undefined || now === undefined) return []
+        if (now - last.at >= (last.outcome === 'failed' ? FAILURE_SHOWN_MS : SHOWN_MS)) return []
+        const [notice, tone] = NOTICES[last.outcome]
+        const text = last.reason === undefined ? notice : `${notice}: ${toPlainText(last.reason)}`
+        const look = binnacle.lookOf<SegmentLook>(['status.copy'], (plain) => binnacle.paint(tone, plain))
+        return [look(text)]
+      },
+    })
     ctx.on('agent/status', ({ agent }) => {
       if (agent === chat.agent) for (const segment of segments) segment.redraw()
     })

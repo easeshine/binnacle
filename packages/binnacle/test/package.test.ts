@@ -132,7 +132,7 @@ test('the packed status line gives `STATUS_LAYOUT` to build on, and the docs for
   const statusLine = await import(pathToFileURL(join(unpacked, exports['./plugins/status-line']!)).href)
   assert.deepEqual(
     [statusLine.STATUS_LAYOUT, guide().includes('STATUS_LAYOUT')],
-    [{ row: [{ place: 'status.state' }, { place: 'status.model' }], separator: true }, true],
+    [{ row: [{ place: 'status.state' }, { place: 'status.model' }, { place: 'status.copy' }], separator: true }, true],
   )
 })
 

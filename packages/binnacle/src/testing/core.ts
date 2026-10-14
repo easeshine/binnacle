@@ -1,6 +1,7 @@
 import { Context } from '@deepseek-ai/cordis'
 import { internals as cmdline, provideCmdline } from '@deepseek-ai/dsh-cmdline'
 import * as core from '../index.ts'
+import type { System } from '../core/system.ts'
 import type { TerminalColorMode } from '../terminal/pi/colors.ts'
 import { XtermTerminal } from './terminal.ts'
 
@@ -27,6 +28,70 @@ export class FakeProcess {
   }
 }
 
+/** What a fake tool does when it runs: exits 0 and writes that text, exits 1, or never ends, until it is killed. */
+export type FakeTool = string | 'fails' | 'hangs'
+
+/** A system with only the tools, the environment and the files it is given. It records each tool it ran, and what it wrote to the terminal. */
+export class FakeSystem implements System {
+  readonly platform: string
+  readonly env: { readonly [name: string]: string | undefined }
+  readonly ran: { readonly command: string; readonly args: readonly string[]; readonly input: string | undefined }[] = []
+  readonly written: string[] = []
+  readonly files: Map<string, string>
+  readonly #tools: { readonly [command: string]: FakeTool }
+  #made = 0
+
+  constructor(
+    options: {
+      platform?: string
+      env?: { readonly [name: string]: string }
+      tools?: { readonly [command: string]: FakeTool }
+      files?: { readonly [path: string]: string }
+    } = {},
+  ) {
+    this.platform = options.platform ?? 'linux'
+    this.env = options.env ?? {}
+    this.#tools = options.tools ?? {}
+    this.files = new Map(Object.entries(options.files ?? {}))
+  }
+
+  run(command: string, args: readonly string[], options: { readonly input?: string; readonly ms: number; readonly signal?: AbortSignal }) {
+    this.ran.push({ command, args, input: options.input })
+    const tool = this.#tools[command]
+    if (tool === undefined || tool === 'fails') return Promise.resolve(undefined)
+    if (tool !== 'hangs') return Promise.resolve(tool)
+    return new Promise<undefined>((resolve) => {
+      if (options.signal?.aborted === true) {
+        resolve(undefined)
+        return
+      }
+      const cancel = core.internals.later(options.ms, () => resolve(undefined))
+      options.signal?.addEventListener('abort', () => {
+        cancel()
+        resolve(undefined)
+      })
+    })
+  }
+
+  read(path: string): string | undefined {
+    return this.files.get(path)
+  }
+
+  temporary(text: string): string {
+    const path = `/tmp/binnacle-copy-${++this.#made}.txt`
+    this.files.set(path, text)
+    return path
+  }
+
+  remove(path: string): void {
+    this.files.delete(path)
+  }
+
+  write(data: string): void {
+    this.written.push(data)
+  }
+}
+
 /**
  * The core alone, on a fake terminal, process, streams and clock, before dsh says it is ready. The core's own tests read these; `mount` builds on it.
  * `restore()` puts back what it replaced.
@@ -37,6 +102,8 @@ export async function mountCore(
     columns?: number
     rows?: number
     colorMode?: TerminalColorMode
+    /** The system a copy reaches; by default one with no tools. */
+    system?: System
     provide?: (ctx: Context) => void
     /** Loads the core, the module of binnacle's entry. By default it is a plugin of its own, with no row. */
     load?: (ctx: Context, core: object) => Promise<{ dispose(): unknown }>
@@ -58,6 +125,8 @@ export async function mountCore(
   core.internals.terminal = () => terminal
   core.internals.process = process
   core.internals.colorMode = () => options.colorMode ?? 'truecolor'
+  const system = options.system ?? new FakeSystem()
+  core.internals.system = system
   const timers: { at: number; run: () => void }[] = []
   const clock = {
     now: 0,
@@ -124,6 +193,7 @@ export async function mountCore(
     terminal,
     process,
     clock,
+    system,
     stdout,
     stderr,
     printed,

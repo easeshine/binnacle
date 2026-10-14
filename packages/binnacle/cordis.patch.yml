@@ -36,7 +36,10 @@
     # The offer of commands: typing / offers dsh's commands above the composer. Off, a command typed in full still runs.
     - id: binnacle-commands
       name: '@easeshine/binnacle/plugins/commands'
-    # The status line: whether the agent runs, and on which model.
+    # Copying: a release after a drag copies the Selection to the clipboard. Off, a drag still selects, and copies nothing.
+    - id: binnacle-copy
+      name: '@easeshine/binnacle/plugins/copy'
+    # The status line: whether the agent runs, on which model, and how a copy ended.
     - id: binnacle-status-line
       name: '@easeshine/binnacle/plugins/status-line'
     # The Requests: the approvals and the questions that stand, and the talk with dsh. It draws nothing.

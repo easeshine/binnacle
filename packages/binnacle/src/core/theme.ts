@@ -55,6 +55,7 @@ export const DEFAULT_TOKENS: Tokens = {
     heading: { color: 'cyan', bold: true },
     code: { color: 'yellow' },
     link: { color: 'blue', underline: true },
+    selection: { inverse: true },
   },
   glyphs: { mark: '›', unmarked: ' ', checked: '[x]', unchecked: '[ ]', rule: '─', separator: ' | ', divider: ' · ', more: '…' },
   edge: 'rounded',
@@ -122,6 +123,7 @@ const ATTRIBUTES = [
   ['dim', '2', '22'],
   ['italic', '3', '23'],
   ['underline', '4', '24'],
+  ['inverse', '7', '27'],
 ] as const
 
 function opening(color: Colour, mode: TerminalColorMode): string {
@@ -130,7 +132,7 @@ function opening(color: Colour, mode: TerminalColorMode): string {
   return foregroundAnsi(parseColor(color), mode)
 }
 
-const CLOSES = new Set(['', '0', '22', '23', '24', '39'])
+const CLOSES = new Set(['', '0', '22', '23', '24', '27', '39'])
 const COLOURS = new Set(['38', '48', '58'])
 
 // A colour's arguments, as the 0 of `38;5;0`, are walked over, so only a real reset or close counts.

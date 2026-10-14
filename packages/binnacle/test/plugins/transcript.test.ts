@@ -28,7 +28,7 @@ const SHIFT_TAB = '\x1b[Z'
 const UP = '\x1b[A'
 const DOWN = '\x1b[B'
 const ENTER = '\r'
-const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M`
+const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M\x1b[<0;${x + 1};${y + 1}m`
 
 /** A Place that takes keys, so the Focus can move to it and away from the transcript. */
 const probe = (name: string, place: (ctx: Context) => void) => ({ name, inject: ['binnacle'] as const, apply: place })

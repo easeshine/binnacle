@@ -7,7 +7,7 @@ import { mount } from './support/mount.ts'
 
 const TAB = '\t'
 const SHIFT_TAB = '\x1b[Z'
-const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M`
+const clickAt = (x: number, y: number) => `\x1b[<0;${x + 1};${y + 1}M\x1b[<0;${x + 1};${y + 1}m`
 const settled = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 async function paged(labels: string[], options: { columns?: number; current?: number } = {}) {
