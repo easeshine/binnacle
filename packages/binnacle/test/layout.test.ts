@@ -524,6 +524,43 @@ test('a node with `mouse: false` ignores a click and the wheel inside it, and a 
   )
 })
 
+test('a node with `clicks: false` ignores a click inside it, moves no Focus, and keeps the wheel', async () => {
+  const heard: string[] = []
+  const taking = (name: string) => ({
+    lines: () => ['1', '2', '3', '4'].map((line) => `${name}${line}`),
+    key: (data: string) => {
+      heard.push(`${name} ${data}`)
+      return true
+    },
+    click: () => {
+      heard.push(`${name} click`)
+      return true
+    },
+  })
+  const { terminal, rows } = await drawn(10, 2, (binnacle) => {
+    binnacle.show({
+      name: 'two',
+      focus: 'b',
+      layout: { row: [{ column: [{ place: 'a' }], size: { fixed: 5 }, clicks: false }, { place: 'b' }] },
+    })
+    binnacle.place('a', taking('a'))
+    binnacle.place('b', taking('b'))
+    binnacle.action('a.clicked', { keys: ['click'], place: 'a', run: () => heard.push('a action') })
+  })
+  terminal.type(clickAt(1, 0))
+  terminal.type(wheelUpAt(2, 1))
+  terminal.type('k')
+  terminal.type(clickAt(6, 0))
+  assert.deepEqual(
+    [rows, (await terminal.read()).rows, heard],
+    [
+      ['a3   b3', 'a4   b4'],
+      ['a1   b3', 'a2   b4'],
+      ['b k', 'b click'],
+    ],
+  )
+})
+
 test("a node with `clickFocus: false` gives a click inside it to its Part and its Place's actions, for each Place inside it, and moves no Focus", async () => {
   const heard: string[] = []
   const taking = (name: string) => ({
@@ -1045,6 +1082,67 @@ test('an insert beside the root, an `over` or a `float` does nothing, and a remo
     ['a', ''],
     ['a', '   b'],
     ['', ''],
+  ])
+})
+
+test("a move over an anchor floats its node over the anchor's, and leaves nothing in its old place", async () => {
+  const layout: Layout = { column: [{ place: 'a', size: 'content', border: ['top'] }, { place: 'b', size: 'fill' }, one('c')] }
+  assert.deepEqual(await edited(10, 4, layout, [editor('author', [{ move: 'a', over: 'b', at: { side: 'bottom', width: 4 } }])]), [
+    'b',
+    '   ────',
+    '   a',
+    'c',
+  ])
+})
+
+test('the node floated over keeps its size and its unless', async () => {
+  const seen: string[][] = []
+  for (const asking of [false, true]) {
+    const { rows } = await drawn(10, 3, (binnacle) => {
+      binnacle.layout('chat', { column: [{ place: 'b', size: { fixed: 1 }, unless: 'n' }, { place: 'c', size: 'fill' }, one('a')] })
+      binnacle.layout('n', asking ? { place: 'n' } : { column: [] })
+      for (const name of ['a', 'b', 'c', 'n']) binnacle.place(name, part(name))
+      binnacle.edit('chat', { move: 'a', over: 'b', at: { side: 'top', width: 4 } })
+    })
+    seen.push(rows)
+  }
+  assert.deepEqual(seen, [
+    ['b  a', 'c', ''],
+    ['c', '', ''],
+  ])
+})
+
+test('a move over an anchor that is not there, of a node that is not there, or over its own node, does nothing', async () => {
+  const layout: Layout = { column: [one('a'), one('b')] }
+  const seen: string[][] = []
+  for (const edits of [[{ move: 'z', over: 'a' }], [{ move: 'a', over: 'z' }], [{ move: 'a', over: 'a' }]] satisfies Edit[][])
+    seen.push(await edited(10, 3, layout, [editor('author', edits)]))
+  assert.deepEqual(seen, [
+    ['a', 'b', ''],
+    ['a', 'b', ''],
+    ['a', 'b', ''],
+  ])
+})
+
+test('a replace of a floated node acts in the float, a remove of the anchor takes the float out with it, and a move of the anchor takes the float with it', async () => {
+  const layout: Layout = { column: [one('a'), one('b'), one('c')] }
+  const seen: string[][] = []
+  for (const edits of [
+    [
+      { move: 'a', over: 'b', at: { width: 4 } },
+      { replace: 'a', with: one('y') },
+    ],
+    [{ move: 'a', over: 'b', at: { width: 4 } }, { remove: 'b' }],
+    [
+      { move: 'a', over: 'b', at: { width: 4 } },
+      { move: 'b', after: 'c' },
+    ],
+  ] satisfies Edit[][])
+    seen.push(await edited(10, 3, layout, [editor('author', edits)]))
+  assert.deepEqual(seen, [
+    ['b  y', 'c', ''],
+    ['c', '', ''],
+    ['c', 'b  a', ''],
   ])
 })
 

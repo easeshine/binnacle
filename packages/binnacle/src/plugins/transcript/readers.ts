@@ -59,6 +59,46 @@ export function callOf(event: SessionEvent): Call | undefined {
   return { name, args: typeof args === 'string' ? args : '' }
 }
 
+const callIdOf = (event: SessionEvent): unknown =>
+  event.type === 'tool/call' ? fields(event.data)?.callId : event.type === 'tool/result' ? messageOf(event)?.toolCallId : undefined
+
+interface Pairs {
+  count: number
+  readonly calls: Map<string, SessionEvent>
+  readonly results: Map<string, SessionEvent>
+}
+
+// The transcript's events only grow, in one list, so each read indexes only the events that came since the last read of that list.
+const pairsOf = new WeakMap<readonly SessionEvent[], Pairs>()
+
+const pairs = (events: readonly SessionEvent[]): Pairs => {
+  let indexed = pairsOf.get(events)
+  if (indexed === undefined || events.length < indexed.count) {
+    indexed = { count: 0, calls: new Map(), results: new Map() }
+    pairsOf.set(events, indexed)
+  }
+  for (; indexed.count < events.length; indexed.count++) {
+    const event = events[indexed.count]!
+    const id = callIdOf(event)
+    if (typeof id !== 'string') continue
+    const kept = event.type === 'tool/call' ? indexed.calls : indexed.results
+    if (!kept.has(id)) kept.set(id, event)
+  }
+  return indexed
+}
+
+/** A tool result's call among the events, by dsh's call id: the first call of that id. `undefined` for another event, or a result whose call is not among them. */
+export function callFor(result: SessionEvent, events: readonly SessionEvent[]): SessionEvent | undefined {
+  const id = result.type === 'tool/result' ? callIdOf(result) : undefined
+  return typeof id === 'string' ? pairs(events).calls.get(id) : undefined
+}
+
+/** A tool call's result among the events, by dsh's call id: the first result of that id. `undefined` for another event, or a call with no result among them yet. */
+export function resultFor(call: SessionEvent, events: readonly SessionEvent[]): SessionEvent | undefined {
+  const id = call.type === 'tool/call' ? callIdOf(call) : undefined
+  return typeof id === 'string' ? pairs(events).results.get(id) : undefined
+}
+
 export function producerOf(event: SessionEvent): string | undefined {
   if (event.type !== 'user/message' || isPrompt(event)) return undefined
   const message = messageOf(event)

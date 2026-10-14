@@ -1,7 +1,7 @@
 import { test } from 'vite-plus/test'
 import assert from 'node:assert/strict'
 import type { Context } from '@deepseek-ai/cordis'
-import { createModel, line, list } from '../src/index.ts'
+import { createModel, line, list, toPlainText } from '../src/index.ts'
 import type { Layout, ListItem, ListPiece, ListRow } from '../src/index.ts'
 import { mount } from './support/mount.ts'
 
@@ -368,4 +368,37 @@ test('a List’s default row draws its mark, its label and its description with 
     },
   })
   assert.deepEqual(await rows(), ['* fig#0 — sweet w30', '- [x] pear#1 w30'])
+})
+
+test('an author marks every List with > in cyan with the Look list.mark, and a Line’s prompt keeps the theme’s mark', async () => {
+  const { rows, ctx } = await typedBeside(['fig', 'pear'])
+  await ctx.plugin({
+    name: 'marks',
+    inject: ['binnacle'],
+    apply: (plugin: Context) => {
+      plugin.binnacle.look<ListPiece>('list.mark', () => (_, at) => (at.marked ? plugin.binnacle.paint({ color: 'cyan' }, '>') : ' '))
+    },
+  })
+  assert.deepEqual(await rows(), ['> fig', '  pear', '›'])
+})
+
+test('an author paints the marked label again in a colour of their own, as the plain text of what beneath drew', async () => {
+  const { ctx, rows } = await fruit()
+  const drawn: string[] = []
+  await ctx.plugin({
+    name: 'colours',
+    inject: ['binnacle'],
+    apply: (plugin: Context) => {
+      plugin.binnacle.look<ListPiece>('fruit.label', (beneath) => (item, at) => {
+        const label = at.marked ? plugin.binnacle.paint({ color: 'magenta' }, toPlainText(beneath(item, at))) : beneath(item, at)
+        drawn.push(label)
+        return label
+      })
+    },
+  })
+  await rows()
+  assert.equal(
+    drawn.find((label) => label.includes('fig')),
+    ctx.binnacle.paint({ color: 'magenta' }, 'fig'),
+  )
 })

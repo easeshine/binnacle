@@ -4,7 +4,7 @@ import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { createModel, toPlainText } from '../../index.ts'
 import type { Point } from '../../index.ts'
 
-export { callOf, failed, isPrompt, noticeOf, producerOf, reasoningOf, textOf, withoutReasoning } from './readers.ts'
+export { callFor, callOf, failed, isPrompt, noticeOf, producerOf, reasoningOf, resultFor, textOf, withoutReasoning } from './readers.ts'
 export type { Call, Notice } from './readers.ts'
 
 export const name = 'binnacle-transcript'

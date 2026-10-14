@@ -4,7 +4,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import * as commands from '../../src/plugins/commands/index.ts'
 import type { CommandsState } from '../../src/plugins/commands/index.ts'
 import type { ComposerState } from '../../src/plugins/composer/index.ts'
-import { line as searchLine } from '../../src/index.ts'
+import { line as searchLine, screen } from '../../src/index.ts'
 import type { ListPiece } from '../../src/index.ts'
 import { mounted } from '../support/mounted.ts'
 
@@ -295,18 +295,36 @@ test('an author who sets commands.open to do nothing stops the offer, and a comm
   assert.deepEqual([rows.slice(0, 5), dshCommands.ran.map(({ line }) => line)], [['', '', '', '', ''], ['/plan']])
 })
 
-test('commands.close, commands.pick and commands.complete are the actions that esc, enter and tab run, and a pick or a completion closes through commands.close', async () => {
+test('commands.dismiss, commands.pick and commands.complete are the actions that esc, enter and tab run, and each closes through commands.close', async () => {
   const { ctx, typed } = await offering()
   const ran: string[] = []
   await authored(ctx, (plugin) => {
-    for (const id of ['commands.close', 'commands.pick', 'commands.complete'])
+    for (const id of ['commands.dismiss', 'commands.close', 'commands.pick', 'commands.complete'])
       plugin.binnacle.action(id, { run: (_at, beneath) => (ran.push(id), beneath()) })
   })
   await typed('/')
   await esc(typed)
   await typed('p', '\t')
   await typed('\x7f', '\x7f', '\x7f', '\x7f', '\x7f', 'g', '\r')
-  assert.deepEqual(ran, ['commands.close', 'commands.complete', 'commands.close', 'commands.pick', 'commands.close'])
+  assert.deepEqual(ran, ['commands.dismiss', 'commands.close', 'commands.complete', 'commands.close', 'commands.pick', 'commands.close'])
+})
+
+test('an author clears the draft at esc with commands.dismiss, and the offer that closes as the draft changes keeps it', async () => {
+  const { ctx, typed, draft } = await offering()
+  await authored(ctx, (plugin) => {
+    const composer = plugin.binnacle.modelOf<ComposerState>('composer')
+    plugin.binnacle.action('commands.dismiss', {
+      run: (_at, beneath) => {
+        beneath()
+        composer.set((state) => (state.text = ''))
+      },
+    })
+  })
+  await typed('/', 'p', ' ')
+  const kept = draft()
+  await typed('\x7f')
+  await esc(typed)
+  assert.deepEqual([kept, draft(), ctx.binnacle.modelOf<CommandsState>('commands').state?.open], ['/p ', '', false])
 })
 
 test('the offer is the Layout commands, COMMANDS_LAYOUT, in the Chat before the composer, which an author moves with an edit of the Chat', async () => {
@@ -321,15 +339,11 @@ test('the offer is the Layout commands, COMMANDS_LAYOUT, in the Chat before the 
   )
 })
 
-test('an author floats the offer over the transcript, framed, with COMMANDS_LAYOUT under a name of their own', async () => {
+test('an author floats the offer over the transcript, framed, with one move, and leaves no node before the composer', async () => {
   const { ctx, typed } = await offering({ rows: 10 })
   await authored(ctx, (plugin) => {
-    plugin.binnacle.layout('commands', { column: [] })
-    plugin.binnacle.layout('floating', { ...commands.COMMANDS_LAYOUT, border: true })
-    plugin.binnacle.edit('chat', {
-      replace: 'transcript',
-      with: { over: { place: 'transcript' }, float: { layout: 'floating' }, at: { side: 'center', width: 24 } },
-    })
+    plugin.binnacle.layout('commands', { ...commands.COMMANDS_LAYOUT, border: true })
+    plugin.binnacle.edit('chat', { move: 'commands', over: 'transcript', at: { side: 'center', width: 24 } })
   })
   assert.deepEqual(await typed('/', 'p', 'l'), [
     '',
@@ -388,8 +402,8 @@ test("a command that a plugin registers with dsh's register is offered and runs,
       name: 'settings',
       description: 'Show the Tones',
       handler: () => {
-        const screen = plugin.binnacle.show({ name: 'settings', layout: { place: 'settings' } })
-        plugin.binnacle.action('settings.back', { keys: ['ctrl+b'], run: () => screen.dispose() })
+        const shown = plugin.binnacle.show({ name: 'settings', layout: { place: 'settings' } })
+        plugin.binnacle.action('settings.back', { keys: ['ctrl+b'], run: () => shown.dispose() })
         return { kind: 'success' }
       },
     })
@@ -398,6 +412,34 @@ test("a command that a plugin registers with dsh's register is offered and runs,
   const shown = await typed('\r')
   const back = await typed('\x02')
   assert.deepEqual([offered, shown[0], back.slice(5)], [['› settings — Show the Tones'], 'the Tones', [RULE, ' ', RULE]])
+})
+
+test('a command shows a Screen of its own with screen, framed and titled, with the Focus in it, and esc goes back to the Chat with the Focus in the composer', async () => {
+  const { ctx, typed, draft, commands: dshCommands } = await offering({ definitions: [] })
+  await authored(ctx, (plugin) => {
+    plugin.binnacle.place('settings', { lines: () => ['the Tones'] })
+    dshCommands.service.register({
+      name: 'settings',
+      description: 'Show the Tones',
+      handler: () => {
+        screen(plugin.binnacle, { name: 'settings', title: 'Settings' })
+        return { kind: 'success' }
+      },
+    })
+  })
+  await typed('/')
+  const shown = await typed('\r')
+  const back = await esc(typed)
+  const typing = await typed('h')
+  assert.deepEqual(
+    [shown.slice(0, 3), back.slice(5), typing.slice(5), draft()],
+    [
+      ['╭─ Settings ───────────────────────────╮', '│the Tones                             │', '│                                      │'],
+      [RULE, ' ', RULE],
+      [RULE, 'h ', RULE],
+      'h',
+    ],
+  )
 })
 
 test('an author who changes what commands.list.pick does keeps its gate, so enter runs it only while the offer draws', async () => {

@@ -42,13 +42,6 @@ export type ContextLook = (context: ContextOf, at: PieceAt) => string[]
 /** The Look `transcript.notice`: the lines of a command, a retry, a compaction or a turn's end. */
 export type NoticeLook = (notice: Notice, at: PieceAt) => string[]
 
-// A text's own line breaks are kept, as making it plain takes them out with the other controls.
-const plain = (text: string): string =>
-  text
-    .split(/\r\n|\r|\n/)
-    .map(toPlainText)
-    .join('\n')
-
 const oneLine = (text: string): string => toPlainText(text.replace(/\s*[\r\n]+\s*/g, ' '))
 
 const firstLineOf = (text: string): string => text.split(/\r\n|\r|\n/).find((line) => line.trim() !== '') ?? ''
@@ -63,9 +56,10 @@ function defaults(binnacle: Binnacle) {
   const paint = (tone: Tone, text: string): string => binnacle.paint(tone, text)
   const cut = (text: string, width: number): string => truncateToWidth(text, width, binnacle.tokens.glyphs.more)
   const prompt: TextLook = (text, { width }) =>
-    wrap(plain(text), width, { first: `${binnacle.tokens.glyphs.mark} ` }).map((line) => paint('accent', line))
+    wrap(text, width, { first: `${binnacle.tokens.glyphs.mark} `, plain: true }).map((line) => paint('accent', line))
   const answer: TextLook = (text, { width }) => markdown(binnacle, text, width)
-  const reasoning: TextLook = (text, { width }) => (plain(text) === '' ? [] : wrap(plain(text), width).map((line) => paint('dim', line)))
+  const reasoning: TextLook = (text, { width }) =>
+    toPlainText(text) === '' ? [] : wrap(text, width, { plain: true }).map((line) => paint('dim', line))
   const call: CallLook = ({ name: tool, args }, { width }) => [cut(`⏺ ${oneLine(tool)}(${oneLine(args)})`, width)]
   const result: ResultLook = ({ text, failed: hasFailed }, { width }) => {
     const first = toPlainText(firstLineOf(text))

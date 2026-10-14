@@ -159,6 +159,8 @@ interface Node extends Box {
   readonly unless?: string
   /** `false`: a click or the wheel inside it does nothing, and a click there moves no Focus. */
   readonly mouse?: boolean
+  /** `false`: a click inside it does nothing, and moves no Focus. The wheel still scrolls there. */
+  readonly clicks?: boolean
   /** `false`: a click inside it reaches its Part and its Place's actions, and moves no Focus, as for a Place that a person reads. A Place that has the Focus keeps it. */
   readonly clickFocus?: boolean
 }
@@ -202,18 +204,21 @@ interface Edits {
   readonly remove?: never
   readonly replace?: never
   readonly with?: never
+  readonly over?: never
+  readonly at?: never
 }
 
 /**
  * A change to one node of a Layout, which it names by an anchor: the name in a node's `place` or `layout`.
  * `insert` adds a node beside the anchor's, `move` takes the anchor's node out of its place and puts it beside the other anchor,
- * `remove` takes the anchor's node out, and `replace` puts `with` in its place.
+ * or floats it `over` the other anchor's node, where `at` says, `remove` takes the anchor's node out, and `replace` puts `with` in its place.
  */
 export type Edit =
   | (Omit<Edits, 'insert' | 'after'> & { readonly insert: Layout; readonly after: string })
   | (Omit<Edits, 'insert' | 'before'> & { readonly insert: Layout; readonly before: string })
   | (Omit<Edits, 'move' | 'after'> & { readonly move: string; readonly after: string })
   | (Omit<Edits, 'move' | 'before'> & { readonly move: string; readonly before: string })
+  | (Omit<Edits, 'move' | 'over' | 'at'> & { readonly move: string; readonly over: string; readonly at?: Anchor })
   | (Omit<Edits, 'remove'> & { readonly remove: string })
   | (Omit<Edits, 'replace' | 'with'> & { readonly replace: string; readonly with: Layout })
 

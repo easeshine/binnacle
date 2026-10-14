@@ -3,7 +3,7 @@ import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { ToolCallView, ToolDefinition, ToolResultView } from '@deepseek-ai/dsh-tools'
 import { toPlainText, truncateToWidth, visibleWidth } from '../../index.ts'
 import type { Tone } from '../../index.ts'
-import { callOf, failed, textOf } from '../transcript/index.ts'
+import { callFor, callOf, failed, resultFor, textOf } from '../transcript/index.ts'
 import type { EventLook, Line, TranscriptState } from '../transcript/index.ts'
 import { asWritten, fields, readable } from './json.ts'
 
@@ -274,28 +274,6 @@ export function apply(ctx: Context): void {
     return folded ? [{ text, fold: region }] : [{ text, fold: region }, ...body.map((line, at) => (at === 0 ? FIRST : REST) + line)]
   }
 
-  // The events only grow until an author replaces them, so each draw indexes only the events that came since the last.
-  let indexed: readonly SessionEvent[] | undefined
-  let count = 0
-  const calls = new Map<string, SessionEvent>()
-  const results = new Map<string, SessionEvent>()
-  const index = (): void => {
-    const events = transcript.state?.events ?? []
-    if (events !== indexed || events.length < count) {
-      indexed = events
-      count = 0
-      calls.clear()
-      results.clear()
-    }
-    for (; count < events.length; count++) {
-      const event = events[count]!
-      const data = fields(event.data)
-      if (event.type === 'tool/call' && typeof data?.callId === 'string' && !calls.has(data.callId)) calls.set(data.callId, event)
-      const of = fields(data?.message)?.toolCallId
-      if (event.type === 'tool/result' && typeof of === 'string' && !results.has(of)) results.set(of, event)
-    }
-  }
-
   // A presenter is pure, so a view is kept for its event while the tool that made it is the same.
   const views = new WeakMap<SessionEvent, { readonly tool: ToolDefinition; readonly view: ToolCallView | ToolResultView | undefined }>()
   const viewOf = <V extends ToolCallView | ToolResultView>(
@@ -317,9 +295,7 @@ export function apply(ctx: Context): void {
     if (called === undefined) return undefined
     const { args, parsed } = parse(called.args)
     const tool = parsed ? safely(() => ctx.get('tools')?.get(called.name, ctx.get('binnacleSession')?.agent)) : undefined
-    const callId = fields(event.data)?.callId
-    index()
-    const answered = typeof callId === 'string' ? results.get(callId) : undefined
+    const answered = resultFor(event, transcript.state?.events ?? [])
     const data = fields(answered?.data)
     const message = fields(data?.message)
     const view =
@@ -354,8 +330,6 @@ export function apply(ctx: Context): void {
     return lines.length === 0 ? [] : [...lines, '']
   })
   binnacle.look<EventLook>('transcript.event.tool/result', (beneath) => (event, at) => {
-    const of = fields(fields(event.data)?.message)?.toolCallId
-    index()
-    return typeof of === 'string' && calls.has(of) ? [] : beneath(event, at)
+    return callFor(event, transcript.state?.events ?? []) === undefined ? beneath(event, at) : []
   })
 }

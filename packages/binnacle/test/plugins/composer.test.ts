@@ -2,7 +2,7 @@ import { test } from 'vite-plus/test'
 import assert from 'node:assert/strict'
 import type { Context } from '@deepseek-ai/cordis'
 import * as composer from '../../src/plugins/composer/index.ts'
-import type { ComposerState } from '../../src/plugins/composer/index.ts'
+import type { ComposerState, DraftRowLook } from '../../src/plugins/composer/index.ts'
 import { mounted } from '../support/mounted.ts'
 
 /** The composer alone. With no agent, as before dsh makes one, no session opens; `opens` gives the mount's fake agent, and `stored` a stored session. */
@@ -368,6 +368,40 @@ test('a draft taller than the 7 rows shown tells the rows hidden above and below
       8,
       [RULE, '↑ 3 more', 'l3', 'l4 ', 'l5', 'l6', 'l7', '↓ 2 more', RULE],
       [RULE, 'l0', 'l1', 'l2', 'l3', 'l4', 'l5', '↓ 4 more', RULE],
+    ],
+  )
+})
+
+test("the Look composer.prefix puts first before the draft's first row and rest before each other, and the draft wraps in the cells left", async () => {
+  const { ctx, typed, terminal } = await chat()
+  await authored(ctx, (plugin) => {
+    plugin.binnacle.look('composer.prefix', () => () => ({ first: '› ', rest: '· ' }))
+  })
+  const empty = await typed()
+  const rows = await typed(...'a'.repeat(19))
+  assert.deepEqual(
+    [empty, rows, (await terminal.read()).cursor],
+    [['', '', RULE, '›  ', RULE], ['', RULE, `› ${'a'.repeat(17)}`, '· aa ', RULE], { x: 4, y: 3 }],
+  )
+})
+
+test('the Look composer.row draws each row of the draft, given its index and whether it tells the rows hidden, and its default paints those in the muted Tone', async () => {
+  const { ctx, typed } = await chat(20, 12)
+  const indices: number[] = []
+  await authored(ctx, (plugin) => {
+    plugin.binnacle.look<DraftRowLook>('composer.row', (beneath) => (row, at) => {
+      if (at.more) return beneath(row, at)
+      indices.push(at.index)
+      return row.replace('l', 'L')
+    })
+  })
+  const lines = Array.from({ length: 10 }, (_, n) => `l${n}`)
+  const rows = await typed(...lines.flatMap((line) => [...line, '\x1b[13;2u']).slice(0, -1))
+  assert.deepEqual(
+    [rows.slice(3), indices.slice(-6)],
+    [
+      [RULE, '↑ 4 more', 'L4', 'L5', 'L6', 'L7', 'L8', 'L9 ', RULE],
+      [1, 2, 3, 4, 5, 6],
     ],
   )
 })

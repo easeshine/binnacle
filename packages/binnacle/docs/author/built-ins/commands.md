@@ -26,9 +26,10 @@ The Layout is `COMMANDS_LAYOUT`, from `@easeshine/binnacle/plugins/commands`, fr
   ```
 
 - The row opens the offer when the draft becomes `/` and a name, with nothing after it. It sets `query` to the name as the person types. It closes the offer when the draft stops being one. It acts only when the draft changes. So an offer closed with esc stays closed until the person types, and an offer that you open stays open until it is closed. While a command runs, the row closes the offer, and does not open it.
-- The offer opens, closes, picks and completes through four actions. Set one to change what it does, or to take it out:
+- The offer opens, closes, picks and completes through five actions. Set one to change what it does, or to take it out:
   - `commands.open`: the row runs it. It sets `open`, and a `query` of `''`.
-  - `commands.close`: esc, in `composer.input`, before the draft, while the offer draws a line. It clears `open`.
+  - `commands.dismiss`: esc, in `composer.input`, before the draft, while the offer draws a line. It runs `commands.close`. Only a person's esc runs it, so set it to act at esc alone.
+  - `commands.close`: no keys. The row runs it when the draft stops being `/` and a name, and each other action runs it to close the offer. It clears `open`.
   - `commands.pick`: enter, and a click on a command, through the List. It takes the marked command. With a `hint`, it sets the draft to `/<name> `. With none, it sets the draft to `/<name>`, and runs `composer.send`. Then it runs `commands.close`.
   - `commands.complete`: tab, as esc. It sets the draft to `/<name> ` for the marked command, then runs `commands.close`.
 
@@ -36,6 +37,18 @@ The Layout is `COMMANDS_LAYOUT`, from `@easeshine/binnacle/plugins/commands`, fr
 
   ```js
   ctx.binnacle.action('commands.open', { run: () => {} })
+  ```
+
+  This one clears the draft when the person presses esc, and keeps it when the offer closes as the person types:
+
+  ```js
+  const composer = ctx.binnacle.modelOf('composer')
+  ctx.binnacle.action('commands.dismiss', {
+    run: (_at, beneath) => {
+      beneath()
+      composer.set((state) => (state.text = ''))
+    },
+  })
   ```
 
 - The List `commands.list` takes its keys in `composer.input` with `keysIn`, so up, down, page up and page down move its mark while the person types. Its Model, `{ mark }`, and its actions, `commands.list.up` and the rest, are named apart from the model `commands` and its actions. Its mark goes back to the first command when `query` changes.
@@ -55,17 +68,26 @@ The Layout is `COMMANDS_LAYOUT`, from `@easeshine/binnacle/plugins/commands`, fr
   ctx.binnacle.edit('chat', { move: 'commands', before: 'transcript' })
   ```
 
-  To float it over the transcript, set the Layout `commands` to draw nothing, and draw `COMMANDS_LAYOUT` under a name of your own:
+  To float it over the transcript as a dialog, move it over the transcript, and frame it:
 
   ```js
   import { COMMANDS_LAYOUT } from '@easeshine/binnacle/plugins/commands'
-  ctx.binnacle.layout('commands', { column: [] })
-  ctx.binnacle.layout('offer', { ...COMMANDS_LAYOUT, border: true })
-  ctx.binnacle.edit('chat', {
-    replace: 'transcript',
-    with: { over: { place: 'transcript' }, float: { layout: 'offer' }, at: { side: 'center' } },
-  })
+  ctx.binnacle.layout('commands', { ...COMMANDS_LAYOUT, border: true })
+  ctx.binnacle.edit('chat', { move: 'commands', over: 'transcript', at: { side: 'center' } })
   ```
 
-- A command that a plugin registers with dsh's `ctx.commands.register` is offered and runs as dsh's own. Its handler can show a Screen of its own with `binnacle.show`, and the Handle's `dispose` goes back to the Chat.
+- A command that a plugin registers with dsh's `ctx.commands.register` is offered and runs as dsh's own. `register` throws when a command of that name is registered already, so you never replace one of dsh's by chance. Its handler can show a Screen of its own with `screen`, which esc leaves, back to the Chat:
+
+  ```js
+  import { screen } from '@easeshine/binnacle'
+  ctx.binnacle.place('settings', { lines: () => Object.keys(ctx.binnacle.tokens.colors) })
+  ctx.commands.register({
+    name: 'settings',
+    description: 'Show the Tones',
+    handler: () => {
+      screen(ctx.binnacle, { name: 'settings', title: 'Settings' })
+      return { kind: 'success' }
+    },
+  })
+  ```
 - On a stored session, or before the session opens, nothing is offered: there is no agent to list the commands for.

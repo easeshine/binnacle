@@ -2,7 +2,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { CommandRuntime } from '@deepseek-ai/dsh-commands'
 import { CURSOR_MARKER, Editor, createModel, visibleWidth } from '../../index.ts'
-import type { EditorTheme, Handle, Layout, Point } from '../../index.ts'
+import type { EditorTheme, Handle, Layout, Point, WrapPrefixes } from '../../index.ts'
 
 export const name = 'binnacle-composer'
 
@@ -16,6 +16,20 @@ export interface ComposerState {
 
 /** The Look `composer.empty`: the line of an empty draft, after its cursor, drawn in that many cells. */
 export type EmptyLook = (width: number) => string
+
+/** The Look `composer.prefix`: what is drawn before the draft's first row, and before each row after it. The draft wraps in the cells left beside the wider. */
+export type DraftPrefixLook = () => WrapPrefixes
+
+/** What the Look `composer.row` is given beside the row. */
+export interface DraftRowAt {
+  /** The row's index among the rows shown. */
+  readonly index: number
+  /** Whether the row tells the rows of a tall draft hidden above or below it, as `↑ 3 more`. */
+  readonly more: boolean
+}
+
+/** The Look `composer.row`: one row of the draft, as the editor drew it at the width left by the prefixes, its cursor's cell in it. */
+export type DraftRowLook = (row: string, at: DraftRowAt) => string
 
 const deepFrozen = <T extends object>(value: T): T => {
   for (const inner of Object.values(value)) if (typeof inner === 'object' && inner !== null) deepFrozen(inner)
@@ -178,18 +192,33 @@ export function apply(ctx: Context): void {
     rendered = { width, lines: lines.map((text) => text.replace(CURSOR_MARKER, '')), cursor, above, below }
     return rendered
   }
+  // The prefixes are read at each draw, as wrap reads its own: the rows after the first start under the draft by default.
+  const prefixes = () => {
+    const { first = '', rest } = binnacle.lookOf<DraftPrefixLook>(['composer.prefix'], () => ({}))()
+    const after = rest ?? ' '.repeat(visibleWidth(first))
+    return { first, rest: after, room: (width: number) => Math.max(1, width - Math.max(visibleWidth(first), visibleWidth(after))) }
+  }
+  const muted: DraftRowLook = (row, at) => (at.more ? binnacle.paint('muted', row) : row)
   placed = binnacle.place(INPUT, {
-    // The Look and the paint are outside the editor's cache, so that the lines follow the Looks and the theme when they change.
+    // The Looks and the paint are outside the editor's cache, so that the lines follow the Looks and the theme when they change.
     lines: (width) => {
+      const { first, rest, room } = prefixes()
       if (editor.getText() !== '') {
-        const { lines, above, below } = drawn(width)
+        const { lines, above, below } = drawn(room(width))
         const last = lines.length - 1
-        return lines.map((text, index) => ((above && index === 0) || (below && index === last) ? binnacle.paint('muted', text) : text))
+        const row = binnacle.lookOf<DraftRowLook>(['composer.row'], muted)
+        return lines.map(
+          (text, index) => (index === 0 ? first : rest) + row(text, { index, more: (above && index === 0) || (below && index === last) }),
+        )
       }
       const empty = binnacle.lookOf<EmptyLook>(['composer.empty'], () => '')
-      return [(editor.focused ? EMPTY_CURSOR : ' ') + empty(Math.max(0, width - 1))]
+      return [first + (editor.focused ? EMPTY_CURSOR : ' ') + empty(Math.max(0, room(width) - 1))]
     },
-    cursor: (width) => drawn(width).cursor,
+    cursor: (width) => {
+      const { first, rest, room } = prefixes()
+      const cursor = drawn(room(width)).cursor
+      return cursor && { line: cursor.line, column: cursor.column + visibleWidth(cursor.line === 0 ? first : rest) }
+    },
     focus: (has) => {
       editor.focused = has
       changed()

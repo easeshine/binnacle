@@ -1,3 +1,4 @@
+import { toPlainText } from '../core/view.ts'
 import { visibleWidth, wrapTextWithAnsi } from '../terminal/pi/utils.ts'
 
 export interface WrapPrefixes {
@@ -7,11 +8,24 @@ export interface WrapPrefixes {
   readonly rest?: string
 }
 
+export interface WrapOptions extends WrapPrefixes {
+  /** `true`: the text is Untrusted Text, made plain with its own line breaks kept. The prefixes stay as they are. */
+  readonly plain?: boolean
+}
+
+// Making a text plain takes its line breaks out with the other controls, so each line is made plain apart.
+const plainLines = (text: string): string =>
+  text
+    .split(/\r\n|\r|\n/)
+    .map(toPlainText)
+    .join('\n')
+
 /** The text's lines, wrapped at `width` with the prefixes added, as the core wraps a Part's lines: a style that spans a wrap is carried to the next line. */
-export function wrap(text: string, width: number, prefixes: WrapPrefixes = {}): string[] {
-  const first = prefixes.first ?? ''
-  const rest = prefixes.rest ?? ' '.repeat(visibleWidth(first))
+export function wrap(text: string, width: number, options: WrapOptions = {}): string[] {
+  const first = options.first ?? ''
+  const rest = options.rest ?? ' '.repeat(visibleWidth(first))
   // One width for every line, so that the text wraps once: the wider prefix sets it.
   const room = Math.max(1, width - Math.max(visibleWidth(first), visibleWidth(rest)))
-  return wrapTextWithAnsi(text, room).map((line, at) => (at === 0 ? first : rest) + line)
+  const shown = options.plain === true ? plainLines(text) : text
+  return wrapTextWithAnsi(shown, room).map((line, at) => (at === 0 ? first : rest) + line)
 }

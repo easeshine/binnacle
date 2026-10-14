@@ -88,16 +88,9 @@ export function apply(ctx: Context): void {
   const drawn = (): boolean => (binnacle.linesShown(LIST) ?? 0) > 0
   const marked = (): CommandItem | undefined => model.state.items[offer.model.state.mark]
   const setDraft = (text: string): void => composer.set((state) => (state.text = text))
-  // Esc and tab are the offer's only while it is drawn. But the row also closes an offer that draws nothing, such as one that matches no command.
-  let rowCloses = false
+  // The row also closes an offer that draws nothing, such as one that matches no command, so commands.close has no gate.
   const close = (): void => {
-    if (!model.state.open) return
-    rowCloses = true
-    try {
-      binnacle.run('commands.close')
-    } finally {
-      rowCloses = false
-    }
+    if (model.state.open) binnacle.run('commands.close')
   }
 
   binnacle.action('commands.open', {
@@ -109,12 +102,18 @@ export function apply(ctx: Context): void {
         state.query = ''
       }),
   })
-  binnacle.action('commands.close', {
+  // A person's esc is an action of its own, so an author tells it from the row's close when the draft stops being a command's name.
+  binnacle.action('commands.dismiss', {
     keys: ['escape'],
     place: INPUT,
     first: true,
-    enabled: () => rowCloses || drawn(),
+    enabled: drawn,
     description: 'Close the offer of commands, and keep the draft',
+    run: close,
+  })
+  binnacle.action('commands.close', {
+    keys: [],
+    description: 'Close the offer of commands',
     run: () => model.set((state) => (state.open = false)),
   })
   binnacle.action('commands.pick', {

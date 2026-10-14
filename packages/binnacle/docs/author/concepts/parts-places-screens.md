@@ -22,6 +22,13 @@ A Screen is a Layout that fills the terminal. The Chat is the first Screen, by t
 
 - `binnacle.show(screen)` shows a Screen: `{ name, layout, focus }`. Only the newest Screen shown is drawn. `focus` names the Place where the Focus starts. Dispose its Handle to show the Screen beneath it again.
 - `binnacle.layout(name, layout)` replaces a Screen's Layout by its name, as [Layouts](layouts.md) says.
+- `screen(binnacle, { name, title })` shows a Screen of one Place, `name`, in a box of the theme's edge, with `title` in its top edge, and the Focus in it. Esc runs its action `<name>.back`, of the kind `screen.back`, which goes back to the Screen beneath. It returns a Handle, whose `dispose` goes back too. Fill the Place as any other, such as with a List by that name. This shows a Screen of settings:
+
+  ```js
+  import { screen } from '@easeshine/binnacle'
+  ctx.binnacle.place('settings', { lines: () => Object.keys(ctx.binnacle.tokens.colors) })
+  screen(ctx.binnacle, { name: 'settings', title: 'Settings' })
+  ```
 
 ## Text
 
@@ -33,14 +40,14 @@ import { toPlainText, truncateToWidth, visibleWidth } from '@easeshine/binnacle'
 const lineOf = (untrusted, width) => truncateToWidth(toPlainText(untrusted), width, '…')
 ```
 
-- `toPlainText(text)` takes every control sequence out of the text.
+- `toPlainText(text)` takes every control sequence out of the text, its line breaks too. To keep the line breaks, wrap it with `plain: true`.
 - `visibleWidth(text)` is the cells that the text takes in the terminal, with its colour and style not counted.
 - `truncateToWidth(text, width, ellipsis)` cuts the text to that many cells, and ends it with `ellipsis` where it is cut, `...` if you give none.
-- `wrap(text, width, { first, rest })` wraps the text at that many cells, with `first` before its first line and `rest` before each line after it. With no `rest`, the lines after the first start under the text. A style that spans a wrap is carried to the next line. An empty text gives `first` alone. A prefix wider than the width draws as wide as it is, and the text gets one cell a line. This wraps a prompt with a `> ` before each line:
+- `wrap(text, width, { first, rest, plain })` wraps the text at that many cells, with `first` before its first line and `rest` before each line after it. With no `rest`, the lines after the first start under the text. With `plain: true`, the text is made plain first, and its own line breaks stay: give it Untrusted Text as it came. The prefixes are not made plain. A style that spans a wrap is carried to the next line. An empty text gives `first` alone. A prefix wider than the width draws as wide as it is, and the text gets one cell a line. Its options' type is `WrapOptions`. This wraps a prompt with a `> ` before each line:
 
   ```js
-  import { toPlainText, wrap } from '@easeshine/binnacle'
-  const lines = wrap(toPlainText(untrusted), width, { first: '> ', rest: '> ' })
+  import { wrap } from '@easeshine/binnacle'
+  const lines = wrap(untrusted, width, { first: '> ', rest: '> ', plain: true })
   ```
 
 - `markdown(binnacle, text, width)` gives the lines of a markdown text, wrapped at that many cells. It makes the text plain itself, so give it the text as it came. The transcript's view draws each answer with it. It draws headings, bold, italic, inline code, code blocks, lists, quotes, links and rules. Any other token, such as a table, raw HTML, a strikethrough or an image, draws as its source text. An empty text gives no line. Blocks are joined by one blank line, and the items of a list by none.

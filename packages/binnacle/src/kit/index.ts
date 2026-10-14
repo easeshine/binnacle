@@ -16,8 +16,11 @@ export { tabs } from './tabs.ts'
 export type { TabAt, TabLook, TabsOptions } from './tabs.ts'
 export { frame, rule } from './frame.ts'
 export type { FrameOptions, Framed } from './frame.ts'
+export { indented } from './indented.ts'
+export { screen } from './screen.ts'
+export type { ScreenOptions } from './screen.ts'
 export { wrap } from './wrap.ts'
-export type { WrapPrefixes } from './wrap.ts'
+export type { WrapOptions, WrapPrefixes } from './wrap.ts'
 export { markdown } from './markdown.ts'
 export type {
   MarkdownAt,

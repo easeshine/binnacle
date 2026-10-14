@@ -48,4 +48,19 @@ const picker = list(ctx.binnacle, {
   | `<name>.label`, then `list.label` | the label as plain text, in `accent` when marked |
   | `<name>.description`, then `list.description` | ` — ` and the description as plain text, in `muted`, or `''` with none |
 
+- A piece of `list.<piece>` changes every List, and nothing else. The theme's `mark` glyph and `accent` Tone change the Line's prompt, the Tabs and the Titles too. This marks every List with `>` in cyan:
+
+  ```js
+  ctx.binnacle.look('list.mark', () => (_, at) => (at.marked ? ctx.binnacle.paint({ color: 'cyan' }, '>') : ' '))
+  ```
+
+- `beneath` gives its text painted already, and a colour painted around it does not change the colours inside it. To paint it in a colour of your own, make it plain first with `toPlainText`. This draws the marked Choice of a Request in magenta:
+
+  ```js
+  import { toPlainText } from '@easeshine/binnacle'
+  ctx.binnacle.look('request.choices.label', (beneath) => (item, at) =>
+    at.marked ? ctx.binnacle.paint({ color: 'magenta' }, toPlainText(beneath(item, at))) : beneath(item, at),
+  )
+  ```
+
 - The box draws a box's frame in `border`, and what a checked box holds in `success`. A box glyph that is not framed in brackets draws whole, in `success` when checked and in `border` when not.

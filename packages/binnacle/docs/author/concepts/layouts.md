@@ -16,6 +16,7 @@ Every node can also take:
 - `size`: `'fill'`, a share of what is left (in a column, a node that fills takes no more than its lines need while another that fills needs more, and what is left after is shared evenly); `'content'`, the cells its lines need; `{ fixed: n }`, in cells, its box included; or `{ most: n }`, the cells its lines need, up to `n`, its box included. A Place taller than a node of `{ most: n }` scrolls in it, as a Place does, so a List keeps its mark in view. A node with no size fills in a Screen's own Layout, and takes what its lines need in a Layout set by name.
 - `unless: name`: it draws nothing, and takes no cells, while the Layout or the Place by that name has a line to draw.
 - `mouse: false`: a click or the wheel inside it does nothing, and a click there moves no Focus.
+- `clicks: false`: a click inside it does nothing, and moves no Focus. The wheel still scrolls there. This turns off clicks in a Request, and keeps the wheel on its body: `binnacle.edit('chat', { replace: 'request', with: { layout: 'request', size: 'content', clicks: false } })`.
 - `clickFocus: false`: a click inside it reaches its Part and its Place's actions, and moves no Focus, as for a Place that a person reads. A Place that has the Focus keeps it, and shift+tab still moves the Focus there. The Chat sets it on the transcript, so a click there leaves the keys in the composer. `binnacle.edit('chat', { replace: 'transcript', with: { place: 'transcript', size: 'fill' } })` gives the transcript its click Focus back.
 - A box: `padding` and `gap` in cells, a `border` on every side (`true`) or on the sides it names, the `edge` its border is drawn with, and a `title` set in its top edge.
 
@@ -71,6 +72,7 @@ ctx.binnacle.layout('menu', { column: [{ place: 'menu.title' }, { place: 'menu.i
 |---|---|
 | `{ insert: node, after: 'x' }`, `{ insert: node, before: 'x' }` | adds `node` beside the anchor's node |
 | `{ move: 'y', after: 'x' }`, `{ move: 'y', before: 'x' }` | takes the node of `y`, as it stands with its box, out of its place, and puts it beside the node of `x` |
+| `{ move: 'y', over: 'x', at }` | takes the node of `y` out of its place, and floats it over the node of `x`, where `at` says, as a float node does |
 | `{ remove: 'x' }` | takes the anchor's node out |
 | `{ replace: 'x', with: node }` | puts `node` in the anchor's node's place |
 
@@ -80,9 +82,16 @@ So one edit moves the composer above the transcript, and its `size` and `unless:
 ctx.binnacle.edit('chat', { move: 'composer', before: 'transcript' })
 ```
 
+And one edit draws the offer of commands as a dialog over the transcript, and leaves nothing before the composer:
+
+```js
+ctx.binnacle.edit('chat', { move: 'commands', over: 'transcript', at: { side: 'center' } })
+```
+
 - An edit applies each time the Layout is drawn, to the newest Layout by that name, whoever set it. While its anchor is not there, it does nothing, and it applies again when the anchor comes back.
 - It looks for its anchor through rows, columns, `first`, `over` and `float`, children in order and `over` before `float`, and takes the first node it finds. It does not look inside a named Layout that the Layout draws: edit that one by its own name.
-- An insert or a move needs a row, a column or a `first` around its anchor. Beside the root, `over` or `float`, it does nothing. A removed root draws nothing.
+- An insert, or a move beside a node, needs a row, a column or a `first` around its anchor. Beside the root, `over` or `float`, it does nothing. A removed root draws nothing.
+- A move `over` a node needs no row around it. It puts a float node in the node's place, with the node's `size` and `unless`, so the floated node goes when that node is hidden. Two moves over one node float each over the one before. The float goes with the node when another move moves it, and goes when a remove takes the node out.
 - A move finds both its anchors as an insert does. While either is not there, it does nothing. What an insert put beside the moved node stays in the old place.
 - Inserts apply first, then moves, then replaces, then removes. A replace or a remove acts on its anchor's node in the Layout as set, where a move put it, so it never acts on a node that an insert added. An insert beside a node that another plugin removes stays, and a remove after a replace takes out what the replace put there. An insert can find its anchor in a node that another insert added.
 - Within each kind, a built-in's edits apply before yours, then the edits go by the `name` of the plugin that made each, a plugin with no name first. Of two replaces of one node, the one applied last holds. So the order never depends on which plugin loads first.

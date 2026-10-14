@@ -1,4 +1,4 @@
-import type { Edit, Layout } from '../api.ts'
+import type { Anchor, Edit, Layout } from '../api.ts'
 import type { Held } from './service.ts'
 
 /** An edit, and the name of the plugin that made it, which ranks it. */
@@ -23,6 +23,8 @@ interface Slot {
   stands?: Layout | null
   /** The Slot that a move drew it in, elsewhere. What was inserted beside it stays in its old place. */
   moved?: Slot
+  /** The nodes that moves float over it, in the order of edits, each over the ones before. A move of the node takes them with it. */
+  readonly floats: { readonly slot: Slot; readonly at: Anchor | undefined }[]
 }
 
 const NOTHING: Layout = { column: [] }
@@ -46,7 +48,15 @@ const ranked = (a: Held<Made>, b: Held<Made>): number =>
 function slotOf(node: Layout, rank = -1, listed = false): Slot {
   const list = node.row ?? node.column ?? node.first
   const children = list ?? (node.over === undefined ? [] : [node.over, node.float])
-  return { node, rank, children: children.map((child) => slotOf(child, -1, list !== undefined)), before: [], after: [], listed }
+  return {
+    node,
+    rank,
+    children: children.map((child) => slotOf(child, -1, list !== undefined)),
+    before: [],
+    after: [],
+    listed,
+    floats: [],
+  }
 }
 
 const where = (slot: Slot): Slot => (slot.moved === undefined ? slot : where(slot.moved))
@@ -73,8 +83,23 @@ function put(found: Slot, slot: Slot, after: boolean): void {
   side.splice(side.findLastIndex((other) => other.rank < slot.rank) + 1, 0, slot)
 }
 
+// The float node stands where the node it covers stood, so it takes that node's size and its unless.
 function built(slot: Slot): Layout | undefined {
   if (slot.moved !== undefined) return undefined
+  return slot.floats.reduce<Layout | undefined>(
+    (over, { slot: floated, at }) =>
+      over && {
+        ...(over.size !== undefined && { size: over.size }),
+        ...(over.unless !== undefined && { unless: over.unless }),
+        over,
+        float: built(floated) ?? NOTHING,
+        ...(at !== undefined && { at }),
+      },
+    standing(slot),
+  )
+}
+
+function standing(slot: Slot): Layout | undefined {
   if (slot.stands !== undefined) return slot.stands ?? undefined
   const { node, children } = slot
   const listed = (): Layout[] => children.flatMap(beside).flatMap((each) => built(each) ?? [])
@@ -115,10 +140,19 @@ export function edited(layout: Layout, edits: readonly Held<Made>[]): Layout {
   for (const [rank, edit] of sorted.entries()) {
     if (edit.move === undefined) continue
     const node = find(root, edit.move) ?? findIn(added, edit.move)
-    const anchor = (edit.after ?? edit.before)!
+    const anchor = (edit.after ?? edit.before ?? edit.over)!
     const found = find(root, anchor) ?? findIn(added, anchor)
-    if (node === undefined || found === undefined || found === node || !found.listed) continue
+    if (node === undefined || found === undefined || found === node) continue
+    if (edit.over !== undefined) {
+      const slot = slotOf(node.node, rank)
+      slot.floats.push(...node.floats)
+      node.moved = slot
+      found.floats.push({ slot, at: edit.at })
+      continue
+    }
+    if (!found.listed) continue
     const slot = slotOf(node.node, rank, true)
+    slot.floats.push(...node.floats)
     node.moved = slot
     put(found, slot, edit.after !== undefined)
   }
