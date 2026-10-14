@@ -83,6 +83,17 @@ test('the packed bin is the `binnacle` command, which says its version with no d
   assert.equal(said, `binnacle ${manifest.version}\n`)
 })
 
+test("every peer of the packed package is optional, so npm installs none of dsh's packages with the command: dsh supplies them", () => {
+  const manifest = JSON.parse(read('package.json')) as {
+    peerDependencies: Record<string, string>
+    peerDependenciesMeta: Record<string, { optional?: boolean }>
+  }
+  assert.deepEqual(
+    Object.keys(manifest.peerDependencies).filter((name) => manifest.peerDependenciesMeta[name]?.optional !== true),
+    [],
+  )
+})
+
 test("the packed export map gives what the Kit keeps, the composer's editor, and not pi-tui's Input", async () => {
   const exports = JSON.parse(read('package.json')).exports as Record<string, string>
   const index = await import(pathToFileURL(join(unpacked, exports['.']!)).href)

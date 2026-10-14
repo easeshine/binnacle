@@ -1,0 +1,23 @@
+name: Bug
+description: binnacle does something that its docs say it does not, or stops with no message.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you saw, and what you expected to see.
+    validations:
+      required: true
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions
+      description: The output of `binnacle --version` and `dsh --version`, and your terminal and OS.
+    validations:
+      required: true
+  - type: textarea
+    id: more
+    attributes:
+      label: More
+      description: A screenshot, the lines of the screen, or your profile's `cordis.patch.yml` when it matters.

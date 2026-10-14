@@ -1,0 +1,41 @@
+name: dsh
+
+# Each day, binnacle is tried on the newest dsh. When its checks pass there, a pull request widens binnacle's range of dsh to it.
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  widen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: voidzero-dev/setup-vp@v1.21.2
+        with:
+          node-version-file: .nvmrc
+          cache: true
+      - id: dsh
+        run: node scripts/dsh-widen.mjs
+      - if: steps.dsh.outputs.version != ''
+        run: vp install --no-frozen-lockfile
+      - if: steps.dsh.outputs.version != ''
+        run: vp run ready
+      - if: steps.dsh.outputs.version != ''
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: dsh/widen
+          title: 'chore: binnacle runs on dsh ${{ steps.dsh.outputs.version }}'
+          commit-message: 'chore: binnacle runs on dsh ${{ steps.dsh.outputs.version }}'
+          body: |
+            dsh ${{ steps.dsh.outputs.version }} is out, and `vp run ready` passes on it.
+
+            - binnacle's tests run on it: the dsh packages in `devDependencies`, and the cordis packages that it takes.
+            - binnacle's peers on dsh and cordis widen to it, so the `binnacle` command and dsh accept it.
+            - The dsh Reference moves to its tag.
+
+            Before you merge, run binnacle on it: `npm install -g @deepseek-ai/dsh@${{ steps.dsh.outputs.version }}`, then `node packages/binnacle/dist/cli.mjs` from this branch.

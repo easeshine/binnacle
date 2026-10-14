@@ -1,0 +1,16 @@
+name: Gap
+description: An author had to read binnacle's source to make a change, or to know what it would do.
+labels: [gap]
+body:
+  - type: textarea
+    id: change
+    attributes:
+      label: The change
+      description: What the author wanted to change, and what they had to read or copy to do it.
+    validations:
+      required: true
+  - type: textarea
+    id: missing
+    attributes:
+      label: What was missing
+      description: The name, the page or the piece of the API that would have made it a change of what binnacle exports.

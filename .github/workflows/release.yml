@@ -1,0 +1,31 @@
+name: release
+
+# On main, changesets opens the version pull request. Once it is merged, the release is published to npm by trusted publishing, and a GitHub release is made.
+# Nothing is published until the repository variable NPM_PUBLISH is 'true'.
+on:
+  push:
+    branches: [main]
+
+concurrency: release
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: voidzero-dev/setup-vp@v1.21.2
+        with:
+          node-version-file: .nvmrc
+          cache: true
+      - uses: changesets/action@v1
+        with:
+          version: pnpm changeset version
+          publish: ${{ vars.NPM_PUBLISH == 'true' && 'pnpm changeset publish' || '' }}
+          title: 'chore: release'
+          commit: 'chore: release'
+          createGithubReleases: true

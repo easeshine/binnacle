@@ -60,7 +60,7 @@
     "get-east-asian-width": "1.6.0",
     "marked": "18.0.11",
     "@xterm/headless": "5.5.0",
-    "semver": "7.8.5"
+    "semver": "catalog:"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "4.0.5-alpha.1",
@@ -76,6 +76,47 @@
     "@deepseek-ai/dsh-tool-ask-user": "0.2.1-alpha.1",
     "@deepseek-ai/dsh-user-questions": "0.2.1-alpha.1",
     "@deepseek-ai/cordis-plugin-loader": "1.0.6-alpha.1"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-agent": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-cmdline": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-commands": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-llm": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-session": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-session-persistence": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-tools": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-scope": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-user-approval": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-tool-ask-user": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-user-questions": {
+      "optional": true
+    },
+    "@deepseek-ai/cordis-plugin-loader": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.5-alpha.1",
