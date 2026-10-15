@@ -4,7 +4,7 @@ import { spawn as spawnProcess } from 'node:child_process'
 import { closeSync, existsSync, linkSync, openSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { printCommand } from '../../agents.mjs'
+import { printCommand } from '../../../../roles.mjs'
 import { locked } from '../lock.mjs'
 import { alive, appendEvent, writeJson } from '../state.mjs'
 

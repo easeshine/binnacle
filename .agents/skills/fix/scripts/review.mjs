@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readdirSync, symlinkSync, writeFileSync } from '
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { builderOf, familyOf, loadRoles, parseRole, pickReviewer, roleText, runHeadless } from './agents.mjs'
+import { builderOf, familyOf, loadRoles, parseRole, pickReviewer, roleText, runHeadless } from '../../../roles.mjs'
 
 // A fix is small: a third Round means it is not, and it moves to the workflow.
 export const ROUNDS = 2

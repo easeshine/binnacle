@@ -158,9 +158,9 @@ export default defineConfig({
       typeCheck: true,
     },
   },
-  // The root's own tests: the tools and the scripts. Each package runs its own.
+  // The root's own tests: the tools, the scripts, and the skills' scripts. Each package runs its own.
   test: {
-    include: ['scripts/**/*.test.mjs', 'tools/**/*.test.mjs'],
+    include: ['scripts/**/*.test.mjs', 'tools/**/*.test.mjs', '.agents/**/*.test.mjs'],
   },
   run: {
     cache: true,

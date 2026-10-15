@@ -1,4 +1,4 @@
-import { roleText } from '../agents.mjs'
+import { roleText } from '../../../roles.mjs'
 
 function order(name) {
   const [, round, pass] = name.match(/^review-(\d+)(?:-(\d+))?\.md$/)

@@ -1,6 +1,6 @@
 import { test } from 'vite-plus/test'
 import assert from 'node:assert/strict'
-import { parseRole } from './agents.mjs'
+import { parseRole } from '../../../roles.mjs'
 import { chooseReviewer, nextRound, parseArgs, reviewedBy, reviewPrompt, sourceOf, verdictOf } from './review.mjs'
 
 test('a review needs the builder to name itself', () => {

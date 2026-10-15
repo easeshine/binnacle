@@ -72,7 +72,7 @@ test('`task watch` reports an agent sooner, after 5 minutes, when a process unde
   world.deps.processes = async () => [
     { pid: 100, ppid: 1, command: '-zsh', cpuSeconds: 1 },
     { pid: 150, ppid: 100, command: 'pi', cpuSeconds: 20 },
-    { pid: 200, ppid: 150, command: 'node --test scripts/task/watch.test.mjs', cpuSeconds: cpu },
+    { pid: 200, ppid: 150, command: 'node --test watch.test.mjs', cpuSeconds: cpu },
     { pid: 300, ppid: 1, command: 'node --test elsewhere', cpuSeconds: cpu * 2 },
   ]
   const result = await run(
@@ -81,7 +81,7 @@ test('`task watch` reports an agent sooner, after 5 minutes, when a process unde
   )
   assert.equal(
     result.stdout,
-    'cards/1 implementer stalled: no session record for 5 min; busy 200 node --test scripts/task/watch.test.mjs, cpu 4:50 in 5 min\n',
+    'cards/1 implementer stalled: no session record for 5 min; busy 200 node --test watch.test.mjs, cpu 4:50 in 5 min\n',
   )
 })
 

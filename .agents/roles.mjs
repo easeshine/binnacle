@@ -177,7 +177,7 @@ const newest = (files) => files.reduce((last, file) => Math.max(last, statSync(f
 // When the agent's tool last wrote its session: the watch reads a long silence as a stall.
 export function sessionWritten(agent, userHome) {
   if (agent.tool === 'pi') {
-    if (!existsSync(agent.sessionDir)) return undefined
+    if (agent.sessionDir === undefined || !existsSync(agent.sessionDir)) return undefined
     return newest(
       readdirSync(agent.sessionDir)
         .filter((name) => name.endsWith('.jsonl'))

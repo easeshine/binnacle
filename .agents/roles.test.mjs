@@ -14,7 +14,7 @@ import {
   printCommand,
   roleText,
   sessionUuid,
-} from './agents.mjs'
+} from './roles.mjs'
 
 const FAMILIES = { zai: 'zai', 'openai-codex': 'openai', anthropic: 'anthropic' }
 

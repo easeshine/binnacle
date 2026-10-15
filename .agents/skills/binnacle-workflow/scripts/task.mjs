@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, w
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { familiesSetUp, familyOf, loadRoles, parseRole, roleText } from '../agents.mjs'
+import { familiesSetUp, familyOf, loadRoles, parseRole, roleText } from '../../../roles.mjs'
 import { handoffFor } from './handoffs.mjs'
 import { marker, messageOf, prBody, reportComment, reportsOf, withTrailers } from './land.mjs'
 import { locked } from './lock.mjs'
@@ -845,7 +845,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const home = process.env.BINNACLE_HOME ?? join(homedir(), '.binnacle')
   const deps = {
     home,
-    repo: join(dirname(fileURLToPath(import.meta.url)), '..', '..'),
+    repo: join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..'),
     env: process.env,
     userHome: homedir(),
     now: () => new Date(),

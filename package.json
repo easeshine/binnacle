@@ -9,8 +9,8 @@
     "test": "vp test",
     "refs": "node scripts/refs.mjs",
     "prepare": "vp config && vp run docs#content",
-    "review": "node scripts/review.mjs",
-    "task": "node scripts/task/task.mjs"
+    "review": "node .agents/skills/fix/scripts/review.mjs",
+    "task": "node .agents/skills/binnacle-workflow/scripts/task.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",

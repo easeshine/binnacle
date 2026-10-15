@@ -1,5 +1,5 @@
 // herdr answers each command with JSON: { result } or { error: { code, message } }.
-import { paneArgs } from '../../agents.mjs'
+import { paneArgs } from '../../../../roles.mjs'
 
 const RETRY = ['agent_prompt_stalled', 'timeout']
 

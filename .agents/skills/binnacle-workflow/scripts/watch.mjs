@@ -1,6 +1,6 @@
 import { existsSync, linkSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { sessionWritten } from '../agents.mjs'
+import { sessionWritten } from '../../../roles.mjs'
 import { alive, appendEvent, readAgents, readEvents, readTasks, standalone, writeJson } from './state.mjs'
 
 export const QUIET = 20 * 60_000
