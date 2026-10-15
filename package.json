@@ -8,7 +8,8 @@
     "dev": "vp run docs#dev",
     "test": "vp test",
     "refs": "node scripts/refs.mjs",
-    "prepare": "vp config && vp run docs#content"
+    "prepare": "vp config && vp run docs#content",
+    "review": "node scripts/review.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",

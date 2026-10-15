@@ -1,0 +1,12 @@
+{
+  "implementer": "herdr:pi:zai/glm-5.3@max",
+  "reviewer": "headless:pi:openai-codex/gpt-6.1-sol@medium",
+  "families": {
+    "anthropic": "anthropic",
+    "openai-codex": "openai",
+    "openai": "openai",
+    "zai": "zai",
+    "google": "google",
+    "google-gemini-cli": "google"
+  }
+}
