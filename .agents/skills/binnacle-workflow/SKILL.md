@@ -1,0 +1,95 @@
+---
+name: binnacle-workflow
+description: The Lead's flow for a large change, from an Intent to a Spec with Parts, each built and reviewed blind by agents that the Task tool starts, to the Maintainer's try.
+disable-model-invocation: true
+---
+
+# The binnacle workflow
+
+You are the **Lead**. You turn what the Maintainer wants into a Spec, start each Task, answer its questions, and check what comes back. You hold at most three things in flight, such as one build, one review and one fix.
+
+The Maintainer grills with you, approves each Intent, agrees each Spec, tries what is merged, and merges each PR. You decide the rest: the Spec's design and its Parts, each role, and each answer to a finding.
+
+A small change is not for this flow: one issue, no new decision, nothing that an author imports, and two source files at most goes to the `fix` skill.
+
+The Task tool's folders, states and commands are in [`task.md`](task.md). Read it before your first command.
+
+## From Intent to Spec
+
+1. Grill the Maintainer about the feature with the `grill` skill, until both of you agree on what is wanted.
+2. Write `intents/<slug>/intent.md` in the Maintainer's words: the title, the metadata, Problem, Proposed outcome, Affected users and systems, Constraints, and Open questions. It holds no design.
+3. Change the Intent until the Maintainer approves it. Each open question is answered by an edit to the Intent.
+4. Write `intents/<slug>/spec.md`, as [`writing-a-spec.md`](writing-a-spec.md) says.
+5. Run `pnpm task start <slug>`, with the Reviewer of *Roles* below. It sends the Reviewer Round 0.
+6. Run `pnpm task watch` in the background. When it exits, act on its line, then run it again.
+7. For each pass with findings, edit the Spec, and write `reply.md` in the Spec's Task folder: your answer to each finding. Then run `pnpm task set <slug> spec`.
+8. Answer each finding against the Intent as it was approved. Where the Intent cannot hold as written, decide, and write the decision under **Decisions**. If the findings come from the Intent, grill the Maintainer again.
+9. When Round 0 is `approved`, show the Maintainer the Spec and its Parts. Ask: is each Part the right size, and is each order real?
+10. If the Maintainer changes the Spec, edit it, and send it for another pass.
+11. Merge the Spec with its Intent, with the Status `agreed`, in a PR of its own: `docs: the Spec of <feature>`. A Part is built only from a Spec that `origin/main` holds.
+
+## Each Part
+
+1. For each Part whose earlier Parts are merged, run `pnpm task build <slug>/<k>`, with the builder of *Roles* below.
+2. If a command exits 3, or the watch says that a Hand-off failed or was not sent, run `pnpm task resend <task>`.
+3. If the watch reports a stall, read the pane or the busy process first. Decide what to do: the tool stops no agent.
+4. If the watch prints a prompt for a subagent, start the subagent with it, in the background. For each later prompt to that role of that Task, continue the same subagent.
+5. If a subagent Reviewer gives its report as its final message, write it to the file that its prompt names, then set its state with `--as reviewer`.
+6. Read each review report in full.
+7. After the third Round with findings, choose one narrow Round more, or stop and ask the Maintainer.
+8. If the Part changes what binnacle draws or boots, try its branch, as *A try* says, and write what you drove and what it drew in `checked.md`.
+9. Run `pnpm task land <slug>/<k>` to open the PR.
+10. If `task land` says that the branch does not hold `origin/main`, send the Part back to its builder to rebase. Rebase it yourself only when you built it.
+11. After the PR merges or closes, run `pnpm task stop <slug>/<k>`.
+12. After the last Part merges, set the Spec's Status to `built` in a PR, and hand the Maintainer the try, as *The Maintainer's try* says.
+13. When the try's fixes and ADRs merge, run `pnpm task stop <slug>`.
+
+## Roles
+
+The Maintainer names the role of each agent at the start of a session, or before a builder starts. For example: "a Claude subagent builds, pi on gpt-6.1-sol reviews". With no name, take the roles in `.agents/roles.json` and `~/.binnacle/roles.json` without asking.
+
+| The Maintainer names | Pass |
+|---|---|
+| you, as the builder | `task build <slug>/<k> --by lead` |
+| a subagent | `--by subagent:<model>`, or `--reviewer subagent:<model>` |
+| an agent in a pane | `--by herdr:<tool>:<model>`, such as `herdr:pi:zai/glm-5.3@max` |
+| an agent with no pane | `--by headless:<tool>:<model>`, such as `headless:codex:gpt-6.1-sol@high` |
+
+- The builder and the Reviewer are of different families when two are set up. The tool refuses one family for both, unless the Maintainer asks for `--same-family`.
+- A person with one agent sets one default role, such as `{ "default": "subagent:sonnet", "lead": "claude:opus" }`. The tool then takes one family for both roles, and the PR says so.
+- The review is blind. Give the Reviewer only the prompts that the tool prints. Never name the builder to the Reviewer.
+
+## A try
+
+1. In the Part's worktree, run `vp install`, then `vp run @easeshine/binnacle#build`.
+2. Run `node packages/binnacle/dist/cli.mjs` there once. It links that checkout into the `binnacle` dsh profile.
+3. Drive dsh in a herdr pane, as the `author-trial` skill's `driving.md` says.
+4. When you are done, run `node packages/binnacle/dist/cli.mjs` in the main checkout. It links the profile back.
+
+## Doors
+
+A PR is **one-way** if it does one of these things:
+
+- changes what an author may import;
+- changes the dsh services or packages that binnacle names;
+- moves a pin;
+- changes a format that a person keeps, such as a theme or the profile;
+- changes a release workflow;
+- changes this list.
+
+Every other PR is **two-way**. If the Spec and the Part give different Doors, the Door is one-way.
+
+## The Maintainer's try
+
+1. Pull `main`, and run `node packages/binnacle/dist/cli.mjs` once, so that the `binnacle` profile runs what merged.
+2. Tell the Maintainer what to try: `binnacle`, then each Journey of the Spec, and what each one should draw.
+3. List the candidate ADRs: each decision of the Spec that binds more than one change, in one line each.
+4. File each problem that the Maintainer finds as an issue, for the `fix` skill. If one is too large for a fix, or the Intent was wrong, grill again.
+5. Write each ADR that the Maintainer picks, in a PR of its own.
+
+## Before you end a session
+
+- Each Task in flight has its state in the Task tool: `pnpm task status` shows each one.
+- Each subagent in flight has ended its turn, and its Task is in a state that the tool holds.
+- Each try that you handed the Maintainer has its answer: its issues filed, and its ADRs written.
+- If the Maintainer asks for it, the `handoff` skill writes what the next Lead needs.

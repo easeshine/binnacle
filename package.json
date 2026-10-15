@@ -9,7 +9,8 @@
     "test": "vp test",
     "refs": "node scripts/refs.mjs",
     "prepare": "vp config && vp run docs#content",
-    "review": "node scripts/review.mjs"
+    "review": "node scripts/review.mjs",
+    "task": "node scripts/task/task.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",

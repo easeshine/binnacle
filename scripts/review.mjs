@@ -89,7 +89,7 @@ async function main() {
   else git('worktree', 'add', '-q', '--detach', checkout, tip)
   if (existsSync(join(common, '.refs')) && !existsSync(join(checkout, '.refs'))) symlinkSync(join(common, '.refs'), join(checkout, '.refs'))
 
-  const config = loadRoles({ root, home: homedir() })
+  const config = loadRoles({ root, binnacle: join(homedir(), '.binnacle') })
   const pick = chooseReviewer(config, builderOf(options.as), options.reviewer)
   const role = pick.role.runner === 'herdr' ? { ...pick.role, runner: 'headless' } : pick.role
   const earlier = readdirSync(dir)

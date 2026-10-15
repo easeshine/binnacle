@@ -3,7 +3,18 @@ import assert from 'node:assert/strict'
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { builderOf, familyOf, headlessCommand, loadRoles, parseRole, pickReviewer, roleText } from './agents.mjs'
+import {
+  builderOf,
+  familiesSetUp,
+  familyOf,
+  loadRoles,
+  paneArgs,
+  parseRole,
+  pickReviewer,
+  printCommand,
+  roleText,
+  sessionUuid,
+} from './agents.mjs'
 
 const FAMILIES = { zai: 'zai', 'openai-codex': 'openai', anthropic: 'anthropic' }
 
@@ -63,18 +74,18 @@ test("a person's own default replaces each role that it does not name", () => {
     JSON.stringify({ implementer: 'herdr:pi:zai/glm-5.3', reviewer: 'headless:pi:openai-codex/x' }),
   )
   writeFileSync(join(home, '.binnacle', 'roles.json'), JSON.stringify({ default: 'subagent:sonnet', reviewer: 'headless:claude:opus' }))
-  assert.deepEqual(loadRoles({ root, home }).roles, {
+  assert.deepEqual(loadRoles({ root, binnacle: join(home, '.binnacle') }).roles, {
     implementer: parseRole('subagent:sonnet'),
     reviewer: parseRole('headless:claude:opus'),
   })
 })
 
 test('each tool runs headless with its model and its thinking, and the prompt last', () => {
-  assert.deepEqual(headlessCommand(parseRole('headless:pi:zai/glm-5.3@max'), 'go'), {
+  assert.deepEqual(printCommand(parseRole('headless:pi:zai/glm-5.3@max'), 'go'), {
     file: 'pi',
     args: ['-p', '--model', 'zai/glm-5.3', '--thinking', 'max', 'go'],
   })
-  assert.deepEqual(headlessCommand(parseRole('headless:claude:sonnet@high'), 'go').args, [
+  assert.deepEqual(printCommand(parseRole('headless:claude:sonnet@high'), 'go').args, [
     '-p',
     '--model',
     'sonnet',
@@ -84,7 +95,7 @@ test('each tool runs headless with its model and its thinking, and the prompt la
     'bypassPermissions',
     'go',
   ])
-  assert.deepEqual(headlessCommand(parseRole('headless:codex:gpt-6.1-sol@medium'), 'go').args, [
+  assert.deepEqual(printCommand(parseRole('headless:codex:gpt-6.1-sol@medium'), 'go').args, [
     'exec',
     '-m',
     'gpt-6.1-sol',
@@ -93,4 +104,39 @@ test('each tool runs headless with its model and its thinking, and the prompt la
     '--dangerously-bypass-approvals-and-sandbox',
     'go',
   ])
+})
+
+const agent = (tool, model, resume) => ({ tool, model, session: 'cards-2-implementer', sessionDir: '/s', resume })
+
+test('a headless session continues: pi by its name, claude by its UUID, codex by the newest in its checkout', () => {
+  assert.deepEqual(printCommand(agent('pi', 'zai/glm-5.3'), 'go').args, [
+    '-p',
+    '--model',
+    'zai/glm-5.3',
+    '--session-dir',
+    '/s',
+    '--session-id',
+    'cards-2-implementer',
+    'go',
+  ])
+  const uuid = sessionUuid('cards-2-implementer')
+  assert.match(uuid, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-8[0-9a-f]{3}-[0-9a-f]{12}$/)
+  assert.deepEqual(printCommand(agent('claude', 'sonnet', false), 'go').args.slice(-3), ['--session-id', uuid, 'go'])
+  assert.deepEqual(printCommand(agent('claude', 'sonnet', true), 'go').args.slice(-3), ['--resume', uuid, 'go'])
+  assert.deepEqual(printCommand(agent('codex', 'gpt-6.1-sol', true), 'go').args.slice(0, 3), ['exec', 'resume', '--last'])
+  assert.deepEqual(printCommand(agent('codex', 'gpt-6.1-sol', false), 'go').args.slice(0, 2), ['exec', '-m'])
+})
+
+test('a pane starts each tool with its session, and continues it when started again', () => {
+  const pane = { model: 'm', sessionDir: '/s', session: 'cards-reviewer' }
+  assert.deepEqual(paneArgs({ ...pane, tool: 'pi', thinking: 'max' }), ['--model', 'm', '--thinking', 'max', '--session-dir', '/s'])
+  assert.deepEqual(paneArgs({ ...pane, tool: 'pi', resume: true }).at(-1), '--continue')
+  assert.deepEqual(paneArgs({ ...pane, tool: 'claude', resume: true }).slice(-2), ['--resume', sessionUuid('cards-reviewer')])
+  assert.deepEqual(paneArgs({ ...pane, tool: 'codex', resume: true }).slice(0, 2), ['resume', '--last'])
+})
+
+test('the families set up count the builder, the reviewer and the lead', () => {
+  const roles = { implementer: parseRole('subagent:sonnet'), reviewer: parseRole('headless:claude:opus') }
+  assert.deepEqual([...familiesSetUp({ roles, lead: builderOf('claude:opus'), families: FAMILIES })], ['anthropic'])
+  assert.equal(familiesSetUp({ roles: { ...roles, reviewer: parseRole('headless:pi:zai/glm-5.3') }, families: FAMILIES }).size, 2)
 })
