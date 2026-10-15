@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { familiesSetUp, familyOf, loadRoles, parseRole, roleText } from '../../../roles.mjs'
 import { handoffFor } from './handoffs.mjs'
-import { marker, messageOf, prBody, reportComment, reportsOf, withTrailers } from './land.mjs'
+import { marker, messageOf, PR_SECTIONS, prBody, reportComment, reportsOf, withTrailers } from './land.mjs'
 import { locked } from './lock.mjs'
 import { makeHeadless } from './runners/headless.mjs'
 import { makeHerdr } from './runners/herdr.mjs'
@@ -436,6 +436,11 @@ async function land(id, deps, say) {
     const message = readFileSync(messagePath, 'utf8')
     const { header } = messageOf(message)
     if (header === '') throw new Refusal(`${messagePath}: its first line, the header, is empty`)
+    const prPath = join(folder, 'pr.md')
+    if (!existsSync(prPath)) throw new Refusal(`no pr.md in ${folder}; write it with the \`pr\` skill`)
+    const prText = readFileSync(prPath, 'utf8')
+    const missing = PR_SECTIONS.filter((name) => !new RegExp(`^## ${name}$`, 'm').test(prText))
+    if (missing.length > 0) throw new Refusal(`${prPath}: it has no ${missing.map((name) => `## ${name}`).join(', ')}`)
     const reports = reportsOf(readdirSync(folder))
     if (!reports.some((file) => !file.startsWith('review-0'))) throw new Refusal(`no review report of a round after round 0 in ${folder}`)
     git(deps.repo, ['fetch', 'origin', 'main'])
@@ -500,7 +505,7 @@ async function land(id, deps, say) {
       const checked = existsSync(checkedPath) ? readFileSync(checkedPath, 'utf8') : undefined
       const made = await deps.gh(
         ['pr', 'create', '--base', 'main', '--head', branch, '--title', header, '--body-file', '-'],
-        prBody({ message, part: part.text, door, checked, reports, place, sameFamily }),
+        prBody({ message, pr: prText, part: part.text, door, checked, reports, place, sameFamily }),
       )
       if (made.code !== 0) throw new Error(made.stderr.trim())
       const address = made.stdout.trim().split('\n').at(-1)

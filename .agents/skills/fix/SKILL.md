@@ -30,7 +30,7 @@ A fix is small when a reviewer can hold all of it in one read, and the Maintaine
 10. If the reviewer runs as a subagent, `pnpm review` prints its prompt. Start the subagent with it, in the background, and save its final message where `pnpm review` says.
 11. If the verdict is `changes`, fix each finding of **Source** and **Standard**, then commit, and go back to step 7.
 12. If the second Round ends with `changes`, stop the Rounds. List each open finding in the PR.
-13. Push the branch, and open the PR with `gh pr create`, in the shape of the PR template.
+13. Push the branch. Write the PR's body with the `pr` skill, and open the PR with `gh pr create --body-file`.
 14. Post each report as a comment of its own, oldest first: `gh pr comment <pr> --body-file <report>`.
 15. Tell the Maintainer the PR. The Maintainer merges it.
 16. After it merges or closes, remove both checkouts: `git worktree remove ~/.binnacle/worktrees/fix-<n>`, and `git worktree remove ~/.binnacle/reviews/fix-<n>-<slug>/checkout`.
@@ -38,7 +38,7 @@ A fix is small when a reviewer can hold all of it in one read, and the Maintaine
 ## The PR
 
 - Its title says what a person or an author can do now.
-- It names the reviewer with the `Reviewed-by:` line that `pnpm review` printed. When that line says the builder's family, the Maintainer reads the diff with more care.
+- Its **Checked** names the reviewer with the `Reviewed-by:` line that `pnpm review` printed. When that line says the builder's family, the Maintainer reads the diff with more care.
 - It quotes each question that a report put under **Questions**, for the Maintainer to answer.
 - It ends with `Closes #<n>`.
 

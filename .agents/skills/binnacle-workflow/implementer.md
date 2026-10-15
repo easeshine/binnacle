@@ -16,7 +16,7 @@ You build one Part of a Spec, in your own worktree. The Part is the numbered ite
 10. If the state becomes `changes`, read the review report in full.
 11. Fix each finding of **Source** and **Standard**. A question under **Questions** is for the Lead.
 12. Do the checks below again, and set the state `ready`.
-13. If the state becomes `approved`, write `message.md`.
+13. If the state becomes `approved`, write `message.md`, and `pr.md` with the `pr` skill.
 
 ## Before you set the state `ready`
 

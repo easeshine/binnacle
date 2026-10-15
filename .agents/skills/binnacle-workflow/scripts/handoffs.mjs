@@ -60,7 +60,7 @@ export function handoffFor(change, c, asker) {
             : {
                 role: 'implementer',
                 start: false,
-                text: `Round ${c.round} of ${c.id} is approved. Write ${c.folder}/message.md, as implementer.md says, and end your turn.`,
+                text: `Round ${c.round} of ${c.id} is approved. Write ${c.folder}/message.md and ${c.folder}/pr.md, as implementer.md says, and end your turn.`,
               }
         default:
           return undefined

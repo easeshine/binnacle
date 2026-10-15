@@ -6,6 +6,8 @@ import { built, git, makeWorld, SPEC, steps } from './world.mjs'
 import { run } from './task.mjs'
 
 const MESSAGE = 'feat: the thing works\n\nWhat changed, and why.\n\nAuthor API: none.\n\nCloses #140\n'
+const PR =
+  '## Summary\n\nA card fills its line.\n\n## Evidence\n\n- **Before:** bare\n  **After:** filled\n\n## Merge danger\n\n**Blast radius:** tool cards\n'
 
 async function approved(world, partDoor) {
   if (partDoor !== undefined) {
@@ -26,6 +28,7 @@ async function approved(world, partDoor) {
   )
   const folder = join(world.home, 'tasks', 'cards.1')
   writeFileSync(join(folder, 'message.md'), MESSAGE)
+  writeFileSync(join(folder, 'pr.md'), PR)
   writeFileSync(join(folder, 'checked.md'), '# The proof of each test\n\n## one\n\n- **Break:** x\n')
   writeFileSync(join(folder, 'review-1.md'), 'Round 1: approved.')
   return { worktree, folder }
@@ -60,7 +63,7 @@ test('`task land <slug>/<k>` squashes the branch into one commit on top of `orig
   assert.equal(git(worktree, ['rev-parse', 'HEAD~1']), git(world.repo, ['rev-parse', 'origin/main']))
 })
 
-test("`task land` opens the PR: its title is the message's header, its body says where the Part fits and holds the message, the Part, `checked.md` and the Door, and each report goes to a comment of its own", async () => {
+test("`task land` opens the PR: its title is the message's header, its body says where the Part fits, holds `pr.md` with the Door in its Merge danger, then Checked with the review, the Part and `checked.md`, and each report goes to a comment of its own", async () => {
   const world = makeWorld()
   onTestFinished(() => world.remove())
   await approved(world)
@@ -70,13 +73,12 @@ test("`task land` opens the PR: its title is the message's header, its body says
   assert.equal(pr.title, 'feat: the thing works')
   assert.match(
     pr.body,
-    /^## What changes\n\nPart 1 of 3 of the Spec \*the cards\*, `intents\/cards\/spec\.md`\.\n\nWhat changed, and why\.\n\nAuthor API: none\.\n\nCloses #140\n\n<details><summary>The Part<\/summary>\n\n\*\*Slice 1\.\*\* Behaviour 1\./,
+    /^Part 1 of 3 of the Spec \*the cards\*, `intents\/cards\/spec\.md`\.\n\n## Summary\n\nA card fills its line\.\n\n## Evidence\n[^]*\n## Merge danger\n\n\*\*Door:\*\* two-way\.\n\n\*\*Blast radius:\*\* tool cards\n\n## Checked\n\n\*\*Review:\*\* 1 report, each in a comment below, oldest first\.\n\n<details><summary>The Part<\/summary>\n\n\*\*Slice 1\.\*\* Behaviour 1\./,
   )
+  assert.match(pr.body, /\nAuthor API: none\.\n\nCloses #140\n$/)
   assert.doesNotMatch(pr.body, /Built-by/)
   assert.match(pr.body, /<details><summary>What the builder checked<\/summary>\n\n# The proof of each test/)
-  assert.match(pr.body, /\*\*Door:\*\* two-way\./)
-  assert.match(pr.body, /\*\*Review:\*\* 1 report, each in a comment below, oldest first\.\n/)
-  assert.match(pr.body, /\n## Records\n/)
+  assert.match(pr.body, /\n- \[x\] `vp run ready` passes/)
   assert.deepEqual(pr.labels, [])
   assert.deepEqual(
     world.gh.comments.map((comment) => comment.body.split('\n')[0]),
@@ -129,6 +131,11 @@ test('`task land` refuses before a round after round 0 is approved, and when an 
   writeFileSync(join(folder, 'message.md'), '\nno header\n')
   await refuses(/its first line, the header, is empty/)
   writeFileSync(join(folder, 'message.md'), MESSAGE)
+  rmSync(join(folder, 'pr.md'))
+  await refuses(/no pr\.md in .*; write it with the `pr` skill/)
+  writeFileSync(join(folder, 'pr.md'), '## Summary\n\nA card.\n')
+  await refuses(/pr\.md: it has no ## Evidence, ## Merge danger/)
+  writeFileSync(join(folder, 'pr.md'), PR)
   rmSync(join(folder, 'review-1.md'))
   await refuses(/no review report of a round after round 0/)
   writeFileSync(join(folder, 'review-1.md'), 'Round 1.')

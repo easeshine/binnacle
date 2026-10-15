@@ -28,6 +28,7 @@ The files of a Task:
 | `review-<r>.md` | The report of Round `<r>`. Round 0 has passes: its first pass is `review-0.md`, and pass `<p>` is `review-0-<p>.md`. The prompt names the file. | the Reviewer |
 | `checked.md` | Optional: what the builder checked by hand, which `task land` puts in the PR | the builder |
 | `message.md` | The final commit message, which names no model | the builder |
+| `pr.md` | The PR's **Summary**, **Evidence**, and **Merge danger** without the Door, as the `pr` skill says | the builder |
 
 The log governs the state: its last line is the current state and Round. If the log does not end with a newline, or a line is not JSON, each command for that Task refuses and names the file. The Lead repairs it by hand.
 
@@ -81,7 +82,7 @@ A **role** is `<runner>:<tool>:<model>@<thinking>`:
 |---|---|---|---|
 | `spec` | Lead, or `task start` as a Spec's first line | `changes` and `approved` at Round 0, on a Spec | sends the Reviewer its next pass, with `reply-<p>.md` |
 | `changes` | Reviewer | `spec`, `ready` | on a Spec, wakes the Lead to edit the Spec. On a Part, sends the report to the Implementer. |
-| `approved` | Reviewer, or `task build` as a Part's first line | `spec`, `ready` | on a Spec, wakes the Lead. On a Part, also asks the Implementer for `message.md`. |
+| `approved` | Reviewer, or `task build` as a Part's first line | `spec`, `ready` | on a Spec, wakes the Lead. On a Part, also asks the Implementer for `message.md` and `pr.md`. |
 | `building` | Implementer | `approved` at Round 0, and `changes`, on a Part | nothing |
 | `ready` | Implementer | `building`, and `changes` on a Part | sends the Reviewer the tip, and the commits since the last Round |
 | `blocked` | any role, with `task ask` | each state except `blocked` and `stopped` | wakes the Lead |
@@ -126,7 +127,7 @@ The Lead answers:
 `pnpm task land <slug>/<k>` checks each input before it changes anything, then:
 
 1. squashes the branch into one commit on `origin/main`, with `message.md` as its message and two trailers, `Built-by:` and `Reviewed-by:`, and pushes it;
-2. opens the PR: where the Part fits ("Part 2 of 3 of the Spec *cards*"), the message's body, the Part's text, `checked.md` if it exists, the Door, the review, and the records to check;
+2. opens the PR: where the Part fits ("Part 2 of 3 of the Spec *cards*"), then `pr.md` with the Door in its **Merge danger**, then **Checked**: the review, the Part's text, `checked.md` if it exists, and the records to check;
 3. labels a one-way PR `one-way`;
 4. posts each review report of the Part as a comment of its own, oldest first;
 5. writes `landed` with the PR's address.
