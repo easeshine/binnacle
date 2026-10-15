@@ -1,6 +1,7 @@
 ---
 name: author-trial
-description: A blind trial of authoring, where agents of other model families change binnacle from the packed package alone. Use it when the Maintainer asks to try a feature as an author, or to find what an author cannot change.
+description: A blind trial of authoring, where agents of other model families change binnacle from the packed package alone, to find what an author cannot change.
+disable-model-invocation: true
 ---
 
 # An author's trial

@@ -1,6 +1,6 @@
 # Notices
 
-These skills began as Matt Pocock's [`skills`](https://github.com/mattpocock/skills) and were rewritten for binnacle: `architecture`, `diagnosing-bugs`, `grill` and `writing-for-agents`. They are under the MIT License:
+These skills began as Matt Pocock's [`skills`](https://github.com/mattpocock/skills) and were rewritten for binnacle: `architecture`, `diagnosing-bugs`, `grill`, `handoff`, `retro` and `writing-for-agents`. They are under the MIT License:
 
 ## mattpocock/skills
 
