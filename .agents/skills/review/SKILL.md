@@ -40,7 +40,7 @@ Put the most severe finding first. Mark each earlier finding as fixed, with its 
 
 The last line is the verdict:
 
-- `Verdict: changes` if there is a finding;
-- `Verdict: approved` if there is none.
+- `Verdict: changes` if there is a finding under **Source** or **Standard**;
+- `Verdict: approved` if there is none. A question alone does not hold the change back.
 
 Write the report to the file that your prompt names. If your prompt names no file, give the report as your final message, in full.

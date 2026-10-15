@@ -32,7 +32,7 @@ Each is capitalized wherever it is used in this meaning. binnacle's own words ar
 - **Journey**: what a person does with a feature in a real session, from start to end, as a Spec writes it. It crosses several behaviours, and the features beside them.
 - **ADR**: a decision that binds more than one change, in `adr/`, written once the Maintainer picks it.
 - **Reference**: another repository, fetched at its pin into `.refs/`, to read and never to write. [`CODING-STANDARD.md`](CODING-STANDARD.md) says how to use one.
-- **Fix**: a small change for one issue, built by one agent and reviewed by an agent of another model family, as the `fix` skill says.
+- **Fix**: a small change for one issue, built by one agent and reviewed by an agent of another model family when one is set up, as the `fix` skill says.
 - **Lead**: the agent that runs the `binnacle-workflow` skill with the Maintainer: it writes a Spec, starts each Task, and checks what comes back.
 - **Part**: one numbered item under a Spec's **Parts of the build**: a vertical slice, built on one branch and merged in one PR.
 - **Task**: a Spec or a Part, while `pnpm task` holds its state.

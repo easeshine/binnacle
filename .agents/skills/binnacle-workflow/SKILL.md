@@ -26,7 +26,7 @@ The Task tool's folders, states and commands are in [`task.md`](task.md). Read i
 8. Answer each finding against the Intent as it was approved. Where the Intent cannot hold as written, decide, and write the decision under **Decisions**. If the findings come from the Intent, grill the Maintainer again.
 9. When Round 0 is `approved`, show the Maintainer the Spec and its Parts. Ask: is each Part the right size, and is each order real?
 10. If the Maintainer changes the Spec, edit it, and send it for another pass.
-11. Merge the Spec with its Intent, with the Status `agreed`, in a PR of its own: `docs: the Spec of <feature>`. A Part is built only from a Spec that `origin/main` holds.
+11. Open a PR of the Spec with its Intent, with the Status `agreed`: `docs: the Spec of <feature>`. When the Maintainer merges it, build the Parts: a Part is built only from a Spec that `origin/main` holds.
 
 ## Each Part
 
@@ -66,22 +66,9 @@ The Maintainer names the role of each agent at the start of a session, or before
 3. Drive dsh in a herdr pane, as the `author-trial` skill's `driving.md` says.
 4. When you are done, run `node packages/binnacle/dist/cli.mjs` in the main checkout. It links the profile back.
 
-## Doors
-
-A PR is **one-way** if it does one of these things:
-
-- changes what an author may import;
-- changes the dsh services or packages that binnacle names;
-- moves a pin;
-- changes a format that a person keeps, such as a theme or the profile;
-- changes a release workflow;
-- changes this list.
-
-Every other PR is **two-way**. If the Spec and the Part give different Doors, the Door is one-way.
-
 ## The Maintainer's try
 
-1. Pull `main`, and run `node packages/binnacle/dist/cli.mjs` once, so that the `binnacle` profile runs what merged.
+1. Pull `main`, run `vp install` and `vp run @easeshine/binnacle#build`, then run `node packages/binnacle/dist/cli.mjs` once, so that the `binnacle` profile runs what merged.
 2. Tell the Maintainer what to try: `binnacle`, then each Journey of the Spec, and what each one should draw.
 3. List the candidate ADRs: each decision of the Spec that binds more than one change, in one line each.
 4. File each problem that the Maintainer finds as an issue, for the `fix` skill. If one is too large for a fix, or the Intent was wrong, grill again.

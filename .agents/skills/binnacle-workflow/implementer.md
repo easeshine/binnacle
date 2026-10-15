@@ -9,7 +9,7 @@ You build one Part of a Spec, in your own worktree. The Part is the numbered ite
 3. Read the `AGENTS.md` of each folder that you change.
 4. List the behaviours of the Part. Each behaviour is the name of one test, at a seam that the Spec names.
 5. Build them with the `tdd` skill, one behaviour at a time.
-6. Commit as often as you like. Only the final message is kept. A commit names no model: no `Co-Authored-By` or other trailer. `task land` adds who built and who reviewed.
+6. Commit as often as you like. `task land` squashes the commits into one, with `message.md` as its message.
 7. If the Spec does not answer a question, write `question.md`, and set the state `blocked` with `task ask`.
 8. When every behaviour is built, do the checks below.
 9. Set the state `ready`.
@@ -37,7 +37,6 @@ Then check each item:
 - The records change in the same commit as the code, as the root `AGENTS.md` says: the `AGENTS.md` beside the code, each page of `packages/binnacle/docs/` that the change touches, and a changeset when the published package changes.
 - Each changed file serves a behaviour or a record of the Part.
 - Each comment in your diff gives a reason that the code cannot show.
-- No commit names a model.
 
 ## The final commit message
 
@@ -46,4 +45,4 @@ Then check each item:
 - It names the change to what an author may import, or says "Author API: none."
 - It lists the decisions that you took.
 - If the Part closes a GitHub issue, it ends with `Closes #<n>`.
-- It names no model. `task land` adds the trailers.
+- It names no model: no `Co-Authored-By` or other trailer. `task land` adds who built and who reviewed.

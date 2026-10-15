@@ -11,12 +11,12 @@ A retro improves the agents' environment: the skills, `AGENTS.md`, `CODING-STAND
 ## Steps
 
 1. Load the `writing-for-agents` skill.
-2. List the PRs merged since the last retro: `gh pr list --state merged`.
-3. Read the Lead's sessions since the last retro: the Maintainer's prompts, and the replies to them. A Claude Code session is a `.jsonl` file in `~/.claude/projects/`, in the folder named for the checkout's path with each `/` as `-`.
+2. Find the last retro: the newest commit whose subject starts with `chore(retro)`. List the PRs merged since it: `gh pr list --state merged --search "merged:>=<its date>"`.
+3. Read the Lead's sessions since the last retro: the Maintainer's prompts, and the replies to them. A Claude Code session is a `.jsonl` file in `~/.claude/projects/`, in the folder named for the checkout's path, with each character that is not a letter or a digit as `-`.
 4. Read the review reports: each Task's in `~/.binnacle/tasks/`, and each fix's in `~/.binnacle/reviews/`.
 5. Find the candidates, in the places below.
 6. Show the Maintainer the list, most costly first, with the change for each one.
-7. For each candidate that the Maintainer accepts, make the change on the branch for skills and docs.
+7. For each candidate that the Maintainer accepts, make the change on the branch for skills and docs. Commit with the subject `chore(retro): <what changes>`, so that the next retro starts there.
 
 ## Where to look
 

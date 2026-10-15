@@ -26,7 +26,7 @@ A Spec is the design of one feature, in `intents/<slug>/spec.md`, beside its Int
 | **Edges** | Each edge from *Edges*, and the behaviour or the decision that answers it |
 | **Out of scope** | What the Spec does not do, and what does it instead |
 | **Parts of the build** | The Parts, numbered, as *Parts* says |
-| **Door** | One-way or two-way, and why |
+| **Door** | One-way or two-way, as *Doors* says, and why |
 
 - The design goes in the Spec, not in the Intent. A decision that binds more than one change is a candidate ADR: offer it to the Maintainer after the try.
 - Order the behaviours so that each builds on the one before. The first is the thinnest one that crosses every seam.
@@ -68,3 +68,16 @@ A **Part** is one vertical slice of the Spec: one numbered item under **Parts of
 - **Its Door.** A Part says `One-way` or `Two-way`, with why, when it differs from the Spec's Door.
 
 A wide refactor, such as a rename that breaks each place that uses a name, has no vertical slice that passes `vp run ready`. Cut it as expand, migrate and contract: add the new form beside the old; move the users to it, in batches, one Part each; then remove the old form.
+
+## Doors
+
+A PR is **one-way** if it does one of these things:
+
+- changes what an author may import;
+- changes the dsh services or packages that binnacle names;
+- moves a pin;
+- changes a format that a person keeps, such as a theme or the profile;
+- changes a release workflow;
+- changes this list.
+
+Every other PR is **two-way**. If the Spec and the Part give different Doors, the Door is one-way.

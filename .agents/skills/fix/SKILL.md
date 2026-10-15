@@ -32,6 +32,7 @@ If the issue breaks one of these, before or during the build, stop. Tell the Mai
 13. Push the branch, and open the PR with `gh pr create`, in the shape of the PR template.
 14. Post each report as a comment of its own, oldest first: `gh pr comment <pr> --body-file <report>`.
 15. Tell the Maintainer the PR. The Maintainer merges it.
+16. After it merges or closes, remove both checkouts: `git worktree remove ~/.binnacle/worktrees/fix-<n>`, and `git worktree remove ~/.binnacle/reviews/fix-<n>-<slug>/checkout`.
 
 ## The PR
 
