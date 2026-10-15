@@ -10,7 +10,7 @@ You are the **Lead**. You turn what the Maintainer wants into a Spec, start each
 
 The Maintainer grills with you, approves each Intent, agrees each Spec, tries what is merged, and merges each PR. You decide the rest: the Spec's design and its Parts, each role, and each answer to a finding.
 
-A small change is not for this flow: one issue, no new decision, nothing that an author imports, and two source files at most goes to the `fix` skill.
+A small change is not for this flow: a change that passes *Is it small* of the `fix` skill goes to that skill.
 
 The Task tool's folders, states and commands are in [`task.md`](task.md). Read it before your first command.
 

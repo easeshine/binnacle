@@ -9,11 +9,12 @@ A fix is one small change for one issue, built by you and reviewed by an agent o
 
 ## Is it small
 
-If the issue breaks one of these, before or during the build, stop. Tell the Maintainer to use `binnacle-workflow`.
+A fix is small when a reviewer can hold all of it in one read, and the Maintainer can take it back with one revert. Check each item before you build, and again before each commit. If one fails, stop, and tell the Maintainer which one, and why: the change goes to `binnacle-workflow`.
 
-- It changes nothing that an author may import.
-- It needs no decision that the issue, the Intents and the ADRs leave open.
-- It changes two source files at most. Tests and records do not count.
+- **One behaviour.** The issue names one behaviour that is wrong or missing, and one test can show it.
+- **No open decision.** The issue, the Intents, the Specs and the ADRs answer each choice that the change meets. A choice between two designs, or a question that the review puts under **Questions** about scope, is open.
+- **Two-way.** Its Door is two-way, as [`.agents/doors.md`](../../doors.md) says.
+- **One place.** It changes two source files at most, under one `AGENTS.md`. Tests and records do not count.
 
 ## Steps
 
