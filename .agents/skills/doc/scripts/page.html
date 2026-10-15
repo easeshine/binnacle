@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>doc</title>
+    <style>
+      /* dusk, from binnacle-v0's theme file */
+      :root {
+        --night: #1b1428;
+        --plum: #2e2344;
+        --velvet: #3b2d57;
+        --chip: #2b2140;
+        --orchid: #ff7ac6;
+        --rose: #f7a8d8;
+        --violet: #b8a1ff;
+        --iris: #8fa6ff;
+        --lilac: #e2c2ff;
+        --amethyst: #8a6ad9;
+        --mint: #7fe0b5;
+        --peach: #ffb784;
+        --coral: #ff6b81;
+        --haze: #a698c8;
+        --dusk: #6b6190;
+        --text: #ece4fa;
+        --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--night);
+        color: var(--text);
+        font: 15px/1.6 var(--sans);
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 24px;
+        background: var(--plum);
+        border-bottom: 1px solid var(--velvet);
+      }
+      header .name {
+        font-family: var(--mono);
+        color: var(--rose);
+        font-weight: 600;
+      }
+      header .path {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--dusk);
+      }
+      header .counts {
+        margin-left: auto;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--haze);
+      }
+      button {
+        font: 13px var(--sans);
+        color: var(--text);
+        background: var(--velvet);
+        border: 1px solid var(--dusk);
+        border-radius: 6px;
+        padding: 4px 10px;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--orchid);
+      }
+      button.primary {
+        background: var(--orchid);
+        color: var(--night);
+        border-color: var(--orchid);
+        font-weight: 600;
+      }
+      button.ghost {
+        background: transparent;
+        border-color: transparent;
+        color: var(--haze);
+        padding: 2px 6px;
+      }
+      button.ghost:hover {
+        color: var(--orchid);
+        border-color: var(--dusk);
+      }
+      main {
+        display: grid;
+        grid-template-columns: minmax(0, 820px) 380px;
+        gap: 32px;
+        justify-content: center;
+        padding: 24px;
+      }
+      #notice {
+        grid-column: 1 / -1;
+        display: none;
+        padding: 8px 12px;
+        border: 1px solid var(--peach);
+        color: var(--peach);
+        border-radius: 6px;
+      }
+
+      .block {
+        position: relative;
+        padding: 2px 12px 2px 14px;
+        margin: 0 -12px 2px -14px;
+        border-left: 3px solid transparent;
+        border-radius: 4px;
+      }
+      .block:hover {
+        background: rgba(59, 45, 87, 0.35);
+      }
+      .block.edited {
+        border-left-color: var(--orchid);
+      }
+      .block.added {
+        border-left-color: var(--mint);
+      }
+      .block.flash {
+        background: rgba(255, 122, 198, 0.15);
+        transition: background 0.6s;
+      }
+      .block .tools {
+        position: absolute;
+        right: -4px;
+        top: -10px;
+        display: none;
+        gap: 2px;
+        background: var(--plum);
+        border: 1px solid var(--velvet);
+        border-radius: 6px;
+        padding: 1px;
+        z-index: 2;
+      }
+      .block:hover .tools {
+        display: flex;
+      }
+      .block .badge {
+        position: absolute;
+        left: -34px;
+        top: 6px;
+        font: 11px var(--mono);
+        color: var(--night);
+        background: var(--peach);
+        border-radius: 9px;
+        padding: 0 6px;
+        cursor: pointer;
+      }
+      .block textarea {
+        width: 100%;
+        min-height: 60px;
+        font: 13px/1.5 var(--mono);
+        color: var(--text);
+        background: var(--chip);
+        border: 1px solid var(--orchid);
+        border-radius: 6px;
+        padding: 8px;
+        resize: vertical;
+      }
+      .block .editbar {
+        display: flex;
+        gap: 6px;
+        margin: 4px 0 8px;
+        font-size: 12px;
+        color: var(--dusk);
+        align-items: center;
+      }
+
+      #doc h1,
+      #doc h2,
+      #doc h3,
+      #doc h4 {
+        color: var(--rose);
+        line-height: 1.25;
+        margin: 0.9em 0 0.4em;
+      }
+      #doc h1 {
+        font-size: 1.7em;
+      }
+      #doc h2 {
+        font-size: 1.3em;
+        border-bottom: 1px solid var(--velvet);
+        padding-bottom: 4px;
+      }
+      #doc a {
+        color: var(--violet);
+      }
+      #doc code {
+        font-family: var(--mono);
+        font-size: 0.88em;
+        color: var(--lilac);
+        background: var(--chip);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+      #doc pre {
+        background: var(--chip);
+        border: 1px solid var(--velvet);
+        border-radius: 6px;
+        padding: 10px 12px;
+        overflow-x: auto;
+      }
+      #doc pre code {
+        padding: 0;
+        background: none;
+      }
+      #doc blockquote {
+        margin: 0.6em 0;
+        padding-left: 12px;
+        border-left: 3px solid var(--amethyst);
+        color: var(--haze);
+        font-style: italic;
+      }
+      #doc table {
+        border-collapse: collapse;
+        margin: 0.6em 0;
+        font-size: 14px;
+      }
+      #doc th,
+      #doc td {
+        border: 1px solid var(--velvet);
+        padding: 5px 9px;
+        vertical-align: top;
+        text-align: left;
+      }
+      #doc th {
+        background: var(--plum);
+        color: var(--rose);
+      }
+      #doc li::marker {
+        color: var(--amethyst);
+      }
+      #doc strong {
+        color: #fff;
+      }
+      #doc hr {
+        border: 0;
+        border-top: 1px solid var(--amethyst);
+      }
+      #doc mark {
+        background: rgba(255, 183, 132, 0.25);
+        color: inherit;
+        border-bottom: 1px solid var(--peach);
+      }
+
+      aside {
+        position: sticky;
+        top: 72px;
+        align-self: start;
+        max-height: calc(100vh - 96px);
+        overflow-y: auto;
+      }
+      aside h3 {
+        margin: 0 0 8px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--dusk);
+      }
+      .thread {
+        background: var(--plum);
+        border: 1px solid var(--velvet);
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 10px;
+      }
+      .thread.resolved {
+        opacity: 0.5;
+      }
+      .thread.orphan {
+        border-color: var(--coral);
+      }
+      .thread .where {
+        font: 11px var(--mono);
+        color: var(--dusk);
+        cursor: pointer;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .thread .quote {
+        font-size: 13px;
+        color: var(--haze);
+        border-left: 2px solid var(--peach);
+        padding-left: 8px;
+        margin: 6px 0;
+      }
+      .msg {
+        margin: 6px 0;
+        font-size: 14px;
+        white-space: pre-wrap;
+      }
+      .msg .by {
+        font: 11px var(--mono);
+        margin-right: 6px;
+      }
+      .msg .by.person {
+        color: var(--orchid);
+      }
+      .msg .by.agent {
+        color: var(--mint);
+      }
+      .thread textarea,
+      dialog textarea {
+        width: 100%;
+        min-height: 54px;
+        font: 14px var(--sans);
+        color: var(--text);
+        background: var(--chip);
+        border: 1px solid var(--dusk);
+        border-radius: 6px;
+        padding: 6px 8px;
+        resize: vertical;
+      }
+      .thread .row {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+        justify-content: flex-end;
+      }
+      #selbtn {
+        position: absolute;
+        display: none;
+        z-index: 10;
+      }
+      dialog {
+        background: var(--plum);
+        color: var(--text);
+        border: 1px solid var(--orchid);
+        border-radius: 10px;
+        width: 460px;
+      }
+      dialog::backdrop {
+        background: rgba(10, 6, 18, 0.6);
+      }
+      .done {
+        text-align: center;
+        margin-top: 20vh;
+        color: var(--mint);
+        font-size: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="name" id="name"></span><span class="path" id="path"></span>
+      <span class="counts" id="counts"></span>
+      <button class="primary" id="handover">Hand over</button>
+    </header>
+    <main>
+      <div id="notice"></div>
+      <article id="doc"></article>
+      <aside>
+        <h3>Comments</h3>
+        <div id="rail"></div>
+      </aside>
+    </main>
+    <button class="primary" id="selbtn">Comment</button>
+    <dialog id="dlg">
+      <p>Hand over to the agent? Edits are written to the file, and comments go to the doc folder.</p>
+      <textarea id="note" placeholder="Optional note for the agent"></textarea>
+      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px">
+        <button id="cancel">Cancel</button><button class="primary" id="confirm">Hand over</button>
+      </div>
+    </dialog>
+    <script type="module">
+      const t = new URLSearchParams(location.search).get('t')
+      const { marked } = await import(`/marked.js?t=${t}`)
+      const state = await (await fetch(`/state?t=${t}`)).json()
+      const $ = (id) => document.getElementById(id)
+      const el = (tag, cls, text) => {
+        const e = document.createElement(tag)
+        if (cls) e.className = cls
+        if (text != null) e.textContent = text
+        return e
+      }
+      const now = () => new Date().toISOString()
+      let seq = 0
+      const uid = () => Date.now().toString(36) + (seq++).toString(36)
+
+      // The file is the concatenation of its blocks' raw text, so unchanged blocks keep their bytes.
+      const split = (src) => {
+        const out = []
+        for (const tok of marked.lexer(src)) {
+          if (tok.type === 'space' && out.length) out[out.length - 1].raw += tok.raw
+          else out.push({ id: uid(), raw: tok.raw, added: false })
+        }
+        for (const b of out) b.original = b.raw
+        return out
+      }
+      let blocks = split(state.source)
+      let comments = state.comments
+      let editing = null,
+        composing = null
+
+      const draftKey = `doc:${state.path}:${state.source.length}:${state.source.slice(0, 64)}`
+      const saved = localStorage.getItem(draftKey)
+      if (saved) {
+        const d = JSON.parse(saved)
+        blocks = d.blocks
+        comments = d.comments
+        $('notice').textContent = 'Restored the edits and comments you made before this tab closed.'
+        $('notice').style.display = 'block'
+      }
+      const persist = () => localStorage.setItem(draftKey, JSON.stringify({ blocks, comments }))
+      const source = () => blocks.map((b) => b.raw).join('')
+
+      $('name').textContent = state.name
+      $('path').textContent = state.path
+      document.title = `doc · ${state.name}`
+
+      const textOf = (b) => {
+        const d = el('div')
+        d.innerHTML = marked.parse(b.raw)
+        return d.textContent
+      }
+      const anchor = (c) => {
+        const texts = blocks.map(textOf)
+        let i = c.quote && c.context ? texts.findIndex((x) => x.startsWith(c.context) && x.includes(c.quote)) : -1
+        if (i < 0 && c.quote) i = texts.findIndex((x) => x.includes(c.quote))
+        if (i < 0 && c.context) i = texts.findIndex((x) => x.startsWith(c.context))
+        if (i < 0 && c.context) i = texts.findIndex((x) => x.includes(c.context.slice(0, 40)))
+        return i
+      }
+      const markQuote = (root, quote) => {
+        const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+        for (let n; (n = walk.nextNode());) {
+          const at = n.data.indexOf(quote)
+          if (at < 0) continue
+          const r = document.createRange()
+          r.setStart(n, at)
+          r.setEnd(n, at + quote.length)
+          r.surroundContents(el('mark'))
+          return
+        }
+      }
+
+      function render() {
+        const doc = $('doc')
+        doc.textContent = ''
+        const where = comments.map(anchor)
+        blocks.forEach((b, i) => {
+          const box = el('div', 'block')
+          box.dataset.i = i
+          box.id = `b-${b.id}`
+          if (b.added) box.classList.add('added')
+          else if (b.raw !== b.original) box.classList.add('edited')
+          if (editing === b.id) {
+            const ta = el('textarea')
+            ta.value = b.raw.trimEnd()
+            ta.rows = Math.min(30, ta.value.split('\n').length + 1)
+            const bar = el('div', 'editbar')
+            const done = el('button', 'primary', 'Done'),
+              cancel = el('button', null, 'Cancel')
+            bar.append(done, cancel, el('span', null, '⌘↵ done · esc cancel'))
+            const finish = (keep) => {
+              editing = null
+              const text = ta.value.trimEnd()
+              if (keep) {
+                const tail = b.raw.match(/\s*$/)[0] || '\n\n'
+                if (!text) blocks.splice(i, 1)
+                else {
+                  const parts = split(text + (tail.includes('\n\n') || i === blocks.length - 1 ? tail : '\n\n'))
+                  parts.forEach((p, k) => {
+                    p.original = k === 0 ? b.original : ''
+                    p.added = b.added || k > 0
+                  })
+                  if (parts.length === 1) parts[0].id = b.id
+                  blocks.splice(i, 1, ...parts)
+                }
+              } else if (b.added && !b.raw.trim()) blocks.splice(i, 1)
+              persist()
+              render()
+            }
+            done.onclick = () => finish(true)
+            cancel.onclick = () => finish(false)
+            ta.onkeydown = (e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault()
+                finish(true)
+              }
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                finish(false)
+              }
+            }
+            box.append(ta, bar)
+            doc.append(box)
+            setTimeout(() => ta.focus())
+            return
+          }
+          const body = el('div')
+          body.innerHTML = marked.parse(b.raw)
+          box.append(body)
+          const mine = comments.filter((c, k) => where[k] === i)
+          for (const c of mine) if (c.quote) markQuote(body, c.quote)
+          const open = mine.filter((c) => !c.resolved).length
+          if (open) {
+            const bd = el('span', 'badge', String(open))
+            bd.onclick = () => document.getElementById(`c-${mine[0].id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            box.append(bd)
+          }
+          const tools = el('div', 'tools')
+          const tb = (label, fn) => {
+            const x = el('button', 'ghost', label)
+            x.onclick = (e) => {
+              e.stopPropagation()
+              fn()
+            }
+            tools.append(x)
+          }
+          tb('comment', () => compose(i, ''))
+          tb('edit', () => {
+            editing = b.id
+            render()
+          })
+          tb('+ below', () => {
+            const nb = { id: uid(), raw: '\n\n', original: '', added: true }
+            blocks.splice(i + 1, 0, nb)
+            editing = nb.id
+            render()
+          })
+          tb('delete', () => {
+            blocks.splice(i, 1)
+            persist()
+            render()
+          })
+          box.append(tools)
+          doc.append(box)
+        })
+        rail(where)
+        counts()
+      }
+
+      function counts() {
+        const edits = blocks.filter((b) => b.raw !== b.original).length + (blocks.length < split(state.source).length ? 1 : 0)
+        const open = comments.filter((c) => !c.resolved).length
+        $('counts').textContent =
+          `${source() === state.source ? 'no edits' : `${edits} block${edits === 1 ? '' : 's'} changed`} · ${open} open comment${open === 1 ? '' : 's'}`
+      }
+
+      function goto(i) {
+        const box = document.querySelector(`.block[data-i="${i}"]`)
+        if (!box) return
+        box.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        box.classList.add('flash')
+        setTimeout(() => box.classList.remove('flash'), 900)
+      }
+
+      function rail(where) {
+        const r = $('rail')
+        r.textContent = ''
+        if (composing) {
+          const th = el('div', 'thread')
+          const w = el('div', 'where', blocks[composing.i] ? textOf(blocks[composing.i]).slice(0, 80) : '')
+          w.onclick = () => goto(composing.i)
+          th.append(w)
+          if (composing.quote) th.append(el('div', 'quote', composing.quote))
+          const ta = el('textarea')
+          ta.placeholder = 'Your comment'
+          const row = el('div', 'row'),
+            ok = el('button', 'primary', 'Comment'),
+            no = el('button', null, 'Cancel')
+          const submit = () => {
+            if (!ta.value.trim()) return
+            const b = blocks[composing.i]
+            comments.push({
+              id: uid(),
+              quote: composing.quote,
+              context: textOf(b).slice(0, 80),
+              block: b.raw.trim().split('\n')[0].slice(0, 120),
+              text: ta.value.trim(),
+              by: 'person',
+              at: now(),
+              resolved: false,
+              replies: [],
+            })
+            composing = null
+            persist()
+            render()
+          }
+          ok.onclick = submit
+          no.onclick = () => {
+            composing = null
+            render()
+          }
+          ta.onkeydown = (e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit()
+            if (e.key === 'Escape') no.onclick()
+          }
+          row.append(no, ok)
+          th.append(ta, row)
+          r.append(th)
+          setTimeout(() => ta.focus())
+        }
+        const order = comments.map((c, k) => [c, where[k]]).sort((a, b) => a[1] - b[1] || a[0].resolved - b[0].resolved)
+        for (const [c, i] of order) {
+          const th = el('div', 'thread')
+          th.id = `c-${c.id}`
+          if (c.resolved) th.classList.add('resolved')
+          if (i < 0) th.classList.add('orphan')
+          const w = el('div', 'where', i < 0 ? `not found in the text · ${c.block || ''}` : textOf(blocks[i]).slice(0, 80))
+          w.onclick = () => i >= 0 && goto(i)
+          th.append(w)
+          if (c.quote) th.append(el('div', 'quote', c.quote))
+          for (const m of [{ by: c.by, text: c.text }, ...c.replies]) {
+            const msg = el('div', 'msg')
+            msg.append(el('span', `by ${m.by}`, m.by), document.createTextNode(m.text))
+            th.append(msg)
+          }
+          const row = el('div', 'row')
+          const reply = el('button', 'ghost', 'reply'),
+            res = el('button', 'ghost', c.resolved ? 'reopen' : 'resolve')
+          const del = el('button', 'ghost', 'delete')
+          res.onclick = () => {
+            c.resolved = !c.resolved
+            persist()
+            render()
+          }
+          del.onclick = () => {
+            comments = comments.filter((x) => x !== c)
+            persist()
+            render()
+          }
+          reply.onclick = () => {
+            const ta = el('textarea')
+            const send = el('button', 'primary', 'Reply')
+            const go = () => {
+              if (!ta.value.trim()) return
+              c.replies.push({ by: 'person', text: ta.value.trim(), at: now() })
+              c.resolved = false
+              persist()
+              render()
+            }
+            send.onclick = go
+            ta.onkeydown = (e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) go()
+            }
+            row.replaceWith(ta, Object.assign(el('div', 'row'), {}).appendChild(send).parentNode)
+            ta.focus()
+          }
+          row.append(...(c.by === 'person' && !c.replies.length ? [del] : []), reply, res)
+          th.append(row)
+          r.append(th)
+        }
+        if (!composing && !comments.length) r.append(el('div', 'msg', 'Hover a block and choose comment, or select text.'))
+      }
+
+      function compose(i, quote) {
+        composing = { i, quote }
+        render()
+      }
+
+      const selbtn = $('selbtn')
+      document.addEventListener('mouseup', (e) => {
+        if (e.target === selbtn) return
+        setTimeout(() => {
+          const s = getSelection()
+          const text = s.toString().trim()
+          const box = s.rangeCount && s.anchorNode && s.anchorNode.parentElement?.closest('.block')
+          const end = s.focusNode && s.focusNode.parentElement?.closest('.block')
+          if (!text || !box || box !== end || editing) {
+            selbtn.style.display = 'none'
+            return
+          }
+          const rect = s.getRangeAt(0).getBoundingClientRect()
+          selbtn.style.left = `${rect.right + scrollX - 40}px`
+          selbtn.style.top = `${rect.bottom + scrollY + 6}px`
+          selbtn.style.display = 'block'
+          selbtn.onclick = () => {
+            selbtn.style.display = 'none'
+            compose(Number(box.dataset.i), text.slice(0, 400))
+            getSelection().removeAllRanges()
+          }
+        })
+      })
+
+      $('handover').onclick = () => $('dlg').showModal()
+      $('cancel').onclick = () => $('dlg').close()
+      $('confirm').onclick = async () => {
+        const res = await fetch(`/handover?t=${t}`, {
+          method: 'POST',
+          body: JSON.stringify({ source: source(), comments, note: $('note').value.trim() }),
+        })
+        if (!res.ok) {
+          alert('Hand over failed. Your edits are kept in this tab.')
+          return
+        }
+        localStorage.removeItem(draftKey)
+        document.body.innerHTML = `<div class="done">Handed over to the agent. You can close this tab.</div>`
+      }
+      window.addEventListener('beforeunload', persist)
+      render()
+    </script>
+  </body>
+</html>

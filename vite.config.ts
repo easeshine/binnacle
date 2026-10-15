@@ -16,6 +16,8 @@ export default defineConfig({
       // Copied from pi-tui, and kept as close to it as we can.
       'packages/binnacle/src/terminal/pi/**',
       'apps/docs/src/routeTree.gen.ts',
+      // marked, vendored as it is published.
+      '**/doc/scripts/marked.esm.js',
     ],
     printWidth: 140,
   },
@@ -152,7 +154,7 @@ export default defineConfig({
         },
       },
     ],
-    ignorePatterns: ['.refs/**', '**/dist/**', 'node_modules/**', 'apps/docs/src/routeTree.gen.ts'],
+    ignorePatterns: ['.refs/**', '**/dist/**', 'node_modules/**', 'apps/docs/src/routeTree.gen.ts', '**/doc/scripts/marked.esm.js'],
     options: {
       typeAware: true,
       typeCheck: true,
