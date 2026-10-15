@@ -1,0 +1,24 @@
+# An author's trial profile: binnacle over dsh-base, and the author's plugins as rows, each off.
+- id: agent-default-model
+  name: '@deepseek-ai/dsh-agent-default-model'
+  config:
+    provider: openai-codex
+    model: gpt-6-luna
+- id: system-prompt
+  name: '@deepseek-ai/dsh-system-prompt'
+  config:
+    includeHarnessIdentity: false
+    includeRuntimeContext: true
+    personaPrefix: You are a coding agent powered by the {{model}} model from the {{provider}} provider.
+    personaSuffix: Your working directory is {{cwd}}.
+- id: sandbox-policy
+  name: '@deepseek-ai/dsh-sandbox-policy'
+  config:
+    mode: workspace-write
+- id: approval
+  name: '@deepseek-ai/dsh-user-approval'
+  config:
+    policy: ask
+- id: agent-preset-registry
+  config:
+    default: author
