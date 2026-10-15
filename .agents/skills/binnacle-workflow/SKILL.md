@@ -71,7 +71,7 @@ The Maintainer names the role of each agent at the start of a session, or before
 1. Pull `main`, run `vp install` and `vp run @easeshine/binnacle#build`, then run `node packages/binnacle/dist/cli.mjs` once, so that the `binnacle` profile runs what merged.
 2. Tell the Maintainer what to try: `binnacle`, then each Journey of the Spec, and what each one should draw.
 3. List the candidate ADRs: each decision of the Spec that binds more than one change, in one line each.
-4. File each problem that the Maintainer finds as an issue, for the `fix` skill. If one is too large for a fix, or the Intent was wrong, grill again.
+4. File each problem that the Maintainer finds as an issue, for the `fix` skill, with the label of its template in `.github/ISSUE_TEMPLATE/`: `bug` or `gap`. If one is too large for a fix, or the Intent was wrong, grill again.
 5. Write each ADR that the Maintainer picks, in a PR of its own.
 
 ## Before you end a session

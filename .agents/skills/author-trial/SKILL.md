@@ -68,3 +68,4 @@ Do every check yourself. An author's report is a claim.
 2. Give a table of the authors: the changes made, the tests that pass, the shortcuts taken, the time and the cost.
 3. List each wall with its sort and its evidence.
 4. Say where each profile, prompt and session is kept.
+5. For each wall that is binnacle's gap, or a gap in the docs, that the Maintainer agrees to, file an issue with the label `gap`, in the shape of `.github/ISSUE_TEMPLATE/gap.yml`.

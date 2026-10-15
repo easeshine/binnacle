@@ -1,6 +1,6 @@
 # Doors
 
-A PR has a **Door**: one-way or two-way. A one-way PR is hard to take back once it is published or kept, so the Maintainer reads it with more care.
+A PR has a **Door**: one-way or two-way. A one-way PR is hard to take back once it is published or kept, so the Maintainer reads it with more care. A one-way PR has the label `one-way`.
 
 A PR is **one-way** if it does one of these things:
 
