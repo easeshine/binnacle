@@ -216,3 +216,58 @@ test('the Tones mdHeading, mdCode and mdLink recolour the markdown', async () =>
   await settled()
   assert.deepEqual(await Promise.all([0, 2, 4].map((x) => terminal.colourAt(x, 0))), [5, 2, 1])
 })
+
+test("each piece of markdown draws in pi's Tone for it: a code block, a quote and its bar, a rule, a link's address and a list's bullet", async () => {
+  const { terminal, ctx } = await drawing('```\nb\n```\n\n> q\n\n---\n\n[l](https://x.io)\n\n- i', 30, 12)
+  await ctx.plugin({
+    name: 'theme',
+    inject: ['binnacle'],
+    apply: (plugin: Context) => {
+      plugin.binnacle.theme({
+        colors: { mdCodeBlock: 'green', mdQuoteBorder: 'red', mdQuote: 'magenta', mdHr: 'blue', mdLinkUrl: 'cyan', mdListBullet: 'yellow' },
+      })
+    },
+  })
+  await settled()
+  assert.deepEqual(
+    (await terminal.read()).rows.slice(0, 9).map((row) => row.trimEnd()),
+    ['  b', '', '│ q', '', '─'.repeat(30), '', 'l (https://x.io)', '', '• i'],
+  )
+  const colours = await Promise.all(
+    [
+      [2, 0],
+      [0, 2],
+      [2, 2],
+      [0, 4],
+      [3, 6],
+      [0, 8],
+      [2, 8],
+    ].map(([x, y]) => terminal.colourAt(x!, y!)),
+  )
+  assert.deepEqual(colours, [2, 1, 5, 4, 6, 3, 'default'])
+})
+
+test('with no layer, a code block, a quote, a rule, a link and a list bullet look as they did', async () => {
+  const { terminal } = await drawing('```\nb\n```\n\n> q\n\n---\n\n[l](https://x.io)\n\n- i', 30, 12)
+  const styles = await Promise.all(
+    [
+      [2, 0],
+      [0, 2],
+      [2, 2],
+      [0, 4],
+      [3, 6],
+      [0, 8],
+    ].map(async ([x, y]) => {
+      const { colour, dim, underline } = await terminal.styleAt(x!, y!)
+      return { colour, dim, underline }
+    }),
+  )
+  assert.deepEqual(styles, [
+    { colour: 3, dim: false, underline: false },
+    { colour: 8, dim: false, underline: false },
+    { colour: 8, dim: false, underline: false },
+    { colour: 'default', dim: true, underline: false },
+    { colour: 'default', dim: false, underline: false },
+    { colour: 'default', dim: false, underline: false },
+  ])
+})

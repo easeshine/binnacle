@@ -601,3 +601,120 @@ test('a generic result whose text is JSON draws a line for each key, a list of v
   ])
   assert.deepEqual([rows[6], rows[7], rows[18], rows[19]], ['⏺ many · 1.0s', '  ⎿ k0: 0', '    k11: 11', ''])
 })
+
+test("a card's line added and line removed draw in toolDiffAdded and toolDiffRemoved, its title in toolTitle, and a terminal's output in toolOutput", async () => {
+  const edit: Tool = { presentResult: () => ({ card: 'diff', diffs: [{ path: 'a.ts', oldText: 'a\n', newText: 'b\nc\n' }] }) }
+  const { drawn, terminal, ctx } = await reading(
+    [
+      call(0, 'edit', '{}'),
+      result(1, 'c0', 'ok'),
+      call(2, 'bash', '{"command":"ls"}'),
+      result(3, 'c2', '', { meta: { output: 'a.ts', exitCode: 0 } }),
+    ],
+    { edit, bash: shell },
+  )
+  const pieces = async () => [
+    await terminal.colourAt(9, 1),
+    await terminal.colourAt(12, 1),
+    await terminal.colourAt(4, 4),
+    ...(await Promise.all([0, 2].map(async (x) => (await terminal.styleAt(x, 0)).bold))),
+    (await terminal.styleAt(2, 3)).bold,
+    (await terminal.styleAt(6, 3)).bold,
+  ]
+  assert.deepEqual((await drawn()).slice(0, 6), ['⏺ edit · 1.0s', '  ⎿ a.ts +2 -1', '', '⏺ ls · 1.0s', '  ⎿ a.ts', ''])
+  const before = await pieces()
+  ctx.binnacle.theme({ colors: { toolDiffAdded: 'magenta', toolDiffRemoved: 'yellow', toolTitle: { bold: true }, toolOutput: 'blue' } })
+  await drawn()
+  assert.deepEqual(
+    [before, await pieces()],
+    [
+      [GREEN, RED, 'default', false, false, false, false],
+      [5, YELLOW, 4, false, true, true, false],
+    ],
+  )
+})
+
+test("each piece of a card that draws in a general Tone draws through the card's own Tone, transcript.card.<Tone>, which an author colours alone", async () => {
+  const grep: Tool = { presentResult: () => ({ card: 'search', shape: 'matches', files: [], truncated: true, total: 120 }) }
+  const { drawn, terminal, ctx } = await reading(
+    [
+      call(0, 'bash', '{"command":"seq"}'),
+      result(1, 'c0', '', { meta: { output: 'a\nb', exitCode: 3 } }),
+      call(2, 'grep', '{}'),
+      result(3, 'c2', ''),
+      call(4, 'todo_write', TODOS),
+      call(6, 'ls', '{}'),
+      result(7, 'c6', 'a'),
+    ],
+    { bash: shell, grep, todo_write: todoWrite },
+    20,
+  )
+  ctx.binnacle.look<CardMostLook>('transcript.card.most', () => () => 1)
+  ctx.binnacle.theme({
+    colors: {
+      'transcript.card.accent': 'blue',
+      'transcript.card.success': 'magenta',
+      'transcript.card.error': 'yellow',
+      'transcript.card.warning': 'bright-red',
+      'transcript.card.muted': 'white',
+    },
+  })
+  await drawn()
+  terminal.type(clickAt(3, 13))
+  assert.deepEqual((await drawn()).slice(0, 15), [
+    '⏺ seq · 1.0s',
+    '  ⎿ … 1 earlier lines',
+    '    b',
+    '    exit 3',
+    '',
+    '⏺ grep · 1.0s',
+    '  ⎿ 120 matches (truncated)',
+    '',
+    '⏺ Update todo list',
+    '  ⎿ [x] Write the test',
+    '    [ ] Fix the parser',
+    '    [ ] Ship',
+    '',
+    '⏺ ls · 1.0s (1 line)',
+    '',
+  ])
+  const colours = await Promise.all(
+    [
+      [0, 0],
+      [6, 0],
+      [4, 1],
+      [4, 3],
+      [16, 6],
+      [0, 8],
+      [8, 9],
+      [8, 10],
+      [0, 13],
+      [12, 13],
+    ].map(([x, y]) => terminal.colourAt(x!, y!)),
+  )
+  assert.deepEqual(colours, [YELLOW, 7, 7, YELLOW, 9, 4, 7, 4, 5, 7])
+})
+
+test("a layer that gives transcript.card.error orange draws a card's exit status in orange, and each other error stays in error, as each follows error until then", async () => {
+  const { drawn, terminal, ctx } = await reading(
+    [
+      call(0, 'bash', '{"command":"false"}'),
+      result(1, 'c0', '', { meta: { output: '', exitCode: 3 } }),
+      at(2, 'turn/end', { turn: 1, reason: { kind: 'error', error: { message: 'the key is wrong', code: 'X' } } }),
+    ],
+    { bash: shell },
+  )
+  const errors = async () => [await terminal.colourAt(4, 1), await terminal.colourAt(2, 3)]
+  ctx.binnacle.theme({ colors: { error: '#ff5f87' } })
+  assert.deepEqual((await drawn()).slice(0, 4), ['⏺ false · 1.0s', '  ⎿ exit 3', '', '✗ the key is wrong'])
+  const pink = await errors()
+  ctx.binnacle.theme({ colors: { 'transcript.card.error': 'orange' } })
+  await drawn()
+  assert.deepEqual(
+    [pink, await errors()],
+    [
+      ['#ff5f87', '#ff5f87'],
+      [208, '#ff5f87'],
+    ],
+  )
+})

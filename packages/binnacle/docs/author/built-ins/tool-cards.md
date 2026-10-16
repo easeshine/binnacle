@@ -1,6 +1,25 @@
 # Tool cards
 
-The row `binnacle-tool-cards` draws each tool call and its result as one card, where the call is: `⏺ ` and the tool's title, its body, then a blank line. The `⏺` is in the `accent` Tone while the call runs, `success` when it is done, and `error` when it failed, and a card that is done ends its first line with how long the call took, such as ` · 1.2s`, in the `muted` Tone. The body comes from dsh's views of the call and its result, which each tool gives with its `presentCall` and `presentResult`: a shell command's last 12 lines, a diff's counts for each file, a search's matches, or a read's lines. Turn the row off, and a call and its result draw as two lines again, as [The transcript's view](transcript.md#the-transcripts-view) says.
+The row `binnacle-tool-cards` draws each tool call and its result as one card, where the call is: `⏺ ` and the tool's title, its body, then a blank line. The `⏺` is in the Tone `transcript.card.accent` while the call runs, `transcript.card.success` when it is done, and `transcript.card.error` when it failed, and a card that is done ends its first line with how long the call took, such as ` · 1.2s`, in `transcript.card.muted`. The body comes from dsh's views of the call and its result, which each tool gives with its `presentCall` and `presentResult`: a shell command's last 12 lines, a diff's counts for each file, a search's matches, or a read's lines. Turn the row off, and a call and its result draw as two lines again, as [The transcript's view](transcript.md#the-transcripts-view) says.
+
+- The card draws in Tones of its own and in pi's, so a theme layer colours one piece of a card alone. Each of its own Tones is like the general Tone of its name until a layer changes it, so a change to `error` reaches `transcript.card.error`:
+
+  | Tone | Draws | Like |
+  |---|---|---|
+  | `transcript.card.accent` | the `⏺` of a call that runs, and a todo in progress | `accent` |
+  | `transcript.card.success` | the `⏺` of a call that succeeded | `success` |
+  | `transcript.card.error` | the `⏺` of a call that failed, and a shell's `exit <code>` or `signal <name>` | `error` |
+  | `transcript.card.warning` | a search's ` (truncated)` | `warning` |
+  | `transcript.card.muted` | `… <n> earlier lines`, the time, the count of a folded card, and a completed todo | `muted` |
+  | `toolTitle` | the title's text, after the `⏺` | `text` |
+  | `toolOutput` | each line of a shell's output | `text` |
+  | `toolDiffAdded`, `toolDiffRemoved` | a diff's `+<added>` and `-<removed>` | `success`, `error` |
+
+  This draws a shell's exit status in orange, and leaves every other error in `error`:
+
+  ```js
+  ctx.binnacle.theme({ colors: { 'transcript.card.error': 'orange' } })
+  ```
 
 - It sets `transcript.event.tool/call` to draw the card, and `transcript.event.tool/result` to draw nothing when its call is in the session, and `beneath` when it is not.
 - A card draws through the Look `transcript.card`, of the type `CardLook` from `@easeshine/binnacle/plugins/tool-cards`: `(card, { width, isFolded }) => Line[]`. It is given a `Card`:

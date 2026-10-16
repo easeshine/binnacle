@@ -26,10 +26,13 @@ const SHOWN_MS = 2000
 const FAILURE_SHOWN_MS = 5000
 
 const NOTICES: { readonly [outcome in NonNullable<CopyState['last']>['outcome']]: readonly [string, Tone] } = {
-  copied: ['copied', 'success'],
-  sent: ['sent to the terminal', 'muted'],
-  failed: ['copy failed', 'error'],
+  copied: ['copied', 'status.success'],
+  sent: ['sent to the terminal', 'status.muted'],
+  failed: ['copy failed', 'status.error'],
 }
+
+/** The status line's own Tones, `status.<the general Tone>`, each like its general Tone until a layer changes it. */
+const OWN = Object.fromEntries((['text', 'success', 'muted', 'error'] as const).map((tone) => [`status.${tone}`, { like: tone }]))
 
 const valuesOf = ({ id, agent }: ChatSession): { readonly [place: string]: string | undefined } =>
   agent === undefined
@@ -41,13 +44,14 @@ export function apply(plugin: Context): void {
   plugin.inject(['binnacleSession'], (ctx) => {
     const { binnacle } = ctx
     const chat = ctx.binnacleSession
+    binnacle.theme({ colors: OWN })
     binnacle.layout('status', STATUS_LAYOUT)
     const segments = ['status.state', 'status.model'].map((place) =>
       binnacle.place(place, {
         lines: () => {
           const value = valuesOf(chat)[place]
           if (value === undefined) return []
-          const look = binnacle.lookOf<SegmentLook>([place], (plain) => binnacle.paint('text', plain))
+          const look = binnacle.lookOf<SegmentLook>([place], (plain) => binnacle.paint('status.text', plain))
           return [look(toPlainText(value))]
         },
       }),

@@ -548,3 +548,11 @@ test('the composer draws its cursor only while it has the Focus', async () => {
   }
   assert.deepEqual([await cursor('h', 'i'), await cursor('\x1b[Z'), await cursor('\x1b[Z')], [true, false, true])
 })
+
+test("a tall draft's rows that tell the hidden rows draw in the composer's own Tone, composer.muted, which an author colours alone", async () => {
+  const { typed, terminal, ctx } = await chat(20, 12)
+  ctx.binnacle.theme({ colors: { 'composer.muted': 'cyan' } })
+  const lines = Array.from({ length: 10 }, (_, n) => `l${n}`)
+  assert.deepEqual((await typed(...lines.flatMap((line) => [...line, '\x1b[13;2u']).slice(0, -1)))[4], '↑ 4 more')
+  assert.deepEqual([await terminal.colourAt(0, 4), await terminal.colourAt(0, 5)], [6, 'default'])
+})

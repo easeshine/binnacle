@@ -100,6 +100,9 @@ function tell(file: string, version: string): void {
 
 export function apply(ctx: Context, config: Config = {}): void {
   const { binnacle } = ctx
+  binnacle.theme({
+    colors: { 'notice.warning': { like: 'warning' }, 'notice.muted': { like: 'muted' }, 'notice.accent': { like: 'accent' } },
+  })
   const own = manifest()
   const told = config.told === undefined ? join(dshHome(), 'binnacle', 'notice.json') : expanded(config.told)
   const repository = own.repository?.url?.replace(/^git\+/, '').replace(/\.git$/, '')
@@ -107,12 +110,12 @@ export function apply(ctx: Context, config: Config = {}): void {
   ctx.effect(() => () => unloaded.abort(), 'binnacle-notice: npm is waited for no more')
 
   const drawn: UpdateLook = ({ version, command, changelog }, width) => {
-    const rule = binnacle.paint('warning', binnacle.tokens.glyphs.rule.repeat(width))
+    const rule = binnacle.paint('notice.warning', binnacle.tokens.glyphs.rule.repeat(width))
     return [
       rule,
-      ` ${binnacle.paint({ ...binnacle.tokens.colors.warning, bold: true }, 'Update Available')}`,
-      ` ${binnacle.paint('muted', `New version ${version} is available. Run `)}${binnacle.paint('accent', command)}`,
-      ` ${binnacle.paint('muted', 'Changelog: ')}${binnacle.paint('accent', changelog)}`,
+      ` ${binnacle.paint({ like: 'notice.warning', bold: true }, 'Update Available')}`,
+      ` ${binnacle.paint('notice.muted', `New version ${version} is available. Run `)}${binnacle.paint('notice.accent', command)}`,
+      ` ${binnacle.paint('notice.muted', 'Changelog: ')}${binnacle.paint('notice.accent', changelog)}`,
       rule,
       '',
     ]

@@ -111,6 +111,11 @@ const shellFailed = (view: ToolResultView | undefined): boolean =>
 
 const most: CardMostLook = () => 12
 
+const GENERAL = ['accent', 'success', 'error', 'warning', 'muted'] as const
+
+/** The card's own Tones, `transcript.card.<the general Tone>`, each like its general Tone until a layer changes it. */
+const OWN = Object.fromEntries(GENERAL.map((tone) => [`transcript.card.${tone}`, { like: tone }]))
+
 const time: CardTimeLook = ({ startedAt, endedAt }) => {
   if (endedAt === undefined) return ''
   const took = Math.max(0, endedAt - startedAt)
@@ -122,7 +127,9 @@ const time: CardTimeLook = ({ startedAt, endedAt }) => {
 export function apply(ctx: Context): void {
   const { binnacle } = ctx
   const transcript = binnacle.modelOf<TranscriptState>('transcript')
+  binnacle.theme({ colors: OWN })
   const paint = (tone: Tone, text: string): string => binnacle.paint(tone, text)
+  const own = (tone: (typeof GENERAL)[number], text: string): string => paint(`transcript.card.${tone}`, text)
   const cut = (text: string, width: number): string => truncateToWidth(text, Math.max(0, width), binnacle.tokens.glyphs.more)
   const first = (card: Card, text: string, width: number): string[] =>
     linesOf(text)
@@ -130,10 +137,10 @@ export function apply(ctx: Context): void {
       .map((line) => cut(toPlainText(line), width))
   const titled = (title: string | undefined, width: number): string[] => (title === undefined ? [] : [cut(oneLine(title), width)])
 
-  const mark: CardMarkLook = (card) => paint(card.result === undefined ? 'accent' : card.result.failed ? 'error' : 'success', '⏺')
+  const mark: CardMarkLook = (card) => own(card.result === undefined ? 'accent' : card.result.failed ? 'error' : 'success', '⏺')
   const title: CardTitleLook = (card, width) => {
     const dot = pieces.mark()(card)
-    return `${dot} ${cut(oneLine(card.call?.title ?? card.name), width - visibleWidth(dot) - 1)}`
+    return `${dot} ${paint('toolTitle', cut(oneLine(card.call?.title ?? card.name), width - visibleWidth(dot) - 1))}`
   }
   // The raw arguments of each card the row makes, as parsing and serializing them again can change them, such as a number's digits.
   const raws = new WeakMap<Card, string>()
@@ -173,9 +180,9 @@ export function apply(ctx: Context): void {
     const status =
       signal !== undefined ? `signal ${oneLine(signal)}` : exitCode !== undefined && exitCode !== 0 ? `exit ${exitCode}` : undefined
     return [
-      ...(earlier > 0 ? [paint('muted', `${binnacle.tokens.glyphs.more} ${earlier} earlier lines`)] : []),
-      ...lines.slice(Math.max(0, earlier)).map((line) => cut(toPlainText(line), width)),
-      ...(status === undefined ? [] : [paint('error', cut(status, width))]),
+      ...(earlier > 0 ? [own('muted', `${binnacle.tokens.glyphs.more} ${earlier} earlier lines`)] : []),
+      ...lines.slice(Math.max(0, earlier)).map((line) => paint('toolOutput', cut(toPlainText(line), width))),
+      ...(status === undefined ? [] : [own('error', cut(status, width))]),
     ]
   }
   const diff: CardBodyLook = (card, width) => {
@@ -184,14 +191,14 @@ export function apply(ctx: Context): void {
     return view.diffs.map(({ path, oldText, newText }) => {
       const { added, removed } = counts(oldText, newText)
       const tail = ` +${added} -${removed}`
-      return `${cut(oneLine(path), width - visibleWidth(tail))} ${paint('success', `+${added}`)} ${paint('error', `-${removed}`)}`
+      return `${cut(oneLine(path), width - visibleWidth(tail))} ${paint('toolDiffAdded', `+${added}`)} ${paint('toolDiffRemoved', `-${removed}`)}`
     })
   }
   const search: CardBodyLook = (card, width) => {
     const view = card.result?.view
     if (view?.card !== 'search') return generic(card, width)
     const found = `${view.total} ${view.shape === 'paths' ? 'paths' : 'matches'}`
-    return [view.truncated ? `${found}${paint('warning', ' (truncated)')}` : found]
+    return [view.truncated ? `${found}${own('warning', ' (truncated)')}` : found]
   }
   const read: CardBodyLook = (card, width) => {
     const view = card.result?.view
@@ -214,8 +221,8 @@ export function apply(ctx: Context): void {
       const { content, status } = fields(item) ?? {}
       if (typeof content !== 'string') return []
       const line = (box: string): string => cut(`${box} ${oneLine(content)}`, width)
-      if (status === 'completed') return [paint('muted', line(checked))]
-      return [status === 'in_progress' ? paint('accent', line(unchecked)) : line(unchecked)]
+      if (status === 'completed') return [own('muted', line(checked))]
+      return [status === 'in_progress' ? own('accent', line(unchecked)) : line(unchecked)]
     })
   }
   binnacle.look<CardBodyLook>('transcript.tool.todo_write', () => todos)
@@ -257,7 +264,7 @@ export function apply(ctx: Context): void {
 
   const cardLook: CardLook = (card, { width, isFolded }) => {
     const took = pieces.time()(card)
-    const after = took === '' ? '' : paint('muted', ` · ${took}`)
+    const after = took === '' ? '' : own('muted', ` · ${took}`)
     const body = pieces.body(card)(card, Math.max(1, width - visibleWidth(FIRST)))
     // A card of one line has nothing to fold, so its line is a Line that folds nothing.
     if (body.length === 0) return [{ text: pieces.title()(card, width - visibleWidth(after)) + after }]
@@ -269,7 +276,7 @@ export function apply(ctx: Context): void {
       ]
     const region = `${card.seq}/body`
     const folded = isFolded(region)
-    const count = folded ? paint('muted', ` (${body.length} ${body.length === 1 ? 'line' : 'lines'})`) : ''
+    const count = folded ? own('muted', ` (${body.length} ${body.length === 1 ? 'line' : 'lines'})`) : ''
     const text = pieces.title()(card, width - visibleWidth(after) - visibleWidth(count)) + after + count
     return folded ? [{ text, fold: region }] : [{ text, fold: region }, ...body.map((line, at) => (at === 0 ? FIRST : REST) + line)]
   }

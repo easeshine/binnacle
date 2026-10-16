@@ -11,8 +11,8 @@ The row `binnacle-status-line` sets the Layout `status`, which the Chat draws. I
 
 - `status.state` is the agent's status, `idle` or `running`, or `read only` on a stored session.
 - `status.model` is the agent's model, or the stored session's id.
-- `status.copy` is how the newest copy ended, read from the model `copy` ([Copying](copy.md)): `copied` in `success` and `sent to the terminal` in `muted`, for two seconds, or `copy failed:` and why in `error`, for five seconds, from the copy's `at` on the core's clock. It draws nothing otherwise, so it takes no divider.
-- Each segment draws through the Look by its Place's name, `(value) => line`. It is given its value, plain already, and returns one line. Its default draws the value in `text`, and `status.copy`'s in its outcome's Tone. Set one, and only that segment changes:
+- `status.copy` is how the newest copy ended, read from the model `copy` ([Copying](copy.md)): `copied` in `status.success` and `sent to the terminal` in `status.muted`, for two seconds, or `copy failed:` and why in `status.error`, for five seconds, from the copy's `at` on the core's clock. It draws nothing otherwise, so it takes no divider.
+- Each segment draws through the Look by its Place's name, `(value) => line`. It is given its value, plain already, and returns one line. Its default draws the value in `status.text`, and `status.copy`'s in its outcome's Tone. The status line's own Tones, `status.text`, `status.success`, `status.muted` and `status.error`, are each like the general Tone of its name until a layer changes it, so `ctx.binnacle.theme({ colors: { 'status.success': 'magenta' } })` colours `copied` alone. Set one, and only that segment changes:
 
   ```js
   ctx.binnacle.look('status.state', (beneath) => (value) => (value === 'running' ? ctx.binnacle.paint('accent', value) : beneath(value)))

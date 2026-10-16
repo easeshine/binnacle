@@ -51,19 +51,19 @@ const source = (token: Token): string => plain(token.raw.replace(/\n+$/, ''))
 
 const wrapped: MarkdownParagraphLook = (text, { width }) => wrap(text, width)
 
-const listItem: MarkdownItemLook = (lines, { marker }) => {
-  const rest = ' '.repeat(visibleWidth(marker))
-  return lines.length === 0 ? [marker] : lines.map((line, at) => (at === 0 ? marker : rest) + line)
-}
-
 function defaults(binnacle: Binnacle) {
   const paint = binnacle.paint.bind(binnacle)
   const heading: MarkdownHeadingLook = (text, { width }) => wrap(text, width).map((line) => paint('mdHeading', line))
   const code: MarkdownCodeLook = (lines, { width }) =>
-    lines.flatMap((line) => wrap(line, width, { first: '  ' })).map((line) => paint('mdCode', line))
-  const quote: MarkdownQuoteLook = (lines) => lines.map((line) => paint('muted', `│ ${line}`))
-  const rule: MarkdownRuleLook = ({ width }) => [paint('border', binnacle.tokens.glyphs.rule.repeat(width))]
-  return { heading, paragraph: wrapped, code, item: listItem, quote, rule }
+    lines.flatMap((line) => wrap(line, width, { first: '  ' })).map((line) => paint('mdCodeBlock', line))
+  const item: MarkdownItemLook = (lines, { marker }) => {
+    const first = paint('mdListBullet', marker)
+    const rest = ' '.repeat(visibleWidth(marker))
+    return lines.length === 0 ? [first] : lines.map((line, at) => (at === 0 ? first : rest) + line)
+  }
+  const quote: MarkdownQuoteLook = (lines) => lines.map((line) => paint('mdQuoteBorder', '│ ') + paint('mdQuote', line))
+  const rule: MarkdownRuleLook = ({ width }) => [paint('mdHr', binnacle.tokens.glyphs.rule.repeat(width))]
+  return { heading, paragraph: wrapped, code, item, quote, rule }
 }
 
 /** The lines of a markdown text, Untrusted Text, wrapped at `width`. Each block draws through its Look, `markdown.<block>`. */
@@ -97,7 +97,7 @@ export function markdown(binnacle: Binnacle, text: string, width: number): strin
       case 'link': {
         const { href } = known
         const drawn = binnacle.paint('mdLink', inline(known.tokens ?? []))
-        return known.text === href ? drawn : `${drawn} (${plain(href)})`
+        return known.text === href ? drawn : `${drawn} ${binnacle.paint('mdLinkUrl', `(${plain(href)})`)}`
       }
       default:
         return source(token)
