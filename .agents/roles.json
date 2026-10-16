@@ -1,6 +1,6 @@
 {
   "lead": "claude:claude-opus-5-5",
-  "implementer": "herdr:pi:zai/glm-5.3@max",
+  "implementer": "subagent:opus",
   "reviewer": "headless:pi:openai-codex/gpt-6.1-sol@medium",
   "families": {
     "anthropic": "anthropic",
