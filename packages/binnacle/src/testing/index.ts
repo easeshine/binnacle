@@ -10,6 +10,7 @@ import type { Binnacle } from '../api.ts'
 import { agents } from './agents.ts'
 import { FakeSystem, mountCore } from './core.ts'
 import { ESCAPE_WAIT_MS, MOTION, mouse, sequenceOf } from './keys.ts'
+import { BUILT_INS } from './rows.ts'
 import { persistence } from './sessions.ts'
 import { PACKAGE } from '../core/name.ts'
 
@@ -41,6 +42,8 @@ export interface MountOptions {
    * One by the name of a fake of the mount's own, `agents` or `agentDefaultModel`, replaces it: an `agents` whose `create` never settles keeps the session from opening.
    */
   readonly provide?: (ctx: Context) => void
+  /** A folder that dsh gives the plugins as its profile's, through `profileContext`, where binnacle reads `palette.json`. With none, there is no profile folder. */
+  readonly profile?: string
 }
 
 /** A cell of the terminal, counted from 0. */
@@ -113,21 +116,6 @@ export interface Mounted {
   close(): Promise<void>
 }
 
-/** The bundle's rows, in its order, the modules they load, and a row's config in a test. */
-const BUILT_INS: readonly (readonly [string, string, () => Promise<object>, unknown?])[] = [
-  ['binnacle-transcript', `${PACKAGE}/plugins/transcript`, () => import('../plugins/transcript/index.ts')],
-  ['binnacle-transcript-view', `${PACKAGE}/plugins/transcript-view`, () => import('../plugins/transcript-view/index.ts')],
-  // A test asks npm nothing.
-  ['binnacle-notice', `${PACKAGE}/plugins/notice`, () => import('../plugins/notice/index.ts'), { latest: '' }],
-  ['binnacle-tool-cards', `${PACKAGE}/plugins/tool-cards`, () => import('../plugins/tool-cards/index.ts')],
-  ['binnacle-composer', `${PACKAGE}/plugins/composer`, () => import('../plugins/composer/index.ts')],
-  ['binnacle-commands', `${PACKAGE}/plugins/commands`, () => import('../plugins/commands/index.ts')],
-  ['binnacle-copy', `${PACKAGE}/plugins/copy`, () => import('../plugins/copy/index.ts')],
-  ['binnacle-status-line', `${PACKAGE}/plugins/status-line`, () => import('../plugins/status-line/index.ts')],
-  ['binnacle-requests', `${PACKAGE}/plugins/requests`, () => import('../plugins/requests/index.ts')],
-  ['binnacle-requests-view', `${PACKAGE}/plugins/requests-view`, () => import('../plugins/requests-view/index.ts')],
-]
-
 let open = false
 
 const CLOSED = 'binnacle/testing: this mount is closed'
@@ -182,6 +170,8 @@ async function mounting(options: MountOptions, made: { ctx?: Context; restore?: 
     rows: options.size?.rows ?? 24,
     args: options.stored === undefined ? [] : ['--session', options.stored.id],
     provide: (ctx) => {
+      // dsh's launcher gives more of a profile than its folder; binnacle reads only the folder.
+      if (options.profile !== undefined) ctx.provide('profileContext' as never, { dir: options.profile } as never)
       options.provide?.(ctx)
       const provideUnless = (name: string, value: unknown): void => {
         // Cordis types a service by its registered name; the fake dsh provides each by a name it is given.

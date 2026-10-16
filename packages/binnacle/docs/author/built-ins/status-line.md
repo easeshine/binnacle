@@ -4,15 +4,16 @@ The row `binnacle-status-line` sets the Layout `status`, which the Chat draws. I
 
 ```js
 {
-  row: [{ place: 'status.state' }, { place: 'status.model' }, { place: 'status.copy' }],
+  row: [{ place: 'status.palette' }, { place: 'status.state' }, { place: 'status.model' }, { place: 'status.copy' }],
   separator: true,
 }
 ```
 
+- `status.palette` is what is wrong with the person's `palette.json`, read from `binnacle.palette.state.error` ([The person's own colours](../concepts/theme.md#the-persons-own-colours)), in `status.error`. It draws nothing while nothing is wrong, so it takes no divider.
 - `status.state` is the agent's status, `idle` or `running`, or `read only` on a stored session.
 - `status.model` is the agent's model, or the stored session's id.
 - `status.copy` is how the newest copy ended, read from the model `copy` ([Copying](copy.md)): `copied` in `status.success` and `sent to the terminal` in `status.muted`, for two seconds, or `copy failed:` and why in `status.error`, for five seconds, from the copy's `at` on the core's clock. It draws nothing otherwise, so it takes no divider.
-- Each segment draws through the Look by its Place's name, `(value) => line`. It is given its value, plain already, and returns one line. Its default draws the value in `status.text`, and `status.copy`'s in its outcome's Tone. The status line's own Tones, `status.text`, `status.success`, `status.muted` and `status.error`, are each like the general Tone of its name until a layer changes it, so `ctx.binnacle.theme({ colors: { 'status.success': 'magenta' } })` colours `copied` alone. Set one, and only that segment changes:
+- Each segment draws through the Look by its Place's name, `(value) => line`. It is given its value, plain already, and returns one line. Its default draws the value in `status.text`, `status.copy`'s in its outcome's Tone, and `status.palette`'s in `status.error`. The status line's own Tones, `status.text`, `status.success`, `status.muted` and `status.error`, are each like the general Tone of its name until a layer changes it, so `ctx.binnacle.theme({ colors: { 'status.success': 'magenta' } })` colours `copied` alone. Set one, and only that segment changes:
 
   ```js
   ctx.binnacle.look('status.state', (beneath) => (value) => (value === 'running' ? ctx.binnacle.paint('accent', value) : beneath(value)))

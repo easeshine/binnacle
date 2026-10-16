@@ -63,6 +63,16 @@ export interface SelectionState {
   readonly selected: { readonly place: string; readonly text: string } | undefined
 }
 
+/** The state of `binnacle.palette`: the person's palette, from `palette.json` in binnacle's profile. */
+export interface PaletteState {
+  /** The id of the palette that the file names, such as `pi/dark`, or `terminal`, binnacle's defaults, while it names none. */
+  readonly inUse: string
+  /** The id of the palette drawn now. */
+  readonly shown: string
+  /** What is wrong with the file, as `palette.json: ` and why; `undefined` while nothing is. The colours stay as they were before the mistake. */
+  readonly error: string | undefined
+}
+
 /** Each colour that pi's themes name, by pi's name: the Tones that binnacle's defaults give. */
 type PiTone = keyof typeof DEFAULT_COLORS
 
@@ -355,10 +365,15 @@ export interface Binnacle {
    * A page is as many rows as the Place's box shows. A Place that is not drawn, or that has no rows of room, does not scroll. It never moves the Focus.
    */
   scroll(place: string, pages: number): void
-  /** Adds a layer to the theme, and draws everything again. The newest layer wins for each token it names. It refuses a colour that is not one, a Hue that is not one, a `like` that makes a loop, and a Tone renamed to pi's name. */
+  /** Adds a layer to the theme, and draws everything again. The newest layer wins for each token it names, and the person's own colours, from `palette.json`, win over every layer. It refuses a colour that is not one, a Hue that is not one, a `like` that makes a loop, and a Tone renamed to pi's name. */
   theme(layer: ThemeLayer): Handle
-  /** The theme's tokens, as its layers make them now. */
+  /** The theme's tokens, as its layers make them now, with the person's own colours over them. */
   readonly tokens: Tokens
+  /**
+   * The person's palette, read from `palette.json` in binnacle's profile, and read again at each save. Its `hues` and `colors` lie over every plugin's layer.
+   * `set` changes nothing: only the file does.
+   */
+  readonly palette: Model<PaletteState>
   /**
    * The text in the Tone's style, or in the Style given, such as `{ bold: true }`. A Part paints at each draw, so that its lines follow the theme.
    * A Style is drawn for the terminal's colours, as a Tone is. It refuses a colour that is not one.

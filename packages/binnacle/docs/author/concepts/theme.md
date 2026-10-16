@@ -9,7 +9,7 @@ ctx.binnacle.theme({
 })
 ```
 
-- `binnacle.theme(layer)` adds a layer. Only the tokens that it names change, and the others stay as they were. The newest layer wins for each token. A layer goes when the plugin that added it unloads, and everything is drawn again.
+- `binnacle.theme(layer)` adds a layer. Only the tokens that it names change, and the others stay as they were. The newest layer wins for each token, and the person's own colours win over every layer ([The person's own colours](#the-persons-own-colours)). A layer goes when the plugin that added it unloads, and everything is drawn again.
 - A colour is a Hue by name, such as `cyan` or `orange`; a 256-colour index, such as `67`; or an exact colour, as `#rrggbb`, `#rgb`, `okhsl(h s% l%)` or `oklch(l c h)`. An exact colour is drawn as the nearest of 256 where the terminal has no truecolor.
 - A Tone's token is a colour, or a Style: `{ color, background, bold, dim, italic, underline, inverse, like }`. `inverse` swaps the text's colour and the background's. A plain colour stands for `{ color }`, and a Style with no `color` keeps the terminal's own.
 - `binnacle.theme` refuses a colour that is not one, such as `'36'`, be it a Tone's colour or its background, and names its Tone.
@@ -30,6 +30,22 @@ ctx.binnacle.place('card', {
     ctx.binnacle.fill('muted', ''),
     ctx.binnacle.fill('muted', ctx.binnacle.paint('accent', 'A card')),
   ],
+})
+```
+
+## The person's own colours
+
+A person writes their own colours in `palette.json`, in binnacle's profile folder ([Colours](../../use/colours.md)). The file holds a layer's `hues` and `colors`, and binnacle reads it again at each save. Its layer lies over every plugin's layer, a built-in's or an author's, whichever loads last. No plugin can rank above it, so no feature draws over the person's choice. `binnacle.tokens`, `paint` and `fill` draw with it.
+
+- A Tone of a feature's own that the file does not name keeps its `like`, so it follows the person's colour of the general Tone.
+- A file with a mistake leaves the colours as they were. `binnacle.palette` is a Model of `{ inUse, shown, error }`: `error` says what is wrong, as `palette.json: ` and why, and is `undefined` while nothing is. The status line draws it in `status.palette`.
+- `inUse` is the id of the palette that the file's `palette` names, or `terminal`, binnacle's defaults, while it names none. `shown` is the id of the palette drawn now.
+- Watch `binnacle.palette`, or name it in a Part's `models`, to draw again when it changes. Its `set` changes nothing: only the file does.
+
+```js
+ctx.binnacle.place('warning', {
+  models: [ctx.binnacle.palette],
+  lines: () => (ctx.binnacle.palette.state.error === undefined ? [] : [ctx.binnacle.paint('warning', 'see palette.json')]),
 })
 ```
 

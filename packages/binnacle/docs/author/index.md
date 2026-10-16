@@ -6,7 +6,7 @@ binnacle's own features are plugins too, and they import only what the package e
 
 | Row | Feature | Source |
 |---|---|---|
-| `binnacle` | the core: the terminal, Layouts, Places, the Focus, gestures, and the Kit | `src/index.ts`, `src/core/`, `src/kit/` |
+| `binnacle` | the core: the terminal, Layouts, Places, the Focus, gestures, the person's `palette.json`, and the Kit | `src/index.ts`, `src/core/`, `src/kit/` |
 | `binnacle-transcript` | the session's events | `src/plugins/transcript/index.ts` |
 | `binnacle-transcript-view` | the transcript a person reads: prompts, answers and what the agent did | `src/plugins/transcript-view/index.ts` |
 | `binnacle-notice` | the notice of a new version, above the transcript's first event | `src/plugins/notice/index.ts` |

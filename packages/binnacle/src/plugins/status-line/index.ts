@@ -17,7 +17,7 @@ const deepFrozen = <T extends object>(value: T): T => {
 
 /** The Layout `status`: the segments, joined by the theme's `divider`. Frozen, as an author builds on it. */
 export const STATUS_LAYOUT: Layout & { readonly row: readonly Layout[] } = deepFrozen({
-  row: [{ place: 'status.state' }, { place: 'status.model' }, { place: 'status.copy' }],
+  row: [{ place: 'status.palette' }, { place: 'status.state' }, { place: 'status.model' }, { place: 'status.copy' }],
   separator: true,
 })
 
@@ -70,6 +70,15 @@ export function apply(plugin: Context): void {
         const text = last.reason === undefined ? notice : `${notice}: ${toPlainText(last.reason)}`
         const look = binnacle.lookOf<SegmentLook>(['status.copy'], (plain) => binnacle.paint(tone, plain))
         return [look(text)]
+      },
+    })
+    binnacle.place('status.palette', {
+      models: [binnacle.palette],
+      lines: () => {
+        const { error } = binnacle.palette.state
+        if (error === undefined) return []
+        const look = binnacle.lookOf<SegmentLook>(['status.palette'], (plain) => binnacle.paint('status.error', plain))
+        return [look(toPlainText(error))]
       },
     })
     ctx.on('agent/status', ({ agent }) => {
