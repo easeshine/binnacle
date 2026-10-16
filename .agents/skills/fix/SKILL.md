@@ -32,7 +32,7 @@ A fix is small when a reviewer can hold all of it in one read, and the Maintaine
 12. If the second Round ends with `changes`, stop the Rounds. List each open finding in the PR.
 13. Push the branch. Write the PR's body with the `pr` skill, and open the PR with `gh pr create --body-file`.
 14. Post each report as a comment of its own, oldest first: `gh pr comment <pr> --body-file <report>`.
-15. Tell the Maintainer the PR. The Maintainer merges it.
+15. Merge the PR when its checks pass, and tell the Maintainer. If the Rounds stopped with a finding open, leave it for the Maintainer to merge.
 16. After it merges or closes, remove both checkouts: `git worktree remove ~/.binnacle/worktrees/fix-<n>`, and `git worktree remove ~/.binnacle/reviews/fix-<n>-<slug>/checkout`.
 
 ## The PR

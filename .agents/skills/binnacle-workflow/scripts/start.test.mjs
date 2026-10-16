@@ -158,3 +158,28 @@ test('`task build` refuses a Part whose task folder, worktree or branch exists, 
   assert.equal(existsSync(join(world.home, 'tasks', 'menus.3')), false)
   assert.equal(existsSync(join(world.home, 'worktrees', 'menus-3')), false)
 })
+
+test('A slug can name a Spec in a folder of Specs, `<group>/<name>`: its Spec is `intents/<group>/<name>/spec.md`, its Part is `<group>/<name>/<k>`, and each folder, worktree and branch takes a dash or a dot for each slash', async () => {
+  const world = makeWorld()
+  onTestFinished(() => world.remove())
+  world.spec('palette/names')
+
+  await steps(world, ['start', 'palette/names'])
+  assert.equal(world.runner.prompts.length, 1)
+  assert.match(world.runner.prompts[0].text, new RegExp(`${world.repo}/intents/palette/names/spec\\.md`))
+  assert.equal(existsSync(join(world.home, 'worktrees', 'palette-names-review')), true)
+  assert.equal(JSON.parse(readFileSync(join(world.home, 'tasks', 'palette.names', 'task.json'), 'utf8')).slug, 'palette/names')
+
+  await steps(world, ['set', 'palette/names', 'approved', '--as', 'reviewer'], ['build', 'palette/names/1'])
+  const worktree = join(world.home, 'worktrees', 'palette-names-1')
+  assert.equal(git(worktree, ['rev-parse', '--abbrev-ref', 'HEAD']), 'task/palette-names-1')
+  const part = JSON.parse(readFileSync(join(world.home, 'tasks', 'palette.names.1', 'task.json'), 'utf8'))
+  assert.equal(part.id, 'palette/names/1')
+  assert.equal(part.slug, 'palette/names')
+  assert.equal(part.part, 1)
+
+  const status = await run(['status'], world.deps)
+  assert.equal(status.code, 0, status.stderr)
+  assert.match(status.stdout, /^palette\/names approved round 0/m)
+  assert.match(status.stdout, /^palette\/names\/1 approved round 0/m)
+})

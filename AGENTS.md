@@ -8,7 +8,8 @@ Read [`CODING-STANDARD.md`](CODING-STANDARD.md) before you write a file that is 
 
 ```text
 intents/<slug>/intent.md    what is wanted and why, in the Maintainer's words: the product, or one feature
-intents/<slug>/spec.md      the design of one feature, beside its Intent, until it is built
+intents/<slug>/spec.md      the design of one feature, beside its Intent
+intents/<slug>/<name>/spec.md  the design of one feature of an Intent that has several, such as each Stage of the palette's
 apps/docs/                  the docs website
 packages/binnacle/          the app: a dsh bundle, its core and its plugins
 tools/oxlint/anti-slop/     binnacle's own lint rules, from anti-slop
@@ -27,10 +28,10 @@ references.json             the repositories that pnpm refs fetches into .refs/
 
 Each is capitalized wherever it is used in this meaning. binnacle's own words are in [`packages/binnacle/docs/glossary.md`](packages/binnacle/docs/glossary.md).
 
-- **Maintainer**: the person who grills with the agents, approves Intents, tries what is merged, and publishes.
+- **Maintainer**: the person who grills with the agents, approves Intents, tries what is merged, and publishes. The agents write the Specs, and merge each PR whose checks pass.
 - **Intent**: what is wanted and why, in the Maintainer's plain words, in `intents/<slug>/intent.md`. The product's Intent holds the Stages; a feature's Intent holds what is wanted of one feature. It holds no design.
 - **Stage**: a part of an Intent that ends in a behaviour the Maintainer can try under dsh.
-- **Spec**: the design of one feature of a Stage, in `intents/<slug>/spec.md` beside its Intent: its behaviours, its seams, its decisions and the parts it is built in. Its Intent links it. Once it is built, the docs say what it does, and the `AGENTS.md` beside its code says how.
+- **Spec**: the design of one feature of a Stage, in `intents/<slug>/spec.md` beside its Intent, or in `intents/<slug>/<name>/spec.md` when its Intent has several: its behaviours, its seams, its decisions and the parts it is built in. Its Intent links it. It is for the agents that build and review it. Once it is built, it stays as a record, the docs say what it does, and the `AGENTS.md` beside its code says how.
 - **Journey**: what a person does with a feature in a real session, from start to end, as a Spec writes it. It crosses several behaviours, and the features beside them.
 - **ADR**: a decision that binds more than one change, in `adr/`, written once the Maintainer picks it.
 - **Reference**: another repository, fetched at its pin into `.refs/`, to read and never to write. [`CODING-STANDARD.md`](CODING-STANDARD.md) says how to use one.

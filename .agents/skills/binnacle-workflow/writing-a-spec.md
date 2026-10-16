@@ -1,6 +1,6 @@
 # Writing a Spec
 
-A Spec is the design of one feature, in `intents/<slug>/spec.md`, beside its Intent. The Reviewer checks it in Round 0. Then each Part's builder and Reviewer read it as their contract. [`intents/select-and-copy/spec.md`](../../../intents/select-and-copy/spec.md) is a Spec that was built.
+A Spec is the design of one feature, in `intents/<slug>/spec.md`, beside its Intent. An Intent with several Specs, such as one for each Stage, holds each in `intents/<slug>/<name>/spec.md`, lists them with their Status under its **Specs**, and keeps each one as a record once it is built. The Reviewer checks it in Round 0. Then each Part's builder and Reviewer read it as their contract. [`intents/select-and-copy/spec.md`](../../../intents/select-and-copy/spec.md) is a Spec that was built.
 
 ## Steps
 

@@ -60,14 +60,16 @@ What a person chooses always wins over what a feature sets. A feature only sets 
 Each stage ends in something the Maintainer can try under dsh.
 
 1. **A line filled with a colour.** An author fills a line with a colour of the palette, across its full width.
-2. **A palette of a person's own.** The full list of colours, with pi's names. A file of the person's own changes. A list to pick a palette from, which shows each one as the person moves to it. A feature's own colours, and new colours. The author agent's changes go in the person's file. The colour sets from pi are in the list.
+2. **A palette of a person's own.** The full list of colours, with pi's names. A file of the person's own changes. A list to pick a palette from, which shows each one as the person moves to it. A feature's own colours, and new colours. The author agent is the Chat's own agent, which reads binnacle's skill in every session, and its changes go in the person's file. The colour sets from pi, and the person's own pi themes, are in the list.
 3. **VS Code themes.** The installed themes are in the list, and each one becomes a palette when the person picks it. A palette fills the screen with its background, and has a light and a dark version.
 
 ## Specs
 
-Stage 1:
+Each Spec is in a folder of its own beside this Intent, and stays there once it is built, as a record. Its Task is `palette/<folder>`.
 
-- [A line filled with a colour](spec.md).
+| Stage | Spec | Status |
+|---|---|---|
+| 1 | [A line filled with a colour](fill/spec.md) | built |
 
 ## Open questions
 

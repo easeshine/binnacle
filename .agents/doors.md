@@ -12,3 +12,5 @@ A PR is **one-way** if it does one of these things:
 - changes this list.
 
 Every other PR is **two-way**. If the Spec and the Part give different Doors, the Door is one-way.
+
+Before 1.0, every PR is two-way: nothing published is promised to stay, so each change can be taken back by the next. The list above says which PRs become one-way after it.
