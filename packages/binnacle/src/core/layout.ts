@@ -203,7 +203,8 @@ class Arrangement {
     for (const [index, row] of floated.entries()) {
       const under = rows[y + index] ?? ''
       const head = sliceWithWidth(under, 0, x, true)
-      const tail = sliceByColumn(under, x + floatWidth, Math.max(0, width - x - floatWidth), true)
+      // The slice drops the reset at the row's end: a fill's tail is closed again, before a box's padding and edge.
+      const tail = filled(sliceByColumn(under, x + floatWidth, width - x - floatWidth, true), width - x - floatWidth)
       rows[y + index] = head.text + blank(x - head.width) + RESET_STYLE + fit(row, floatWidth) + RESET_STYLE + tail
     }
     return rows
