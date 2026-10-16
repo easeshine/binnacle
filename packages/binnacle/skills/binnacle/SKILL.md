@@ -1,11 +1,20 @@
 ---
 name: binnacle
-description: Writing a plugin that changes binnacle, the terminal app for dsh, from the docs that come with the installed @easeshine/binnacle. Use it whenever you change what binnacle draws, its keys, its theme, its layout, or one of its built-in features, or test such a change.
+description: Changing binnacle, the terminal app for dsh, from the docs that come with the installed @easeshine/binnacle. Use it whenever a person asks to change binnacle's colours, keys, layout or one of its features, such as "make the errors on tool cards orange", or you write or test a plugin that changes what binnacle draws.
 ---
 
 # Changing binnacle
 
 The docs in this package match the version that is installed. Read them before you write a plugin, and read the source only for what they do not say.
+
+## A person's colours
+
+A colour that a person asks for goes in their own file, `palette.json`, at `$DSH_PROFILE_DIR/palette.json`. Never write a plugin for it: the file wins over every plugin, and binnacle draws in it as soon as it is saved.
+
+1. Read [`docs/use/colours.md`](../../docs/use/colours.md). It says what the file holds: `palette`, `hues` and `colors`.
+2. Find the Tone of what the person names. The theme's own Tones are in [`docs/author/concepts/theme.md`](../../docs/author/concepts/theme.md#the-tones), and each feature's own in its page under `docs/author/built-ins/`, such as `transcript.card.error` for the errors on tool cards.
+3. Read the file, if it is there, and set the Tone under `colors`, such as `"transcript.card.error": "orange"`. Keep each other key as it is, and write JSON with two spaces of indent.
+4. When binnacle cannot read the file, its status line says what is wrong, and where. Mend that first.
 
 ## Find the page
 

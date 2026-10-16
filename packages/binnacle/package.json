@@ -30,6 +30,7 @@
     "./plugins/palette": "./dist/plugins/palette/index.mjs",
     "./plugins/requests": "./dist/plugins/requests/index.mjs",
     "./plugins/requests-view": "./dist/plugins/requests-view/index.mjs",
+    "./plugins/skill": "./dist/plugins/skill/index.mjs",
     "./plugins/status-line": "./dist/plugins/status-line/index.mjs",
     "./plugins/tool-cards": "./dist/plugins/tool-cards/index.mjs",
     "./plugins/transcript": "./dist/plugins/transcript/index.mjs",
@@ -72,6 +73,8 @@
     "@deepseek-ai/dsh-llm": "0.2.1-alpha.1",
     "@deepseek-ai/dsh-session": "0.2.1-alpha.1",
     "@deepseek-ai/dsh-session-persistence": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-skill": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-skill-filesystem": "0.2.1-alpha.1",
     "@deepseek-ai/dsh-tools": "0.2.1-alpha.1",
     "@deepseek-ai/dsh-scope": "0.2.1-alpha.1",
     "@deepseek-ai/dsh-user-approval": "0.2.1-alpha.1",
@@ -99,6 +102,12 @@
       "optional": true
     },
     "@deepseek-ai/dsh-session-persistence": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-skill": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-skill-filesystem": {
       "optional": true
     },
     "@deepseek-ai/dsh-tools": {
@@ -130,6 +139,8 @@
     "@deepseek-ai/dsh-llm": "0.2.1-alpha.1",
     "@deepseek-ai/dsh-session": "0.2.1-alpha.1",
     "@deepseek-ai/dsh-session-persistence": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-skill": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh-skill-filesystem": "0.2.1-alpha.1",
     "@deepseek-ai/dsh-tools": "0.2.1-alpha.1",
     "@deepseek-ai/dsh-scope": "0.2.1-alpha.1",
     "@deepseek-ai/dsh-user-approval": "0.2.1-alpha.1",
