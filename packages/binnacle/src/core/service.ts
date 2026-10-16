@@ -11,6 +11,7 @@ import type {
   Look,
   LookOptions,
   Model,
+  PaletteState,
   Watchable,
   Part,
   PlacedHandle,
@@ -32,6 +33,7 @@ import { editorActionsOf, tableKeysOf } from './gestures.ts'
 import { drawer } from './looks.ts'
 import type { Make } from './looks.ts'
 import { checkLayer, filler, layered, painter } from './theme.ts'
+import { PersonsPalette, profileDir } from './palette-file.ts'
 import { PACKAGE } from './name.ts'
 
 /** What the service asks of what draws. */
@@ -113,6 +115,7 @@ export class BinnacleService extends Service implements Binnacle {
   // Made again from the layers at the next read, after a layer comes or goes. A method runs on a traced copy, where a field set stays on the copy, so the field is an object that is changed.
   private readonly themed: { now?: Themed } = {}
   private readonly drawn: Drawn
+  private readonly person: PersonsPalette
   readonly gestures: Gestures = {
     actionsOf: (gesture) => [...editorActionsOf(gesture), ...this.actions.actionsOf(gesture, this.drawn.places.focusedPlace())],
   }
@@ -120,6 +123,28 @@ export class BinnacleService extends Service implements Binnacle {
   constructor(ctx: Context, drawn: Drawn) {
     super(ctx, 'binnacle')
     this.drawn = drawn
+    this.person = new PersonsPalette(
+      profileDir(ctx),
+      () => this.themeLayers(),
+      () => this.restyle(),
+    )
+    this.person.start(ctx)
+  }
+
+  get palette(): Model<PaletteState> {
+    return this.person.model
+  }
+
+  /** Each plugin's theme layer, in the order they draw, beneath the person's own. */
+  themeLayers(): readonly ThemeLayer[] {
+    return this.layers.map(({ item }) => item)
+  }
+
+  /** Everything is drawn again in the theme as its layers make it now. */
+  restyle(): void {
+    delete this.themed.now
+    this.drawn.forgetAll()
+    this.drawn.redraw()
   }
 
   get tokens(): Tokens {
@@ -137,15 +162,15 @@ export class BinnacleService extends Service implements Binnacle {
   theme(layer: ThemeLayer): Handle {
     // The layer is checked where it will rank, as a built-in's goes beneath every author's.
     const firstAuthor = builtIn(this.ctx.fiber as Fiber) ? this.layers.findIndex((other) => !other.builtIn) : -1
-    const layers = this.layers.map(({ item }) => item)
+    const layers = [...this.themeLayers()]
     layers.splice(firstAuthor === -1 ? layers.length : firstAuthor, 0, layer)
     checkLayer(layer, layers)
-    const restyle = (): void => {
-      delete this.themed.now
-      this.drawn.forgetAll()
+    // A layer that comes or goes can make or break a loop with the person's file, so the file is checked again; no person's file refuses a plugin.
+    const changed = (): void => {
+      this.restyle()
+      this.person.recheck()
     }
-    restyle()
-    return this.hold(this.layers, layer, 'binnacle: a theme layer', undefined, restyle)
+    return this.hold(this.layers, layer, 'binnacle: a theme layer', undefined, changed, changed)
   }
 
   look<F extends Look>(name: string, make: (beneath: F) => F, options?: LookOptions): Handle {
@@ -307,7 +332,8 @@ export class BinnacleService extends Service implements Binnacle {
 
   private themeNow(): Themed {
     if (this.themed.now === undefined) {
-      const tokens = layered(this.layers.map(({ item }) => item))
+      // The person's layer lies over every plugin's, so no feature draws over their choice.
+      const tokens = layered([...this.themeLayers(), this.person.layer])
       this.themed.now = { tokens, paint: painter(tokens, this.drawn.colorMode()), fill: filler(tokens, this.drawn.colorMode()) }
     }
     return this.themed.now

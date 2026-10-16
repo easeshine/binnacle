@@ -52,4 +52,5 @@ The core, row `binnacle`, cannot be turned off: it owns the terminal, and every 
 | Commands | `binnacle-commands` | [commands.md](commands.md) |
 | Select and copy | `binnacle`, `binnacle-copy` | [copy.md](copy.md) |
 | Status line | `binnacle-status-line` | [status-line.md](status-line.md) |
+| Colours | `binnacle` | [colours.md](colours.md) |
 | Requests | `binnacle-requests`, `binnacle-requests-view` | [requests.md](requests.md) |

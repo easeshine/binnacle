@@ -61,7 +61,7 @@ const SIXTEEN: readonly Sixteen[] = [
 
 const HUES: readonly Hue[] = [...SIXTEEN, 'orange']
 
-const isHue = (name: unknown): name is Hue => HUES.some((hue) => hue === name)
+export const isHue = (name: unknown): name is Hue => HUES.some((hue) => hue === name)
 
 // 208 is the orange of the 256 that every terminal of 256 colours draws alike; the sixteen have none.
 // Object.fromEntries widens its keys to strings; the entries are one for each Hue.
@@ -76,12 +76,15 @@ const RENAMED: ReadonlyMap<string, Tone> = new Map([
   ['selection', 'selectedBg'],
 ])
 
+/** pi's name for a Tone that binnacle named so before. */
+export const renamedTo = (tone: string): Tone | undefined => RENAMED.get(tone)
+
 function checkName(tone: Tone): void {
-  const now = RENAMED.get(tone)
+  const now = renamedTo(tone)
   if (now !== undefined) throw new Error(`binnacle: the Tone '${tone}' is now '${now}'`)
 }
 
-const quoted = (value: unknown): string => JSON.stringify(value).replaceAll('"', "'")
+export const quoted = (value: unknown): string => JSON.stringify(value).replaceAll('"', "'")
 
 const styleOf = (given: Colour | Style): Style => (typeof given === 'object' ? given : { color: given })
 
@@ -115,35 +118,46 @@ export function checkLayer(layer: ThemeLayer, layers: readonly ThemeLayer[]): vo
     if (!isHue(hue)) throw new Error(`binnacle: ${quoted(hue)} is not a Hue`)
     if (given !== undefined) checkHue(hue, given)
   }
+  const loop = loopIn(layer, layers)
+  if (loop !== undefined) throw new Error(`binnacle: the theme's like makes a loop: ${loop.map(quoted).join(' like ')}`)
+}
+
+/** The first loop of `like`s through a Tone that the layer names, with each layer as `layers` are, or `undefined`. */
+export function loopIn(layer: ThemeLayer, layers: readonly ThemeLayer[]): readonly string[] | undefined {
   const colors = laid(layers).colors
   for (const tone of Object.keys(layer.colors ?? {})) {
     const loop = loopFrom(tone, colors)
-    if (loop !== undefined) throw new Error(`binnacle: the theme's like makes a loop: ${loop.map(quoted).join(' like ')}`)
+    if (loop !== undefined) return loop
   }
+  return undefined
+}
+
+/** Whether a Hue may be given this colour: a 256-colour index, an exact colour, or one of the sixteen as its own. */
+export function isHueColour(hue: Hue, given: unknown): boolean {
+  if (given === hue && hue !== 'orange') return true
+  return !isHue(given) && isExact(given)
 }
 
 function checkHue(hue: Hue, given: Colour): void {
-  const own = given === hue && hue !== 'orange'
-  const fails = (): boolean => {
-    if (own) return false
-    if (isHue(given)) return true
-    try {
-      parseColor(given)
-      return false
-    } catch {
-      return true
-    }
-  }
-  if (fails()) throw new Error(`binnacle: the Hue ${quoted(hue)} takes a 256-colour index or an exact colour, not ${quoted(given)}`)
+  if (!isHueColour(hue, given))
+    throw new Error(`binnacle: the Hue ${quoted(hue)} takes a 256-colour index or an exact colour, not ${quoted(given)}`)
 }
 
-function checkColour(color: Colour | undefined, what: string): void {
-  if (color === undefined || isHue(color)) return
+const isExact = (given: unknown): boolean => {
+  if (typeof given !== 'string' && typeof given !== 'number') return false
   try {
-    parseColor(color)
+    parseColor(given)
+    return true
   } catch {
-    throw new Error(`binnacle: ${what} is not a colour: ${quoted(color)}`)
+    return false
   }
+}
+
+/** Whether a Tone may be drawn in this colour: a Hue, a 256-colour index or an exact colour. */
+export const isColour = (given: unknown): given is Colour => isHue(given) || isExact(given)
+
+function checkColour(color: Colour | undefined, what: string): void {
+  if (color !== undefined && !isColour(color)) throw new Error(`binnacle: ${what} is not a colour: ${quoted(color)}`)
 }
 
 /** The Tones from `tone` through each `like` back to it, or `undefined` when the `like`s end. */
