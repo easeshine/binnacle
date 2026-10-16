@@ -11,6 +11,7 @@ import type {
   Look,
   LookOptions,
   Model,
+  PaletteSource,
   PaletteState,
   Watchable,
   Part,
@@ -33,8 +34,10 @@ import { editorActionsOf, tableKeysOf } from './gestures.ts'
 import { drawer } from './looks.ts'
 import type { Make } from './looks.ts'
 import { checkLayer, filler, layered, painter } from './theme.ts'
-import { PersonsPalette, profileDir } from './palette-file.ts'
-import { PACKAGE } from './name.ts'
+import { Palettes } from './palettes.ts'
+import type { Moved } from './drawing.ts'
+import { builtIn, listIn } from './rank.ts'
+import type { Fiber, Held } from './rank.ts'
 
 /** What the service asks of what draws. */
 export interface Drawn {
@@ -55,36 +58,6 @@ export interface DrawnPlaces {
   linesShown(place: string): number | undefined
   /** The Place with the Focus, as it was last drawn. */
   focusedPlace(): string | undefined
-}
-
-/** The Place the Focus was moved to, and whether it has had the Focus since. */
-export interface Moved {
-  readonly place: string
-  had: boolean
-}
-
-/** One registration. Each is held apart, so that one object registered twice goes only with the plugin whose registration unloads. */
-export interface Held<T> {
-  readonly item: T
-  /** Registered by a row of the bundle: it ranks beneath every author's. */
-  readonly builtIn: boolean
-}
-
-/** The parts of a Cordis fiber that the core reads. The loader adds `entry`: the row whose plugin it is, or none on a child plugin. */
-interface Fiber {
-  /** The plugin's own `name`, with none on a plugin that names none. */
-  readonly runtime?: { readonly name?: string }
-  readonly entry?: { readonly options: { readonly name: string } }
-  readonly parent: { readonly fiber: Fiber }
-}
-
-// A child plugin has no row of its own: the row is the first of its parents' that has one, as the loader's `locate` finds it.
-function builtIn(fiber: Fiber): boolean {
-  for (let at = fiber; ; at = at.parent.fiber) {
-    const name = at.entry?.options.name
-    if (name !== undefined) return name === PACKAGE || name.startsWith(`${PACKAGE}/`)
-    if (at.parent.fiber === at) return false
-  }
 }
 
 interface Themed {
@@ -115,7 +88,8 @@ export class BinnacleService extends Service implements Binnacle {
   // Made again from the layers at the next read, after a layer comes or goes. A method runs on a traced copy, where a field set stays on the copy, so the field is an object that is changed.
   private readonly themed: { now?: Themed } = {}
   private readonly drawn: Drawn
-  private readonly person: PersonsPalette
+  private readonly sources: Held<PaletteSource>[] = []
+  readonly palettesNow: Palettes
   readonly gestures: Gestures = {
     actionsOf: (gesture) => [...editorActionsOf(gesture), ...this.actions.actionsOf(gesture, this.drawn.places.focusedPlace())],
   }
@@ -123,16 +97,41 @@ export class BinnacleService extends Service implements Binnacle {
   constructor(ctx: Context, drawn: Drawn) {
     super(ctx, 'binnacle')
     this.drawn = drawn
-    this.person = new PersonsPalette(
-      profileDir(ctx),
+    this.palettesNow = new Palettes(
+      ctx,
       () => this.themeLayers(),
+      () => this.paletteSources(),
       () => this.restyle(),
     )
-    this.person.start(ctx)
   }
 
   get palette(): Model<PaletteState> {
-    return this.person.model
+    return this.palettesNow.model
+  }
+
+  palettes(source: PaletteSource): Handle {
+    this.palettesNow.check(source)
+    const { palettesNow } = this
+    return this.hold(
+      this.sources,
+      source,
+      'binnacle: a palette source',
+      undefined,
+      () => palettesNow.went(source),
+      () => palettesNow.came(source),
+    )
+  }
+
+  paletteSources(): readonly PaletteSource[] {
+    return this.sources.map(({ item }) => item)
+  }
+
+  showPalette(id: string | undefined): Promise<void> {
+    return this.palettesNow.show(id)
+  }
+
+  pickPalette(id: string): Promise<void> {
+    return this.palettesNow.pick(id)
   }
 
   /** Each plugin's theme layer, in the order they draw, beneath the person's own. */
@@ -168,7 +167,7 @@ export class BinnacleService extends Service implements Binnacle {
     // A layer that comes or goes can make or break a loop with the person's file, so the file is checked again; no person's file refuses a plugin.
     const changed = (): void => {
       this.restyle()
-      this.person.recheck()
+      this.palettesNow.recheck()
     }
     return this.hold(this.layers, layer, 'binnacle: a theme layer', undefined, changed, changed)
   }
@@ -332,8 +331,8 @@ export class BinnacleService extends Service implements Binnacle {
 
   private themeNow(): Themed {
     if (this.themed.now === undefined) {
-      // The person's layer lies over every plugin's, so no feature draws over their choice.
-      const tokens = layered([...this.themeLayers(), this.person.layer])
+      // The palette lies over every plugin's layer, and the person's own over it, so no feature draws over their choice.
+      const tokens = layered([...this.themeLayers(), ...this.palettesNow.layers(), this.palettesNow.person.layer])
       this.themed.now = { tokens, paint: painter(tokens, this.drawn.colorMode()), fill: filler(tokens, this.drawn.colorMode()) }
     }
     return this.themed.now
@@ -375,10 +374,4 @@ export class BinnacleService extends Service implements Binnacle {
       },
     }
   }
-}
-
-function listIn<T>(lists: Map<string, T[]>, name: string): T[] {
-  const list = lists.get(name) ?? []
-  lists.set(name, list)
-  return list
 }

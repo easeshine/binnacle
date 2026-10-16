@@ -10,6 +10,7 @@ export const BUILT_INS: readonly (readonly [string, string, () => Promise<object
   ['binnacle-composer', `${PACKAGE}/plugins/composer`, () => import('../plugins/composer/index.ts')],
   ['binnacle-commands', `${PACKAGE}/plugins/commands`, () => import('../plugins/commands/index.ts')],
   ['binnacle-copy', `${PACKAGE}/plugins/copy`, () => import('../plugins/copy/index.ts')],
+  ['binnacle-palette', `${PACKAGE}/plugins/palette`, () => import('../plugins/palette/index.ts')],
   ['binnacle-status-line', `${PACKAGE}/plugins/status-line`, () => import('../plugins/status-line/index.ts')],
   ['binnacle-requests', `${PACKAGE}/plugins/requests`, () => import('../plugins/requests/index.ts')],
   ['binnacle-requests-view', `${PACKAGE}/plugins/requests-view`, () => import('../plugins/requests-view/index.ts')],

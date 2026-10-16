@@ -27,6 +27,7 @@
     "./plugins/composer": "./dist/plugins/composer/index.mjs",
     "./plugins/copy": "./dist/plugins/copy/index.mjs",
     "./plugins/notice": "./dist/plugins/notice/index.mjs",
+    "./plugins/palette": "./dist/plugins/palette/index.mjs",
     "./plugins/requests": "./dist/plugins/requests/index.mjs",
     "./plugins/requests-view": "./dist/plugins/requests-view/index.mjs",
     "./plugins/status-line": "./dist/plugins/status-line/index.mjs",

@@ -9,7 +9,7 @@ ctx.binnacle.theme({
 })
 ```
 
-- `binnacle.theme(layer)` adds a layer. Only the tokens that it names change, and the others stay as they were. The newest layer wins for each token, and the person's own colours win over every layer ([The person's own colours](#the-persons-own-colours)). A layer goes when the plugin that added it unloads, and everything is drawn again.
+- `binnacle.theme(layer)` adds a layer. Only the tokens that it names change, and the others stay as they were. The newest layer wins for each token, and the palette in use and the person's own colours win over every layer ([The person's own colours](#the-persons-own-colours)). A layer goes when the plugin that added it unloads, and everything is drawn again.
 - A colour is a Hue by name, such as `cyan` or `orange`; a 256-colour index, such as `67`; or an exact colour, as `#rrggbb`, `#rgb`, `okhsl(h s% l%)` or `oklch(l c h)`. An exact colour is drawn as the nearest of 256 where the terminal has no truecolor.
 - A Tone's token is a colour, or a Style: `{ color, background, bold, dim, italic, underline, inverse, like }`. `inverse` swaps the text's colour and the background's. A plain colour stands for `{ color }`, and a Style with no `color` keeps the terminal's own.
 - `binnacle.theme` refuses a colour that is not one, such as `'36'`, be it a Tone's colour or its background, and names its Tone.
@@ -39,13 +39,42 @@ A person writes their own colours in `palette.json`, in binnacle's profile folde
 
 - A Tone of a feature's own that the file does not name keeps its `like`, so it follows the person's colour of the general Tone.
 - A file with a mistake leaves the colours as they were. `binnacle.palette` is a Model of `{ inUse, shown, error }`: `error` says what is wrong, as `palette.json: ` and why, and is `undefined` while nothing is. The status line draws it in `status.palette`.
-- `inUse` is the id of the palette that the file's `palette` names, or `terminal`, binnacle's defaults, while it names none. `shown` is the id of the palette drawn now.
+- `inUse` is the id of the palette that the file's `palette` names, or `terminal`, binnacle's defaults, while it names none. `shown` is the id of the palette drawn now. `error` also says when the palette that the file names is not there, `palette.json: no palette <id>`, or does not load, `palette.json: <id>: ` and why: binnacle then draws as `terminal`, with the person's colours.
 - Watch `binnacle.palette`, or name it in a Part's `models`, to draw again when it changes. Its `set` changes nothing: only the file does.
 
 ```js
 ctx.binnacle.place('warning', {
   models: [ctx.binnacle.palette],
   lines: () => (ctx.binnacle.palette.state.error === undefined ? [] : [ctx.binnacle.paint('warning', 'see palette.json')]),
+})
+```
+
+## A palette and its sources
+
+A palette is a theme layer of `hues` and `colors` that a source gives. The palette in use lies over every plugin's layer, and the person's own colours lie over it. So a person's colour in a Hue, such as `"mdHeading": "green"`, follows the palette's green, and an exact colour stays as it is. Its id is `<source>/<name>`, such as `pi/dark`, and `terminal` is binnacle's defaults, with no palette.
+
+```js
+ctx.binnacle.palettes({
+  name: 'sea',
+  list: async () => [{ name: 'deep', description: 'dark blues' }],
+  load: async (name) => ({ hues: { blue: '#1f4e79' }, colors: { accent: 'blue' } }),
+})
+```
+
+- `binnacle.palettes(source)` adds a source: `{ name, list, load }`. Its `name` is letters, digits and `-`, and a source of a name that another has is refused, and the error names it. It goes when its plugin unloads. A palette of its that is drawn then draws as `terminal`, and `error` says it is not there.
+- `list()` gives a Promise of its palettes, `{ name, description? }[]`, without reading them. Of two by one name, the first is kept. `load(name)` gives a Promise of a theme layer, of which only `hues` and `colors` are read, or rejects with what is wrong, in one line. binnacle checks the layer as `binnacle.theme` checks one, and a palette with a mistake does not load.
+- `binnacle.paletteSources()` gives the sources: binnacle's first, then each author's, in the order they were added. The row `binnacle-palette` adds `pi` and `pi-themes` ([Palettes](../built-ins/palette.md)).
+- `binnacle.showPalette(id)` draws a palette, or the one that the file names with `undefined`, and writes nothing. It resolves once the palette draws, and rejects with what is wrong when it does not load: the colours drawn stay.
+- `binnacle.pickPalette(id)` loads the palette, then reads `palette.json` from disk, sets its `palette`, keeps each other key as it is on disk, and writes it with two spaces of indent. `terminal` takes `palette` out. It resolves once the palette draws. It rejects, and writes nothing, when the palette does not load, or when the file on disk holds a mistake, which `binnacle.palette.state.error` then names.
+- Only the newest call draws. Each call of `showPalette` and `pickPalette`, and each save that changes the file's `palette`, takes the place of the calls before it, which reject with an `AbortError` and draw nothing, even when they load later. A load whose source goes while it waits does not draw.
+- At the start, binnacle waits for the palette that the file names before it first draws, for at most 100 ms. A palette that has not drawn by then draws as `terminal` until it loads. A palette whose source is not there once binnacle has drawn sets `error`, which a source that comes later clears, and one that has not loaded 5 seconds after the start sets `palette.json: <id> did not load`.
+
+```js
+ctx.binnacle.action('mine.dark', {
+  keys: ['ctrl+d'],
+  run: () => {
+    ctx.binnacle.pickPalette('pi/dark').catch(() => {})
+  },
 })
 ```
 

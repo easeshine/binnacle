@@ -76,7 +76,8 @@ export function apply(ctx: Context): void {
     exit(1)
   })
 
-  const cancelReady = ctx.appReady!.onReady(() => host.open(internals.terminal()))
+  // The palette that palette.json names draws before the first draw, if it loads soon enough.
+  const cancelReady = ctx.appReady!.onReady(() => service.palettesNow.opened(() => host.open(internals.terminal())))
   ctx.effect(
     () => () => {
       cancelReady()

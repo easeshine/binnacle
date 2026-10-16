@@ -1,7 +1,7 @@
 import type { Action, Binding, Point } from '../api.ts'
 import { matchesKey } from '../terminal/pi/keys.ts'
 import type { KeyId } from '../terminal/pi/keys.ts'
-import type { Held } from './service.ts'
+import type { Held } from './rank.ts'
 
 // pi's window for the second ctrl+c that quits.
 const QUIT_WITHIN_MS = 500

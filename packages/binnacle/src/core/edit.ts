@@ -1,5 +1,5 @@
 import type { Anchor, Edit, Layout } from '../api.ts'
-import type { Held } from './service.ts'
+import type { Held } from './rank.ts'
 
 /** An edit, and the name of the plugin that made it, which ranks it. */
 export interface Made {

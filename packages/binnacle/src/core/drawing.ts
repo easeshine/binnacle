@@ -5,11 +5,16 @@ import type { Size } from './host.ts'
 import { arrange } from './layout.ts'
 import { createModel } from './model.ts'
 import type { Hit, Placed } from './arranged.ts'
-import type { Moved } from './service.ts'
 import type { Theme } from './theme.ts'
 import { Scroll } from './scroll.ts'
 import { Selecting } from './selecting.ts'
 import { Rows } from './view.ts'
+
+/** The Place the Focus was moved to, and whether it has had the Focus since. */
+export interface Moved {
+  readonly place: string
+  had: boolean
+}
 
 /** The service, read through this: the service draws through Drawing, so neither is whole when the other is made. */
 export interface OnView extends Theme {

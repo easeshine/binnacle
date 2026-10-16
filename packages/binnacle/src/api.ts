@@ -69,8 +69,28 @@ export interface PaletteState {
   readonly inUse: string
   /** The id of the palette drawn now. */
   readonly shown: string
-  /** What is wrong with the file, as `palette.json: ` and why; `undefined` while nothing is. The colours stay as they were before the mistake. */
+  /**
+   * What is wrong with the file, or with the palette that it names, as `palette.json: ` and why; `undefined` while nothing is.
+   * A mistake in the file keeps the colours as they were before it, and a palette that is not there, or does not load, draws as `terminal`.
+   */
   readonly error: string | undefined
+}
+
+/** A palette that a source has, as a List names it, before it is read. */
+export interface PaletteInfo {
+  /** Its name in its source. Its id is `<source>/<name>`. */
+  readonly name: string
+  readonly description?: string
+}
+
+/** A place that palettes come from, such as pi's themes, which `binnacle.palettes(source)` adds. */
+export interface PaletteSource {
+  /** Letters, digits and `-`: the first part of each of its palettes' ids. */
+  readonly name: string
+  /** Its palettes, without reading them. Of two by one name, the first is kept. */
+  list(): Promise<readonly PaletteInfo[]>
+  /** The palette by its name, as a theme layer of `hues` and `colors`, or a rejection that says what is wrong, in one line. */
+  load(name: string): Promise<ThemeLayer>
 }
 
 /** Each colour that pi's themes name, by pi's name: the Tones that binnacle's defaults give. */
@@ -374,6 +394,24 @@ export interface Binnacle {
    * `set` changes nothing: only the file does.
    */
   readonly palette: Model<PaletteState>
+  /**
+   * Adds a place that palettes come from. Its palettes draw between the plugins' layers and the person's own colours.
+   * It refuses a name that is not letters, digits and `-`, and a name that another source has.
+   */
+  palettes(source: PaletteSource): Handle
+  /** The sources of palettes, binnacle's first, then each author's, in the order they were added. */
+  paletteSources(): readonly PaletteSource[]
+  /**
+   * Draws the palette by its id, `<source>/<name>` or `terminal`, or with `undefined` the one that `palette.json` names, and writes nothing.
+   * It resolves once the palette draws. It rejects with what is wrong when the palette does not load, and with an `AbortError` when a later call, or a save that changed the file's `palette`, took its place: then nothing draws.
+   */
+  showPalette(id: string | undefined): Promise<void>
+  /**
+   * Loads the palette by its id, then writes the id to `palette.json` as its `palette`, `terminal` by taking `palette` out, and draws it.
+   * The file is read from disk once the palette has loaded, and each other key stays as it is there. It resolves once both are done.
+   * It rejects, and writes nothing, when the palette does not load, when the file on disk holds a mistake, which `palette.error` then names, or with an `AbortError` when a later call or a save took its place.
+   */
+  pickPalette(id: string): Promise<void>
   /**
    * The text in the Tone's style, or in the Style given, such as `{ bold: true }`. A Part paints at each draw, so that its lines follow the theme.
    * A Style is drawn for the terminal's colours, as a Tone is. It refuses a colour that is not one.
