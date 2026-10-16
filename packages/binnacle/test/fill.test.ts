@@ -162,6 +162,25 @@ test('a float over a filled row leaves the fill on each side of it', async () =>
   assert.deepEqual(await backgrounds(shown, 0, [0, 1, 2, 3, 4, 5]), [4, 4, 'default', 'default', 4, 4])
 })
 
+test("a float over a filled row in a box leaves the box's padding and edges as they were", async () => {
+  const shown = await filling(10, 6, (binnacle) => {
+    binnacle.layout('chat', {
+      column: [{ over: { place: 'under' }, float: { place: 'note' }, at: { side: 'top', width: 2 } }],
+      border: true,
+      padding: 1,
+    })
+    binnacle.place('under', { lines: () => [fillStyle(binnacle, BLUE, ''), fillStyle(binnacle, BLUE, 'hi')] })
+    binnacle.place('note', { lines: () => ['xy'] })
+  })
+  assert.deepEqual(
+    [await backgrounds(shown, 2, [2, 6, 7, 8, 9]), await backgrounds(shown, 3, [2, 7, 8, 9])],
+    [
+      [4, 4, 4, 'default', 'default'],
+      [4, 4, 'default', 'default'],
+    ],
+  )
+})
+
 test('a person who copies a filled row gets its text with no spaces at its end', async () => {
   const shown = await filling(
     10,
