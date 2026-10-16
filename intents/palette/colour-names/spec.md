@@ -1,7 +1,7 @@
 # Spec: the full list of colours, Hues, and a feature's own colours
 
 - **Intent:** [Colours](../intent.md), Stage 2, *A palette of a person's own*: "The full list of colours, with pi's names. … A feature's own colours, and new colours." It serves outcomes 4, 8 and 9: a change to "the palette's orange" follows the palette; an author "picks each colour of a new feature from binnacle's full list of colours, named by what they are for"; and a feature's own colours each look "like the general colour until a person changes it". The person's file, the list of palettes, pi's sets and the Chat's agent are the next Spec of Stage 2, `own-palette`.
-- **Status:** agreed
+- **Status:** built
 
 ## Problem
 

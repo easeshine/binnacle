@@ -70,7 +70,7 @@ Each Spec is in a folder of its own beside this Intent, and stays there once it 
 | Stage | Spec | Status |
 |---|---|---|
 | 1 | [A line filled with a colour](fill/spec.md) | built |
-| 2 | [The full list of colours, Hues, and a feature's own colours](colour-names/spec.md) | agreed |
+| 2 | [The full list of colours, Hues, and a feature's own colours](colour-names/spec.md) | built |
 | 2 | [A palette of a person's own](own-palette/spec.md) | agreed |
 
 ## Open questions
