@@ -1,7 +1,7 @@
 # Spec: a palette of a person's own
 
 - **Intent:** [Colours](../intent.md), Stage 2, *A palette of a person's own*: "A file of the person's own changes. A list to pick a palette from, which shows each one as the person moves to it. … The author agent is the Chat's own agent, which has binnacle's skill in every session, and its changes go in the person's file. The colour sets from pi, and the person's own pi themes, are in the list." It serves outcomes 1 to 5, and 11: a person picks a palette and sees it as they move; changes any colour in a file of their own; asks the author agent for a change that goes in that file; keeps their changes across palettes; and sees the terminal's own colours until they pick. An author adds a place that palettes come from. It builds on [`colour-names`](../colour-names/spec.md): the Tones, the Hues, `like` and each feature's own Tones.
-- **Status:** agreed
+- **Status:** built
 
 ## Problem
 
