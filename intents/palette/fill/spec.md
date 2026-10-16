@@ -1,6 +1,6 @@
 # Spec: a line filled with a colour
 
-- **Intent:** [Colours](intent.md), Stage 1, *A line filled with a colour*. It serves outcome 10: an author "fills a line with a colour across its full width, as for a card, or for a line added to a file."
+- **Intent:** [Colours](../intent.md), Stage 1, *A line filled with a colour*. It serves outcome 10: an author "fills a line with a colour across its full width, as for a card, or for a line added to a file."
 - **Status:** built
 
 ## Problem

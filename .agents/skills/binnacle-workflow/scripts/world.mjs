@@ -83,7 +83,7 @@ export function makeWorld() {
     },
     // The Lead's answer to each finding, which the next pass of Round 0 reads.
     reply(slug, text = 'Each finding is fixed.\n') {
-      writeFileSync(join(home, 'tasks', slug, 'reply.md'), text)
+      writeFileSync(join(home, 'tasks', slug.replaceAll('/', '.'), 'reply.md'), text)
     },
     tick(ms = 60_000) {
       clock = new Date(clock.getTime() + ms)
@@ -182,7 +182,7 @@ export function makeFakeGh() {
 }
 
 export function logLines(world, id) {
-  return readFileSync(join(world.home, 'tasks', id.replace('/', '.'), 'log.ndjson'), 'utf8')
+  return readFileSync(join(world.home, 'tasks', id.replaceAll('/', '.'), 'log.ndjson'), 'utf8')
     .split('\n')
     .filter(Boolean)
     .map((line) => JSON.parse(line))

@@ -27,7 +27,7 @@ Nothing yet is shared between features. Each one draws its own list of choices a
 8. A person can still turn a whole feature off.
 9. binnacle is built in layers, as a web app is built from a framework, a design system and its pages:
    - **the core** owns the terminal, where things go, the Focus and the gestures;
-   - **the theme** names the colours by what they mean, the glyphs, the edges and the spacing. How a person and an author choose the colours is in the [colours Intent](../colours/intent.md);
+   - **the theme** names the colours by what they mean, the glyphs, the edges and the spacing. How a person and an author choose the colours is in the [colours Intent](../palette/intent.md);
    - **components**, such as a list, a line to type in, tabs and a title, each hold what they do and which keys do it, apart from how they look;
    - **their default looks** draw each component with the theme;
    - **features**, such as Requests, are made of components, and talk to dsh.

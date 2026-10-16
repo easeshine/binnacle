@@ -2,7 +2,7 @@
 
 The Lead, the Implementer and the Reviewer share this page. The Task tool, `pnpm task`, holds the state of each Spec and each Part, starts the agents that it can start, and sends each Hand-off.
 
-A **Task** is a Spec, named by its slug, such as `cards`, or a Part of it, named `<slug>/<k>`, such as `cards/2`. `<k>` is the Part's number under the Spec's **Parts of the build**. A Spec has only Round 0. A Part begins where its Spec's Round 0 ended, and its Rounds start at 1.
+A **Task** is a Spec, named by its slug, such as `cards`, or a Part of it, named `<slug>/<k>`, such as `cards/2`. A Spec in a folder of its Intent's has a slug with a slash, such as `palette/fill`, for `intents/palette/fill/spec.md`, and its Part is `palette/fill/1`. A name in a slug is never only digits. Each slash is a dot in the Task's folder, and a dash in its worktree and its branch: `palette.fill.1`, `palette-fill-1`. `<k>` is the Part's number under the Spec's **Parts of the build**. A Spec has only Round 0. A Part begins where its Spec's Round 0 ended, and its Rounds start at 1.
 
 ## Folders
 

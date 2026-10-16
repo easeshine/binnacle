@@ -33,19 +33,21 @@ export function readLog(folder) {
 }
 
 // A Spec's Task is its slug, and a Part's is `<slug>/<k>`, as its Spec numbers it under its Parts.
+// A slug can name a Spec in a folder of Specs, `<group>/<name>`. A name is never only digits, so a last number is a Part.
 export function parseId(text) {
-  const match = /^([a-z0-9][a-z0-9-]*)(?:\/([1-9]\d*))?$/.exec(text ?? '')
+  const name = String.raw`(?!\d+(?:/|$))[a-z0-9][a-z0-9-]*`
+  const match = new RegExp(String.raw`^(${name}(?:/${name})*)(?:/([1-9]\d*))?$`).exec(text ?? '')
   if (match === null) return undefined
   return { id: text, slug: match[1], ...(match[2] === undefined ? {} : { part: Number(match[2]) }) }
 }
 
-// A Part's id holds a slash, so its folder, its branch and its worktree hold a dot or a dash.
+// An id can hold slashes, so its folder holds a dot, and its branch and its worktree a dash, for each one.
 export function folderOf(home, id) {
-  return join(home, 'tasks', id.replace('/', '.'))
+  return join(home, 'tasks', id.replaceAll('/', '.'))
 }
 
 export function nameOf(id) {
-  return id.replace('/', '-')
+  return id.replaceAll('/', '-')
 }
 
 export function readTask(folder) {
@@ -109,9 +111,10 @@ export function readTasks(home) {
   for (const entry of readdirSync(folder, { withFileTypes: true })
     .filter((dirent) => dirent.isDirectory())
     .toSorted((a, b) => a.name.localeCompare(b.name))) {
-    const id = entry.name.replace('.', '/')
+    let id = entry.name.replaceAll('.', '/')
     try {
       const record = readTask(join(folder, entry.name))
+      id = record.id ?? id
       const lines = readLog(join(folder, entry.name))
       const last = lines.at(-1)
       tasks.set(id, {
