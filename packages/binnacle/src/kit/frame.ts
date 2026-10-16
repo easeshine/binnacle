@@ -1,5 +1,6 @@
 import type { Binnacle, Tone } from '../api.ts'
 import { edgeNamed } from '../core/theme.ts'
+import { backgroundOpen } from '../core/row-end.ts'
 import { truncateToWidth, visibleWidth } from '../terminal/pi/utils.ts'
 import { wrap } from './wrap.ts'
 
@@ -39,8 +40,13 @@ export function frame<L extends Framed>(
       : `${paint(edge.topLeft + edge.top)} ${title} ${paint(edge.top.repeat(Math.max(0, between - 3 - visibleWidth(title))) + edge.topRight)}`
   const bottomBetween = cells - visibleWidth(edge.bottomLeft) - visibleWidth(edge.bottomRight)
   const bottom = paint(edge.bottomLeft + edge.bottom.repeat(bottomBetween) + edge.bottomRight)
-  const boxed = (row: string): string =>
-    paint(edge.left) + row + RESET_STYLE + ' '.repeat(Math.max(0, inner - visibleWidth(row))) + paint(edge.right)
+  const boxed = (row: string): string => {
+    const pad = ' '.repeat(Math.max(0, inner - visibleWidth(row)))
+    // A row that ends with its background open fills the padding, so a fill reaches the frame's inner edge.
+    return backgroundOpen(row)
+      ? paint(edge.left) + row + pad + RESET_STYLE + paint(edge.right)
+      : paint(edge.left) + row + RESET_STYLE + pad + paint(edge.right)
+  }
   return [top, ...lines.flatMap((line) => rowsOf(line, inner, visibleWidth(edge.left), boxed)), bottom]
 }
 

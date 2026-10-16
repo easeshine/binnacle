@@ -1,5 +1,5 @@
 import type { Colour, Sixteen, Style, ThemeLayer, Tokens, Tone } from '../api.ts'
-import { foregroundAnsi, parseColor } from '../terminal/pi/colors.ts'
+import { backgroundAnsi, foregroundAnsi, parseColor } from '../terminal/pi/colors.ts'
 import type { TerminalColorMode } from '../terminal/pi/colors.ts'
 
 export interface Edge {
@@ -87,7 +87,9 @@ const styleOf = (given: Colour | Style): Style => (typeof given === 'object' ? g
 /** Throws, naming the Tone, when a layer gives a colour that is not one, so the author learns at load and not at a draw. */
 export function checkLayer(layer: ThemeLayer): void {
   for (const [tone, given] of Object.entries(layer.colors ?? {})) {
-    checkColour(given === undefined ? undefined : styleOf(given).color, `the theme's ${tone}`)
+    const style = given === undefined ? undefined : styleOf(given)
+    checkColour(style?.color, `the theme's ${tone}`)
+    checkColour(style?.background, `the theme's ${tone}`)
   }
 }
 
@@ -126,13 +128,18 @@ const ATTRIBUTES = [
   ['inverse', '7', '27'],
 ] as const
 
-function opening(color: Colour, mode: TerminalColorMode): string {
+function opening(color: Colour, mode: TerminalColorMode, behind = false): string {
   const index = SIXTEEN.findIndex((sixteen) => sixteen === color)
-  if (index >= 0) return `\x1b[${index < 8 ? 30 + index : 90 + index - 8}m`
-  return foregroundAnsi(parseColor(color), mode)
+  if (index >= 0) {
+    // A sixteen's background is its own code, 40 to 47 and 100 to 107, so the person's palette decides how it looks.
+    const [on, from] = index < 8 ? [behind ? 40 : 30, 0] : [behind ? 100 : 90, 8]
+    return `\x1b[${on + index - from}m`
+  }
+  const parsed = parseColor(color)
+  return behind ? backgroundAnsi(parsed, mode) : foregroundAnsi(parsed, mode)
 }
 
-const CLOSES = new Set(['', '0', '22', '23', '24', '27', '39'])
+const CLOSES = new Set(['', '0', '22', '23', '24', '27', '39', '49'])
 const COLOURS = new Set(['38', '48', '58'])
 
 // A colour's arguments, as the 0 of `38;5;0`, are walked over, so only a real reset or close counts.
@@ -152,6 +159,8 @@ function closes(params: string): boolean {
 interface Wrap {
   readonly open: string
   readonly close: string
+  /** The close with the background left open, as `fill` ends a line. */
+  readonly filled: string
 }
 
 function wrapOf(style: Style, mode: TerminalColorMode): Wrap {
@@ -166,19 +175,41 @@ function wrapOf(style: Style, mode: TerminalColorMode): Wrap {
     open += opening(style.color, mode)
     close = `\x1b[39m${close}`
   }
-  return { open, close }
+  const filled = close
+  if (style.background !== undefined) {
+    open += opening(style.background, mode, true)
+    close = `\x1b[49m${close}`
+  }
+  return { open, close, filled }
 }
 
 /** How each Tone, or a Style given as it is, is drawn on a terminal of that many colours. */
 export function painter(tokens: Tokens, mode: TerminalColorMode): (given: Tone | Style, text: string) => string {
+  return drawer(tokens, mode, false)
+}
+
+/** As `paint`, with the background left open at the text's end, so that the line fills the rest of its row. */
+export function filler(tokens: Tokens, mode: TerminalColorMode): (given: Tone | Style, text: string) => string {
+  return drawer(tokens, mode, true)
+}
+
+function drawer(tokens: Tokens, mode: TerminalColorMode, fills: boolean): (given: Tone | Style, text: string) => string {
   const wraps = new Map<Tone, Wrap>()
+  // Object.entries widens each key to a string; the theme's colours are keyed by Tone.
   for (const [tone, style] of Object.entries(tokens.colors) as [Tone, Style][]) wraps.set(tone, wrapOf(style, mode))
+  const what = fills ? 'fill' : 'paint'
   return (given, text) => {
-    if (typeof given === 'object') checkColour(given.color, "paint's colour")
+    if (typeof given === 'object') {
+      checkColour(given.color, `${what}'s colour`)
+      checkColour(given.background, `${what}'s background`)
+    }
     const wrap = typeof given === 'object' ? wrapOf(given, mode) : wraps.get(given)
-    if (wrap === undefined || wrap.open === '' || text === '') return text
+    if (wrap === undefined) return text
+    // A fill of no text opens its background alone, so an empty line fills its row; a paint of no text gives no text.
+    if (text === '') return fills && wrap.filled !== wrap.close ? wrap.open : text
+    if (wrap.open === '') return text
     // A style painted inside ends with its own close, which can end this one's too, so this one opens again after it.
     const held = text.replace(/\x1b\[([\d;:]*)m/g, (sequence, params: string) => (closes(params) ? sequence + wrap.open : sequence))
-    return wrap.open + held + wrap.close
+    return wrap.open + held + (fills ? wrap.filled : wrap.close)
   }
 }

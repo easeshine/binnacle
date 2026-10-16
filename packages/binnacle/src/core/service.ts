@@ -31,7 +31,7 @@ import type { Made } from './edit.ts'
 import { editorActionsOf, tableKeysOf } from './gestures.ts'
 import { drawer } from './looks.ts'
 import type { Make } from './looks.ts'
-import { checkLayer, layered, painter } from './theme.ts'
+import { checkLayer, filler, layered, painter } from './theme.ts'
 import { PACKAGE } from './name.ts'
 
 /** What the service asks of what draws. */
@@ -88,6 +88,7 @@ function builtIn(fiber: Fiber): boolean {
 interface Themed {
   readonly tokens: Tokens
   readonly paint: (given: Tone | Style, text: string) => string
+  readonly fill: (given: Tone | Style, text: string) => string
 }
 
 export class BinnacleService extends Service implements Binnacle {
@@ -127,6 +128,10 @@ export class BinnacleService extends Service implements Binnacle {
 
   paint(given: Tone | Style, text: string): string {
     return this.themeNow().paint(given, text)
+  }
+
+  fill(given: Tone | Style, text: string): string {
+    return this.themeNow().fill(given, text)
   }
 
   theme(layer: ThemeLayer): Handle {
@@ -299,7 +304,7 @@ export class BinnacleService extends Service implements Binnacle {
   private themeNow(): Themed {
     if (this.themed.now === undefined) {
       const tokens = layered(this.layers.map(({ item }) => item))
-      this.themed.now = { tokens, paint: painter(tokens, this.drawn.colorMode()) }
+      this.themed.now = { tokens, paint: painter(tokens, this.drawn.colorMode()), fill: filler(tokens, this.drawn.colorMode()) }
     }
     return this.themed.now
   }

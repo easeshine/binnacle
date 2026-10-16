@@ -1,5 +1,6 @@
 import type { Part, Point } from '../api.ts'
 import { stripTerminalSequences, visibleWidth, wrapTextWithAnsi } from '../terminal/pi/utils.ts'
+import { backgroundAtEnd, backgroundOpen, closesButBackground, wrapperBackgroundAtEnd } from './row-end.ts'
 
 // Stripping sequences leaves single controls that a terminal still obeys: C0 but the tab, DEL, and C1.
 const CONTROLS = /[\x00-\x08\x0a-\x1f\x7f-\x9f]/g
@@ -21,7 +22,41 @@ function toStyledText(line: string): string {
     .join('')
 }
 
-const rowsOfLine = (line: string, width: number): string[] => wrapTextWithAnsi(toStyledText(line), width)
+// The first code a row starts with: the state the wrapper carried to it, or none when the row starts with text.
+const CARRIED = /^\x1b\[[\d;:]*m/
+
+// The wrapper carries each style over a wrap, but a colour in the colon form it does not read: it drops that colour, or
+// holds an older background from before it. The background open at a row's end is set right at the next row's start.
+function carried(rows: readonly string[]): readonly string[] {
+  const read = rows.map(wrapperBackgroundAtEnd)
+  let open = ''
+  return rows.map((row, at) => {
+    // What the wrapper read at the row before is its carry; the background as it was written is the truth it is set to.
+    const fixed =
+      at === 0 || open === read[at - 1]
+        ? row
+        : read[at - 1] !== ''
+          ? row.replace(CARRIED, (code) => `${code}\x1b[49m\x1b[${open}m`)
+          : backgroundAtEnd(CARRIED.exec(row)?.[0] ?? '') === ''
+            ? `\x1b[${open}m${row}`
+            : row
+    open = backgroundAtEnd(fixed)
+    return fixed
+  })
+}
+
+/**
+ * A line's rows, wrapped at the width, each ended by the one rule of a fill, read on the whole line before it wraps: a line whose
+ * background is open at its end is filled, and each of its rows keeps the background open at its end with every other style closed;
+ * any other line's rows close their background too, so a painted one stops at its text on every row it wraps to.
+ */
+export function rowsOf(text: string, width: number): readonly string[] {
+  const rows = carried(wrapTextWithAnsi(text, width))
+  if (backgroundOpen(text)) return rows.map((row) => row + closesButBackground(row))
+  return rows.map((row) => (backgroundOpen(row) ? `${row}\x1b[49m` : row))
+}
+
+const rowsOfLine = (line: string, width: number): readonly string[] => rowsOf(toStyledText(line), width)
 
 interface Wrapped {
   readonly width: number

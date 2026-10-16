@@ -103,9 +103,11 @@ export type Sixteen =
 /** One of the sixteen by name; a 256-colour index; or an exact colour, as `#rrggbb`, `#rgb`, `okhsl(h s% l%)` or `oklch(l c h)`, drawn as the nearest of 256 where the terminal has no truecolor. */
 export type Colour = Sixteen | number | (string & {})
 
-/** How a Tone is drawn: a colour, the terminal's own when it has none, and attributes. */
+/** How a Tone is drawn: a colour, the terminal's own when it has none, the colour behind it, and attributes. */
 export interface Style {
   readonly color?: Colour
+  /** The colour behind the text. `paint` closes it at the text's end; `fill` leaves it open, so the line fills its row. */
+  readonly background?: Colour
   readonly bold?: boolean
   readonly dim?: boolean
   readonly italic?: boolean
@@ -359,6 +361,12 @@ export interface Binnacle {
    * A Style is drawn for the terminal's colours, as a Tone is. It refuses a colour that is not one.
    */
   paint(given: Tone | Style, text: string): string
+  /**
+   * The text in the Tone's or the Style's style, with the background left open at its end, so that the line fills the rest of its Place's
+   * row to the edge, on each row that it wraps to. A Style without a background fills as `paint` draws it, and `fill(given, '')` opens
+   * the background alone, so an empty line fills its row. It refuses a colour that is not one.
+   */
+  fill(given: Tone | Style, text: string): string
   /**
    * Sets how a piece of a component is drawn, by an instance's name, such as `request.choices.row`, or by its kind's, such as `list.row`.
    * `make` is handed the Look beneath it, and returns the Look. The Look beneath is found each time it draws.
