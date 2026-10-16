@@ -12,6 +12,7 @@ const plugins = [
   'status-line',
   'requests',
   'requests-view',
+  'skill',
 ]
 
 export default defineConfig({

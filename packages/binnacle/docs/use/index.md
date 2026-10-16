@@ -53,4 +53,5 @@ The core, row `binnacle`, cannot be turned off: it owns the terminal, and every 
 | Select and copy | `binnacle`, `binnacle-copy` | [copy.md](copy.md) |
 | Status line | `binnacle-status-line` | [status-line.md](status-line.md) |
 | Colours | `binnacle`, `binnacle-palette` | [colours.md](colours.md) |
+| The agent's skill | `binnacle-skill` | [colours.md](colours.md#ask-the-agent) |
 | Requests | `binnacle-requests`, `binnacle-requests-view` | [requests.md](requests.md) |

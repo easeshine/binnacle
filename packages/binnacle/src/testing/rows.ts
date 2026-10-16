@@ -14,4 +14,5 @@ export const BUILT_INS: readonly (readonly [string, string, () => Promise<object
   ['binnacle-status-line', `${PACKAGE}/plugins/status-line`, () => import('../plugins/status-line/index.ts')],
   ['binnacle-requests', `${PACKAGE}/plugins/requests`, () => import('../plugins/requests/index.ts')],
   ['binnacle-requests-view', `${PACKAGE}/plugins/requests-view`, () => import('../plugins/requests-view/index.ts')],
+  ['binnacle-skill', `${PACKAGE}/plugins/skill`, () => import('../plugins/skill/index.ts')],
 ]

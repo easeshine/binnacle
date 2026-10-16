@@ -18,6 +18,7 @@ binnacle's own features are plugins too, and they import only what the package e
 | `binnacle-status-line` | whether the agent runs, on which model, and how a copy ended | `src/plugins/status-line/index.ts` |
 | `binnacle-requests` | the approvals and the questions that stand, and the talk with dsh: a model that draws nothing | `src/plugins/requests/index.ts` |
 | `binnacle-requests-view` | the Requests' default view: a person answers an approval or a question | `src/plugins/requests-view/index.ts` |
+| `binnacle-skill` | binnacle's skill in the catalog of the Chat's agent, so it changes a person's colours in `palette.json` | `src/plugins/skill/index.ts` |
 
 The components of the Kit, in `src/kit/`, are made from the author API, as your own can be.
 

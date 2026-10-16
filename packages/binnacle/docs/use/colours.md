@@ -1,6 +1,6 @@
 # Colours
 
-Rows `binnacle`, `binnacle-palette`. To change colours in a plugin, see [the theme, for authors](../author/concepts/theme.md).
+Rows `binnacle`, `binnacle-palette`, `binnacle-skill`. To change colours in a plugin, see [the theme, for authors](../author/concepts/theme.md).
 
 binnacle draws in the terminal's own colours until you pick a palette or change them. Your palette and your own colours go in `palette.json`, in binnacle's profile: `~/.dsh/profiles/binnacle/palette.json`.
 
@@ -43,6 +43,12 @@ Type `/palette`. A List of palettes opens above the composer, with the palette i
 - A Request that comes stands in the composer's place, and the List goes with the composer. When the Request goes, the List is back, with its mark.
 - When `palette.json` names a palette that is not there, or that does not load, binnacle draws in the terminal's own colours, with yours over them, and the status line says which palette and why: `palette.json: no palette pi-themes/mine`, or `palette.json: pi-themes/mine: not JSON`.
 - Turn the row `binnacle-palette` off, and `/palette` is no command. `palette.json` still applies, and a palette of pi's draws in the terminal's own colours.
+
+## Ask the agent
+
+Ask the Chat's agent for a change of colour in your own words, such as `make the errors on tool cards orange`. The agent has binnacle's skill in every session: it loads the skill, finds the Tone, and writes it under `colors` in `palette.json`, beside your own colours, here `"transcript.card.error": "orange"`. Once it saves, binnacle draws in it, as when you save the file. The agent changes only the Tone it names, so the `✗` of a failed read stays in `error`. Delete the line, and save, to undo it.
+
+Turn the row `binnacle-skill` off, and the agent does not know binnacle.
 
 ## A mistake in the file
 
