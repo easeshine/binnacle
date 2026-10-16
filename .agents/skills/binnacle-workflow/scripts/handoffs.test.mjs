@@ -53,6 +53,20 @@ test('each change hands the task to the role that acts next, or to no agent', ()
   assert.match(handoffFor({ kind: 'answer' }, { ...task, k: 2 }, 'reviewer').text, /answer-2\.md/)
 })
 
+test("the Lead's `changes` after its try sends the Implementer the try's report, and the next round's Reviewer checks it first", () => {
+  const changes = handoffFor({ kind: 'set', to: 'changes' }, { ...task, round: 1, tried: true })
+  assert.equal(changes.role, 'implementer')
+  assert.equal(
+    changes.text,
+    "The Lead's try of Round 1 of cards/1 has findings: read /h/tasks/cards.1/try-1.md in full, fix each finding, and set `ready` again with `pnpm -C /r task set cards/1 ready --as implementer`.",
+  )
+  const ready = handoffFor({ kind: 'set', to: 'ready' }, { ...task, round: 2, tip: 'b2', base: 'a1', tried: true })
+  assert.match(
+    ready.text,
+    /Check each finding of the Lead's try of the last Round first, in \/h\/tasks\/cards\.1\/try-1\.md, then what the commits touched\. Write the report to \/h\/tasks\/cards\.1\/review-2\.md/,
+  )
+})
+
 test('each prompt names the tool of the main checkout, never the tool of the checkout the agent works in, and the role, which a subagent has in no environment', () => {
   const c = { ...task, repo: '/src/binnacle' }
   const verdict = handoffFor({ kind: 'start' }, c).text

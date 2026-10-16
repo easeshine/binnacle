@@ -1,13 +1,14 @@
 import { roleText } from '../../../roles.mjs'
 
+// The Lead's try of a Round, `try-<r>.md`, comes after each pass of that Round's review.
 function order(name) {
-  const [, round, pass] = name.match(/^review-(\d+)(?:-(\d+))?\.md$/)
-  return [Number(round), pass === undefined ? 1 : Number(pass)]
+  const [, kind, round, pass] = name.match(/^(review|try)-(\d+)(?:-(\d+))?\.md$/)
+  return [Number(round), kind === 'try' ? Infinity : pass === undefined ? 1 : Number(pass)]
 }
 
 export function reportsOf(files) {
   return files
-    .filter((name) => /^review-\d+(?:-\d+)?\.md$/.test(name))
+    .filter((name) => /^(?:review-\d+(?:-\d+)?|try-\d+)\.md$/.test(name))
     .toSorted((a, b) => {
       const [ra, pa] = order(a)
       const [rb, pb] = order(b)

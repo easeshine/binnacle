@@ -12,6 +12,10 @@ export function handoffFor(change, c, asker) {
   const reviewer = `You are the Reviewer. Read ${c.repo}/${ROLES}/reviewer.md first.`
   const verdict = `Write the report to ${report}, then set the state with \`${tool} set ${c.id} changes --as reviewer\` or \`${tool} set ${c.id} approved --as reviewer\`, and end your turn. If you cannot write the file, give the report as your final message, and the Lead writes it.`
   const spec = `${c.repo}/intents/${c.slug}/spec.md`
+  // The Lead's try of an approved Round: the Implementer fixes what it found, and the next Round checks each of its findings first.
+  const tried = `${c.folder}/try-${c.round - (change.to === 'ready' ? 1 : 0)}.md`
+  const lastFindings =
+    c.tried === true ? `each finding of the Lead's try of the last Round first, in ${tried}` : 'each finding of the last Round first'
   switch (change.kind) {
     case 'start':
       return {
@@ -44,7 +48,7 @@ export function handoffFor(change, c, asker) {
             role: 'reviewer',
             start: false,
             // A Part's own Reviewer starts at its Round 1, so that prompt is its first. The Spec's Reviewer knows its role already.
-            text: `${c.round === 1 && c.sharedReviewer !== true ? `${reviewer} ` : ''}Round ${c.round} of Part ${c.part} of the Spec ${c.slug} at ${c.tip}: the commits ${c.base}..${c.tip}. In your checkout ${c.review}, run \`git switch --detach ${c.tip}\`, then \`vp install\`. ${c.round > 1 ? 'Check each finding of the last Round first, then what the commits touched.' : `Review the commits against Part ${c.part} of the Spec intents/${c.slug}/spec.md, as the \`review\` skill says.`} ${verdict}`,
+            text: `${c.round === 1 && c.sharedReviewer !== true ? `${reviewer} ` : ''}Round ${c.round} of Part ${c.part} of the Spec ${c.slug} at ${c.tip}: the commits ${c.base}..${c.tip}. In your checkout ${c.review}, run \`git switch --detach ${c.tip}\`, then \`vp install\`. ${c.round > 1 ? `Check ${lastFindings}, then what the commits touched.` : `Review the commits against Part ${c.part} of the Spec intents/${c.slug}/spec.md, as the \`review\` skill says.`} ${verdict}`,
           }
         case 'changes':
           return c.round === 0
@@ -52,7 +56,7 @@ export function handoffFor(change, c, asker) {
             : {
                 role: 'implementer',
                 start: false,
-                text: `Round ${c.round} of ${c.id} has findings: read ${report} in full, fix each finding, and set \`ready\` again with \`${tool} set ${c.id} ready --as implementer\`.`,
+                text: `${c.tried === true ? "The Lead's try of " : ''}Round ${c.round} of ${c.id} has findings: read ${c.tried === true ? tried : report} in full, fix each finding, and set \`ready\` again with \`${tool} set ${c.id} ready --as implementer\`.`,
               }
         case 'approved':
           return c.round === 0

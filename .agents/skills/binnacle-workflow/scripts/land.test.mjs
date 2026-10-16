@@ -4,6 +4,7 @@ import { appendFileSync, chmodSync, mkdirSync, readFileSync, rmSync, writeFileSy
 import { join } from 'node:path'
 import { built, git, makeWorld, SPEC, steps } from './world.mjs'
 import { run } from './task.mjs'
+import { reportsOf } from './land.mjs'
 
 const MESSAGE = 'feat: the thing works\n\nWhat changed, and why.\n\nAuthor API: none.\n\nCloses #140\n'
 const PR =
@@ -85,6 +86,16 @@ test("`task land` opens the PR: its title is the message's header, its body says
     ['<!-- binnacle-report: review-1.md -->'],
   )
   assert.match(world.gh.comments[0].body, /<details><summary>review-1\.md<\/summary>\n\nRound 1: approved\./)
+})
+
+test("each report goes to a comment in the order it was written: the passes of round 0, then each round, with the Lead's try after the round it tried", () => {
+  assert.deepEqual(reportsOf(['try-1.md', 'review-2.md', 'checked.md', 'review-1.md', 'review-0-2.md', 'review-0.md', 'try-x.md']), [
+    'review-0.md',
+    'review-0-2.md',
+    'review-1.md',
+    'try-1.md',
+    'review-2.md',
+  ])
 })
 
 test('A Part built and reviewed by one family says so, in its trailer and its PR', async () => {
