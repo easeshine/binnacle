@@ -26,6 +26,7 @@ The files of a Task:
 | `answer.md` | The answer | the Lead |
 | `reply.md` | The Lead's answer to each finding of the last pass of Round 0. `task set <slug> spec` renames it `reply-<p>.md`. | the Lead |
 | `review-<r>.md` | The report of Round `<r>`. Round 0 has passes: its first pass is `review-0.md`, and pass `<p>` is `review-0-<p>.md`. The prompt names the file. | the Reviewer |
+| `try-<r>.md` | What the Lead's try of approved Round `<r>` found, with each finding written as a review report writes it. `task set <slug>/<k> changes` needs it. | the Lead |
 | `checked.md` | Optional: what the builder checked by hand, which `task land` puts in the PR | the builder |
 | `message.md` | The final commit message, which names no model | the builder |
 | `pr.md` | The PR's **Summary**, **Evidence**, and **Merge danger** without the Door, as the `pr` skill says | the builder |
@@ -81,7 +82,7 @@ A **role** is `<runner>:<tool>:<model>@<thinking>`:
 | State | Set by | After | Hand-off |
 |---|---|---|---|
 | `spec` | Lead, or `task start` as a Spec's first line | `changes` and `approved` at Round 0, on a Spec | sends the Reviewer its next pass, with `reply-<p>.md` |
-| `changes` | Reviewer | `spec`, `ready` | on a Spec, wakes the Lead to edit the Spec. On a Part, sends the report to the Implementer. |
+| `changes` | Reviewer, or the Lead after `approved` on a Part | `spec`, `ready`, and `approved` after Round 0 on a Part | on a Spec, wakes the Lead to edit the Spec. On a Part, sends the report to the Implementer: the Lead's `try-<r>.md` after `approved`. The Round stays, and the next Round checks the try's findings first. |
 | `approved` | Reviewer, or `task build` as a Part's first line | `spec`, `ready` | on a Spec, wakes the Lead. On a Part, also asks the Implementer for `message.md` and `pr.md`. |
 | `building` | Implementer | `approved` at Round 0, and `changes`, on a Part | nothing |
 | `ready` | Implementer | `building`, and `changes` on a Part | sends the Reviewer the tip, and the commits since the last Round |
@@ -129,7 +130,7 @@ The Lead answers:
 1. squashes the branch into one commit on `origin/main`, with `message.md` as its message and two trailers, `Built-by:` and `Reviewed-by:`, and pushes it;
 2. opens the PR: where the Part fits ("Part 2 of 3 of the Spec *cards*"), then `pr.md` with the Door in its **Merge danger**, then **Checked**: the review, the Part's text, `checked.md` if it exists, and the records to check;
 3. labels a one-way PR `one-way`;
-4. posts each review report of the Part as a comment of its own, oldest first;
+4. posts each review report of the Part, and each `try-<r>.md`, as a comment of its own, oldest first;
 5. writes `landed` with the PR's address.
 
 A land that stops part of the way names the step: run it again, and it finishes without a second commit, PR or comment. If the branch does not hold `origin/main`, `task land` refuses: the builder rebases it, as `implementer.md` says.

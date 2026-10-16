@@ -17,6 +17,7 @@ import {
   followers,
   nameOf,
   OWNERS,
+  ownerOf,
   parseId,
   readAgents,
   readEvents,
@@ -442,7 +443,7 @@ async function land(id, deps, say) {
     const missing = PR_SECTIONS.filter((name) => !new RegExp(`^## ${name}$`, 'm').test(prText))
     if (missing.length > 0) throw new Refusal(`${prPath}: it has no ${missing.map((name) => `## ${name}`).join(', ')}`)
     const reports = reportsOf(readdirSync(folder))
-    if (!reports.some((file) => !file.startsWith('review-0'))) throw new Refusal(`no review report of a round after round 0 in ${folder}`)
+    if (!reports.some((file) => /^review-[1-9]/.test(file))) throw new Refusal(`no review report of a round after round 0 in ${folder}`)
     git(deps.repo, ['fetch', 'origin', 'main'])
     const spec = specOnMain(deps, record.slug)
     const parts = partsOf(spec)
@@ -565,7 +566,9 @@ async function setState(id, state, read, deps, say) {
     const folder = folderOf(deps.home, id)
     const { kind } = readTask(folder)
     const last = readLog(folder).at(-1)
-    if (OWNERS[state] !== read.as) throw new Refusal(`the ${read.as} cannot set ${state}; the ${OWNERS[state]} sets it`)
+    const owner = ownerOf(state, last.to)
+    if (owner !== read.as)
+      throw new Refusal(`the ${read.as} cannot set ${state}${owner === OWNERS[state] ? '' : ` after ${last.to}`}; the ${owner} sets it`)
     if (!followers(kind, last.to, last.round).includes(state)) throw new Refusal(refusal(id, kind, state, last))
     if (kind === 'spec' && last.to === 'approved') {
       const part = [...readTasks(deps.home).tasks.values()].find((task) => task.slug === id && task.kind === 'part')
@@ -578,6 +581,10 @@ async function setState(id, state, read, deps, say) {
         throw new Refusal(`task ${id}: no reply.md in ${folder}; answer each finding there, then set spec again`)
       renameSync(join(folder, 'reply.md'), join(folder, `reply-${pass}.md`))
     }
+    // The Lead's `changes` after an approval sends the builder what the Lead's try found, as a report of its own.
+    const tried = state === 'changes' && last.to === 'approved'
+    if (tried && !existsSync(join(folder, `try-${last.round}.md`)))
+      throw new Refusal(`task ${id}: no try-${last.round}.md in ${folder}; write what the try found there, then set changes again`)
     const round = state === 'ready' ? last.round + 1 : last.round
     appendLine(join(folder, 'log.ndjson'), {
       at: deps.now().toISOString(),
@@ -588,6 +595,7 @@ async function setState(id, state, read, deps, say) {
     })
     say(`task ${id}: ${state} round ${round}`)
     const c = context(id, folder, deps)
+    c.tried = tried || (state === 'ready' && existsSync(join(folder, `try-${last.round}.md`)))
     if (state === 'ready') {
       c.tip = git(join(deps.home, 'worktrees', nameOf(id)), ['rev-parse', 'HEAD'])
       c.base = lastTip(folder) ?? c.tip

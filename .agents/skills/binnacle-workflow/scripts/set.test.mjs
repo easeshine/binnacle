@@ -1,4 +1,6 @@
 import { onTestFinished, test } from 'vite-plus/test'
+import { writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import assert from 'node:assert/strict'
 import { built, logLines, makeWorld } from './world.mjs'
 import { run } from './task.mjs'
@@ -119,17 +121,45 @@ test('A state that cannot follow the current state is refused, and the error nam
   assert.equal(specOnTicket.code, 1)
   assert.match(specOnTicket.stderr, /spec cannot follow changes; building, ready can follow it/)
 
-  // After a later round's approval, nothing follows: the Lead takes the message and the PR.
+  // After a later round's approval, only the Lead's `changes` from its try follows: the Lead takes the message and the PR.
   await run(['set', 'cards/2', 'ready', '--as', 'implementer'], world.deps)
   await run(['set', 'cards/2', 'approved', '--as', 'reviewer'], world.deps)
   const fromApproved = await run(['set', 'cards/2', 'building', '--as', 'implementer'], world.deps)
   assert.equal(fromApproved.code, 1)
-  assert.match(fromApproved.stderr, /building cannot follow approved; nothing can follow it/)
+  assert.match(fromApproved.stderr, /building cannot follow approved; changes can follow it/)
 
   // `task set` cannot set what only `task ask` and `task stop` set.
   const blocked = await run(['set', 'menus', 'blocked', '--as', 'implementer'], world.deps)
   assert.equal(blocked.code, 1)
   assert.match(blocked.stderr, /task set cannot set blocked; only task ask sets it/)
+})
+
+test("The Lead sets `changes` on a Part after a later round's approval, with the report of its try, and the round stays", async () => {
+  const world = makeWorld()
+  onTestFinished(() => world.remove())
+  await built(world, 1)
+  await run(['set', 'cards/1', 'building', '--as', 'implementer'], world.deps)
+  await run(['set', 'cards/1', 'ready', '--as', 'implementer'], world.deps)
+  await run(['set', 'cards/1', 'approved', '--as', 'reviewer'], world.deps)
+
+  const byReviewer = await run(['set', 'cards/1', 'changes', '--as', 'reviewer'], world.deps)
+  assert.equal(byReviewer.code, 1)
+  assert.match(byReviewer.stderr, /the reviewer cannot set changes after approved; the lead sets it/)
+
+  const noTry = await run(['set', 'cards/1', 'changes'], world.deps)
+  assert.equal(noTry.code, 1)
+  assert.match(noTry.stderr, /task cards\/1: no try-1\.md in .*; write what the try found there, then set changes again/)
+  assert.deepEqual(stateOf(world, 'cards/1'), { state: 'approved', round: 1 })
+
+  writeFileSync(join(world.home, 'tasks', 'cards.1', 'try-1.md'), 'The float leaves the fill on the edge.')
+  const tried = await run(['set', 'cards/1', 'changes'], world.deps)
+  assert.equal(tried.code, 0)
+  assert.equal(tried.stdout.split('\n')[0], 'task cards/1: changes round 1')
+  assert.deepEqual(logLines(world, 'cards/1').at(-1).role, 'lead')
+
+  // The next round reviews the fix, blind, as each round does.
+  await run(['set', 'cards/1', 'ready', '--as', 'implementer'], world.deps)
+  assert.deepEqual(stateOf(world, 'cards/1'), { state: 'ready', round: 2 })
 })
 
 test('The Lead sets `spec` again after an edit of the Spec at round 0', async () => {

@@ -37,7 +37,7 @@ The Task tool's folders, states and commands are in [`task.md`](task.md). Read i
 5. If a subagent Reviewer gives its report as its final message, write it to the file that its prompt names, then set its state with `--as reviewer`.
 6. Read each review report in full.
 7. After the third Round with findings, choose one narrow Round more, or stop and ask the Maintainer.
-8. If the Part changes what binnacle draws or boots, try its branch, as *A try* says, and write what you drove and what it drew in `checked.md`.
+8. If the Part changes what binnacle draws or boots, try its branch, as *A try* says, and write what you drove and what it drew in `checked.md`. If the try finds a bug, write it as a finding to `try-<r>.md`, as a review report is written, and run `pnpm task set <slug>/<k> changes`: the builder fixes it, the next Round reviews the fix, and you try the branch again.
 9. Run `pnpm task land <slug>/<k>` to open the PR.
 10. If `task land` says that the branch does not hold `origin/main`, send the Part back to its builder to rebase. Rebase it yourself only when you built it.
 11. After the PR merges or closes, run `pnpm task stop <slug>/<k>`.
