@@ -134,7 +134,7 @@ test('A state that cannot follow the current state is refused, and the error nam
   assert.match(blocked.stderr, /task set cannot set blocked; only task ask sets it/)
 })
 
-test("The Lead sets `changes` on a Part after a later round's approval, with the report of its try, and the round stays", async () => {
+test("The Lead sets `changes` on a Part after a later round's approval, with the report of its try, and the round stays until the fix is ready for the next round", async () => {
   const world = makeWorld()
   onTestFinished(() => world.remove())
   await built(world, 1)
@@ -157,7 +157,6 @@ test("The Lead sets `changes` on a Part after a later round's approval, with the
   assert.equal(tried.stdout.split('\n')[0], 'task cards/1: changes round 1')
   assert.deepEqual(logLines(world, 'cards/1').at(-1).role, 'lead')
 
-  // The next round reviews the fix, blind, as each round does.
   await run(['set', 'cards/1', 'ready', '--as', 'implementer'], world.deps)
   assert.deepEqual(stateOf(world, 'cards/1'), { state: 'ready', round: 2 })
 })
