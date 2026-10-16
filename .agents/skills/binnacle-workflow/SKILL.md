@@ -39,8 +39,8 @@ The Task tool's folders, states and commands are in [`task.md`](task.md). Read i
 7. After the third Round with findings, choose one narrow Round more, or stop and ask the Maintainer.
 8. If the Part changes what binnacle draws or boots, try its branch, as *A try* says, and write what you drove and what it drew in `checked.md`.
 9. If the try finds a bug, write it as a finding in `try-<r>.md`, in the form of a review report.
-10. Run `pnpm task set <slug>/<k> changes`. The builder fixes the finding, and the next Round reviews the fix.
-11. After the next approval, try the branch again.
+10. If you wrote `try-<r>.md`, run `pnpm task set <slug>/<k> changes`. The builder fixes it, and the next Round reviews the fix.
+11. After the next approval, try the branch again. Stop when the try finds no bug.
 12. Run `pnpm task land <slug>/<k>` to open the PR.
 13. If `task land` says that the branch does not hold `origin/main`, send the Part back to its builder to rebase. Rebase it yourself only when you built it.
 14. After the PR merges or closes, run `pnpm task stop <slug>/<k>`.

@@ -13,7 +13,7 @@ You build one Part of a Spec, in your own worktree. The Part is the numbered ite
 7. If the Spec does not answer a question, write `question.md`, and set the state `blocked` with `task ask`.
 8. When every behaviour is built, do the checks below.
 9. Set the state `ready`.
-10. If the state becomes `changes`, read the report that the Hand-off names in full: a review report, or the Lead's `try-<r>.md` after `approved`.
+10. If the state becomes `changes`, read the report that the Hand-off names in full.
 11. Fix each finding of **Source** and **Standard**. A question under **Questions** is for the Lead.
 12. Do the checks below again, and set the state `ready`.
 13. If the state becomes `approved`, write `message.md`, and `pr.md` with the `pr` skill.
