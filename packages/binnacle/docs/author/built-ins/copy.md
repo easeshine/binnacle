@@ -18,7 +18,7 @@ ctx.binnacle.place('chars', {
 - It changes while the drag grows, and is `undefined` again once the Selection clears.
 - `set` on it does nothing. The type of its state is `SelectionState`.
 - A release that ends with a Selection fires the gesture `select` to the actions with no Place, as the wheel fires `wheelup` and `wheeldown`.
-- The Selection is drawn in the Tone `selection`, `{ inverse: true }` by default ([The theme](../concepts/theme.md)).
+- The Selection is drawn in the Tone `selectedBg`, `{ inverse: true }` by default ([The theme](../concepts/theme.md)).
 
 ## The action `copy.selection`
 

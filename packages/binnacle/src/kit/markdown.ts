@@ -58,9 +58,9 @@ const listItem: MarkdownItemLook = (lines, { marker }) => {
 
 function defaults(binnacle: Binnacle) {
   const paint = binnacle.paint.bind(binnacle)
-  const heading: MarkdownHeadingLook = (text, { width }) => wrap(text, width).map((line) => paint('heading', line))
+  const heading: MarkdownHeadingLook = (text, { width }) => wrap(text, width).map((line) => paint('mdHeading', line))
   const code: MarkdownCodeLook = (lines, { width }) =>
-    lines.flatMap((line) => wrap(line, width, { first: '  ' })).map((line) => paint('code', line))
+    lines.flatMap((line) => wrap(line, width, { first: '  ' })).map((line) => paint('mdCode', line))
   const quote: MarkdownQuoteLook = (lines) => lines.map((line) => paint('muted', `│ ${line}`))
   const rule: MarkdownRuleLook = ({ width }) => [paint('border', binnacle.tokens.glyphs.rule.repeat(width))]
   return { heading, paragraph: wrapped, code, item: listItem, quote, rule }
@@ -91,12 +91,12 @@ export function markdown(binnacle: Binnacle, text: string, width: number): strin
       case 'em':
         return `\x1b[3m${inline(known.tokens ?? [])}\x1b[23m`
       case 'codespan':
-        return binnacle.paint('code', plain(known.text))
+        return binnacle.paint('mdCode', plain(known.text))
       case 'br':
         return '\n'
       case 'link': {
         const { href } = known
-        const drawn = binnacle.paint('link', inline(known.tokens ?? []))
+        const drawn = binnacle.paint('mdLink', inline(known.tokens ?? []))
         return known.text === href ? drawn : `${drawn} (${plain(href)})`
       }
       default:

@@ -204,13 +204,13 @@ test('an author changes one kind of block with its Look, given what it draws and
   assert.deepEqual(given, [{ lang: 'py', width: 20 }])
 })
 
-test('the Tones heading, code and link recolour the markdown', async () => {
+test('the Tones mdHeading, mdCode and mdLink recolour the markdown', async () => {
   const { terminal, ctx } = await drawing('# h `c` [l](https://x.io)')
   await ctx.plugin({
     name: 'theme',
     inject: ['binnacle'],
     apply: (plugin: Context) => {
-      plugin.binnacle.theme({ colors: { heading: 'magenta', code: 'green', link: 'red' } })
+      plugin.binnacle.theme({ colors: { mdHeading: 'magenta', mdCode: 'green', mdLink: 'red' } })
     },
   })
   await settled()
