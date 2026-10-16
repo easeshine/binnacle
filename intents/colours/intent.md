@@ -65,7 +65,9 @@ Each stage ends in something the Maintainer can try under dsh.
 
 ## Specs
 
-None yet.
+Stage 1:
+
+- [A line filled with a colour](spec.md).
 
 ## Open questions
 

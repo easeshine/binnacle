@@ -1,0 +1,94 @@
+# Spec: a line filled with a colour
+
+- **Intent:** [Colours](intent.md), Stage 1, *A line filled with a colour*. It serves outcome 10: an author "fills a line with a colour across its full width, as for a card, or for a line added to a file."
+- **Status:** draft
+
+## Problem
+
+An author who draws a card cannot put a colour behind its lines. A Style has a colour and five attributes, and no background, so `binnacle.paint` cannot draw one, and a theme layer cannot give a Tone one.
+
+An author who writes the escape code by hand still gets a strip as wide as the text, not the line. The core pads each row of a Place with spaces after the row's reset (`core/layout.ts`, `Arrangement#place`), and `frame` pads each line after a reset too (`kit/frame.ts`). So the author must measure each line and pad it to the width before painting it, and wrapping breaks that padding.
+
+## Behaviour
+
+1. An author fills a line with a Style's background, `binnacle.fill({ background: 'blue' }, 'text')`, and the background reaches the right edge of the line's Place.
+2. An author fills a line with a Tone that a theme layer gives a background, `binnacle.fill('muted', 'text')`, and the background follows the theme.
+3. An author paints text on a background with `binnacle.paint`, and the background stops where the text stops.
+4. An author fills a line with a Tone that has no background, and the line draws as `paint` draws it, with nothing behind the rest of the row.
+5. An author paints text inside a filled line, in a Tone or a Style with a background of its own, and the fill draws again after it, to the edge.
+6. An author fills an empty line, and a whole row of the background draws.
+7. An author fills a line longer than its Place, and each row that it wraps to fills to the edge.
+8. A line that ends with a colour, bold, dim, italic, underline or inverse still open draws the rest of its row plain: only a background goes on past the text.
+9. An author fills a line in a `frame`, and the background reaches the frame's inner edge, and the edge keeps its own Tone.
+10. A filled row in a box stops at the box's content: the box's padding and edges draw as they did.
+11. A float over a filled row leaves the fill on each side of it.
+12. A person who copies a filled row gets its text with no spaces at its end.
+13. An author whose theme layer changes the fill's Tone sees the fill in the new colour, and in the old one again when the layer goes.
+14. A theme layer that gives a Tone a background that is not a colour is refused, and the error names the Tone. `paint` and `fill` with a Style whose background is not a colour throw.
+15. A filled line in a separated row draws its background only as far as its text.
+
+## Journeys
+
+1. **A card of the author's own.** Add a plugin to the profile with a theme layer that gives `muted` the background `bright-black`, and a command `/card` that shows a Screen of its own. The Screen's Part draws a card: an empty filled line, a filled line with a bold title in `accent`, a filled line of text longer than the terminal, and an empty filled line. Run `/card`. The card is one block of `bright-black` from the left edge to the right, the long line wraps, and each of its rows is filled. Make the terminal narrower, then wider: the block follows the width each time.
+2. **Copy from the card.** On the card's Screen, drag across the long line, and let go. The Selection draws over the text in the `selection` Tone. Paste into another program: the text comes with no spaces at the end of a row. Press esc: the Chat is back, as it was.
+3. **The theme changes the card.** Change the plugin's layer to give `muted` the background `#3a3a5a`, and restart binnacle. Run `/card` again: the block is that colour, or the nearest of 256 where the terminal has no truecolor. Take the layer out: the card draws in `muted` with nothing behind it, and its lines stop where their text stops.
+4. **A framed card.** Change the Part to draw the card in a `frame`. The background fills each line inside the frame to its edge, and the edge draws in `border`, with nothing behind it.
+
+## Seams
+
+- **The terminal**, through `@easeshine/binnacle/testing`'s mount: a plugin's theme layer, Part and Layout in. Out come the drawn rows, and each cell's style, whose `background` already reads the terminal's.
+- **The copy's text**, as the `copy` plugin's tests read it after a drag and a release.
+
+## Decisions
+
+1. **`fill` is its own call, beside `paint`, not an attribute of a Style.** A Style says how a colour looks, and a Tone is shared by many draws. A fill says where a line ends. A Tone that filled would fill each line drawn in it, such as a description in `muted`.
+2. **The core holds one rule: a background still open at the end of a line goes on to the end of its row.** `fill` paints as `paint` does, and leaves the background open at the end. Each place that pads a row follows the rule: a Place's rows, a float's rows, and `frame`'s lines. A line with a raw escape code that leaves a background open fills too, as the rule is about the line, not about who wrote it.
+3. **Only the background goes past the text.** Before the core pads a row, it closes each other style that is still open: the colour, bold, dim, italic, underline and inverse. An underline left open by a mistake does not run to the edge.
+4. **The key is `background`, as the test kit's `CellStyle` names it.** A sixteen's background is its own code, `40` to `47` and `100` to `107`, so the person's palette decides how it looks, as for a colour. An exact colour is drawn as the nearest of 256 where the terminal has no truecolor, through the copied colour code's `background` branch.
+5. **A painted background is closed by `49`.** `paint` opens its style again after an inner `49`, as it does after each other close, so the outer background draws on after an inner one.
+6. **This Stage adds no Tone, and changes no default.** pi's background Tones come with pi's whole set in Stage 2, when a Tone can name a Hue and the default Palette can give each a colour that reads. Until then, an author fills with a Style, or with a Tone that their own theme layer gives a background.
+7. **A fill reaches the content of what holds it, and no further.** A Place's row ends at its content box, so a box's padding and edges stay as they are. `frame` has no padding, so a fill there reaches the inner edge. A separated row cuts each child to its first line, joined by dividers, so a fill there stops at its text, and no divider takes it.
+8. **An empty fill is a row of the background.** `fill(given, '')` opens the background with no text, so that a card's blank lines fill. `paint(given, '')` still gives `''`.
+9. **The kit's `wrap` and `indented` do not fill their indent.** Their indent is drawn before the line's text, so the fill starts at the text on each row after the first. An author who wants the indent filled fills the line after it is wrapped or indented.
+
+## Edges
+
+| Edge | Answer |
+|---|---|
+| A Tone with no background | Behaviour 4 |
+| An empty line | Behaviour 6, Decision 8 |
+| A line longer than its Place | Behaviour 7 |
+| A wide character that leaves one cell at a row's end | The cell is padded in the background, as Behaviour 1 |
+| A Place one cell wide | Each row is one cell of the fill, as Behaviour 7 |
+| A style other than the background left open | Behaviour 8, Decision 3 |
+| A background inside a fill | Behaviour 5, Decision 5 |
+| A box's padding and edges | Behaviour 10, Decision 7 |
+| A `frame` | Behaviour 9 |
+| A separated row | Behaviour 15, Decision 7 |
+| A float over a filled row | Behaviour 11 |
+| The theme layer comes or goes while the fill shows | Behaviour 13 |
+| A colour that is not one | Behaviour 14 |
+| A copy of a filled row | Behaviour 12 |
+| The Selection and the Mark over a fill | Each is drawn over its cells as before. The Selection's `selection` Tone is `inverse` by default, which swaps the fill and the text. |
+| A terminal of 256 colours | Decision 4 |
+| The indent of `wrap` and `indented` | Decision 9 |
+| After it: the Focus and the keys | A fill changes no key, no click and no Focus |
+
+## Out of scope
+
+- The background Tones of pi, and their defaults: Stage 2, with pi's whole set.
+- A colour behind the whole screen: Stage 3.
+- A plugin's own colours, such as `tool-cards.error`: Stage 2.
+- A built-in that draws with a fill, such as tool cards drawn as cards. Each built-in takes it up in a change of its own, once its Tones exist.
+- `NO_COLOR`: the product's Stage 6.
+
+## Parts of the build
+
+1. **An author fills a line with a colour across its full width.**
+   - Behaviours 1 to 15.
+   - Code: `src/api.ts` (`Style`, `Binnacle#fill`), `core/theme.ts` (the background, `fill`, and `49` in the closes), `core/layout.ts` and `kit/frame.ts` (the padding), and the copied colour code's `background` branch.
+   - Records: the `AGENTS.md` of `src/core/` and `src/kit/`, `author/concepts/theme.md`, `frame` in `author/concepts/parts-places-screens.md`, and a changeset, a `patch`.
+
+## Door
+
+One-way: it changes what an author may import. `Style` takes `background`, and `Binnacle` takes `fill`.
