@@ -8,6 +8,7 @@ const plugins = [
   'composer',
   'commands',
   'copy',
+  'palette',
   'status-line',
   'requests',
   'requests-view',

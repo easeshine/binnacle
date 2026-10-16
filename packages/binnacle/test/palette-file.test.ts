@@ -226,8 +226,8 @@ test('binnacle.palette names the palette that palette.json names, and the one dr
   assert.deepEqual(
     [named, set, { ...shown.binnacle.palette.state }, told > 0],
     [
-      { inUse: 'pi/dark', shown: 'terminal', error: undefined },
-      { inUse: 'pi/dark', shown: 'terminal', error: undefined },
+      { inUse: 'pi/dark', shown: 'terminal', error: 'palette.json: no palette pi/dark' },
+      { inUse: 'pi/dark', shown: 'terminal', error: 'palette.json: no palette pi/dark' },
       { inUse: 'terminal', shown: 'terminal', error: undefined },
       true,
     ],

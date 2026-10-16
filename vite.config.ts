@@ -144,6 +144,8 @@ export default defineConfig({
                     '!./*',
                     '!../../index.ts',
                     '!../*/index.ts',
+                    // pi's themes, copied as data with pi's other code: what a built-in reads of them, an author can copy.
+                    '!../../terminal/pi/*.json',
                   ],
                   message:
                     "A built-in imports only binnacle's entry, another built-in's entry, cordis, dsh's packages and node's own modules.",

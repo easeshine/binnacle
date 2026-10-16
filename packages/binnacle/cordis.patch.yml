@@ -39,6 +39,9 @@
     # Copying: a release after a drag copies the Selection to the clipboard. Off, a drag still selects, and copies nothing.
     - id: binnacle-copy
       name: '@easeshine/binnacle/plugins/copy'
+    # The palettes: /palette opens a List of palettes above the composer, from pi's themes and an author's sources. Off, palette.json still applies, and a palette of pi's draws as the terminal's colours.
+    - id: binnacle-palette
+      name: '@easeshine/binnacle/plugins/palette'
     # The status line: whether the agent runs, on which model, and how a copy ended.
     - id: binnacle-status-line
       name: '@easeshine/binnacle/plugins/status-line'

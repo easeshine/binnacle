@@ -14,6 +14,7 @@ binnacle's own features are plugins too, and they import only what the package e
 | `binnacle-composer` | what a person types, before it is sent | `src/plugins/composer/index.ts` |
 | `binnacle-commands` | the offer of dsh's commands while a person types `/` | `src/plugins/commands/index.ts` |
 | `binnacle-copy` | the copy of the Selection to the clipboard | `src/plugins/copy/index.ts` |
+| `binnacle-palette` | the sources of pi's palettes, `/palette`, and the List that a person picks a palette from | `src/plugins/palette/index.ts` |
 | `binnacle-status-line` | whether the agent runs, on which model, and how a copy ended | `src/plugins/status-line/index.ts` |
 | `binnacle-requests` | the approvals and the questions that stand, and the talk with dsh: a model that draws nothing | `src/plugins/requests/index.ts` |
 | `binnacle-requests-view` | the Requests' default view: a person answers an approval or a question | `src/plugins/requests-view/index.ts` |

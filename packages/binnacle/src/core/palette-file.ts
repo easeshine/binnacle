@@ -1,10 +1,9 @@
-import { readFileSync, watch } from 'node:fs'
+import { readFileSync, watch, writeFileSync } from 'node:fs'
 import type { FSWatcher } from 'node:fs'
 import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
-import type { Model, PaletteState, ThemeLayer } from '../api.ts'
+import type { ThemeLayer } from '../api.ts'
 import { internals } from './internals.ts'
-import { createModel } from './model.ts'
 import { isColour, isHue, isHueColour, loopIn, quoted, renamedTo } from './theme.ts'
 
 export const PALETTE_FILE = 'palette.json'
@@ -98,35 +97,44 @@ export function profileDir(ctx: Context): string | undefined {
 
 /**
  * The person's own colours, read from `palette.json` in the profile folder and kept as the file changes.
- * A file with a mistake keeps the last good colours, and `error` says what is wrong.
+ * A file with a mistake keeps the last good colours, and `fault` says what is wrong.
  */
 export class PersonsPalette {
-  private file = NO_FILE
-  // The text last read, which is checked again as the plugins' layers change.
+  private good = NO_FILE
+  // The text last read, which is checked again as the layers beneath change.
   private text: string | undefined
   // Why the file could not be read the last time, which only a read that works clears.
   private failed: string | undefined
-  private readonly own = createModel<{ inUse: string; shown: string; error: string | undefined }>({
-    inUse: 'terminal',
-    shown: 'terminal',
-    error: undefined,
-  })
-  /** As an author reads it: `set` changes nothing, as only the file does. */
-  readonly model: Model<PaletteState> = { state: this.own.state, watch: this.own.watch, set: () => {} }
+  private wrong: string | undefined
   private readonly dir: string | undefined
   private readonly beneath: () => readonly ThemeLayer[]
-  private readonly restyle: () => void
+  private readonly changed: () => void
 
-  /** `beneath` gives each plugin's layer, and `restyle` draws everything again in the theme. */
-  constructor(dir: string | undefined, beneath: () => readonly ThemeLayer[], restyle: () => void) {
+  /** `beneath` gives each layer beneath the person's, and `changed` runs after the file's colours, its palette or its fault change. */
+  constructor(dir: string | undefined, beneath: () => readonly ThemeLayer[], changed: () => void) {
     this.dir = dir
     this.beneath = beneath
-    this.restyle = restyle
+    this.changed = changed
   }
 
-  /** The person's layer, which lies over every plugin's. */
+  /** The file as it was last read with no mistake. */
+  get file(): PaletteFile {
+    return this.good
+  }
+
+  /** The file's text as it was last read, `''` for no file. */
+  get lastText(): string {
+    return this.text ?? ''
+  }
+
+  /** What is wrong with the file, as `palette.json: ` and why, or `undefined`. */
+  get fault(): string | undefined {
+    return this.wrong
+  }
+
+  /** The person's layer, which lies over every other. */
   get layer(): ThemeLayer {
-    return layerOf(this.file)
+    return layerOf(this.good)
   }
 
   /** Reads the file now, then again after each save, until the plugin unloads. */
@@ -135,17 +143,37 @@ export class PersonsPalette {
     this.watch(ctx)
   }
 
-  /** Reads the file, and keeps what it holds, or the last good colours with what is wrong. */
-  private read(): void {
-    if (this.dir === undefined) return
+  /** Reads the file, and keeps what it holds, or the last good colours with what is wrong. It gives the file's text read, or `undefined` with a mistake. */
+  read(): string | undefined {
+    if (this.dir === undefined) return ''
     const read = textOf(join(this.dir, PALETTE_FILE))
     this.failed = typeof read === 'object' ? read.failed : undefined
     if (typeof read !== 'object') this.text = read
     this.recheck()
+    return this.wrong === undefined ? (this.text ?? '') : undefined
   }
 
   /**
-   * Checks the text last read with the plugins' layers as they are now, as a layer that comes or goes can make or break a `like` loop with the file's.
+   * Writes `palette` into the file's text, as `read` gave it, with each other key kept, or takes it out for `undefined`.
+   * It gives why the write failed, or `undefined`.
+   */
+  write(text: string, palette: string | undefined): string | undefined {
+    if (this.dir === undefined) return `${PALETTE_FILE}: there is no profile folder`
+    // `read` gave the text only when it held an object, or nothing.
+    const held = (text.trim() === '' ? {} : JSON.parse(text)) as { [key: string]: unknown }
+    const { palette: _, ...rest } = held
+    const written = palette === undefined ? rest : { palette, ...rest }
+    try {
+      writeFileSync(join(this.dir, PALETTE_FILE), `${JSON.stringify(written, null, 2)}\n`)
+    } catch (error) {
+      return `${PALETTE_FILE}: cannot be written: ${error instanceof Error ? error.message : String(error)}`
+    }
+    this.read()
+    return undefined
+  }
+
+  /**
+   * Checks the text last read with the layers beneath as they are now, as a layer that comes or goes can make or break a `like` loop with the file's.
    * The file's colours stay only while they make no loop with those layers.
    */
   recheck(): void {
@@ -158,25 +186,18 @@ export class PersonsPalette {
       this.refuse(read)
       return
     }
-    const changed = read !== this.file || this.own.state.error !== undefined
-    this.file = read
-    this.own.set((state) => {
-      state.inUse = read.palette ?? 'terminal'
-      state.error = undefined
-    })
-    if (changed) this.restyle()
+    const changed = read !== this.good || this.wrong !== undefined
+    this.good = read
+    this.wrong = undefined
+    if (changed) this.changed()
   }
 
-  /** Keeps the last good colours, but for a loop that they make with the plugins' layers now, and says what is wrong. */
+  /** Keeps the last good colours, but for a loop that they make with the layers beneath now, and says what is wrong. */
   private refuse(why: string): void {
-    const layer = layerOf(this.file)
-    if (this.file !== NO_FILE && loopIn(layer, [...this.beneath(), layer]) !== undefined) {
-      this.file = NO_FILE
-      this.restyle()
-    }
-    this.own.set((state) => {
-      state.error = `${PALETTE_FILE}: ${why}`
-    })
+    const layer = layerOf(this.good)
+    if (this.good !== NO_FILE && loopIn(layer, [...this.beneath(), layer]) !== undefined) this.good = NO_FILE
+    this.wrong = `${PALETTE_FILE}: ${why}`
+    this.changed()
   }
 
   private watch(ctx: Context): void {
