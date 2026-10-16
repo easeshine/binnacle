@@ -47,26 +47,29 @@ const oneLine = (text: string): string => toPlainText(text.replace(/\s*[\r\n]+\s
 const firstLineOf = (text: string): string => text.split(/\r\n|\r|\n/).find((line) => line.trim() !== '') ?? ''
 
 const SEVERITY: Readonly<Record<Notice['severity'], { readonly tone: Tone; readonly prefix: string }>> = {
-  info: { tone: 'muted', prefix: '· ' },
-  warning: { tone: 'warning', prefix: '' },
-  error: { tone: 'error', prefix: '✗ ' },
+  info: { tone: 'transcript.muted', prefix: '· ' },
+  warning: { tone: 'transcript.warning', prefix: '' },
+  error: { tone: 'transcript.error', prefix: '✗ ' },
 }
+
+/** The view's own Tones, `transcript.<the general Tone>`, each like its general Tone until a layer changes it. */
+const OWN = Object.fromEntries((['error', 'warning', 'muted', 'dim'] as const).map((tone) => [`transcript.${tone}`, { like: tone }]))
 
 function defaults(binnacle: Binnacle) {
   const paint = (tone: Tone, text: string): string => binnacle.paint(tone, text)
   const cut = (text: string, width: number): string => truncateToWidth(text, width, binnacle.tokens.glyphs.more)
   const prompt: TextLook = (text, { width }) =>
-    wrap(text, width, { first: `${binnacle.tokens.glyphs.mark} `, plain: true }).map((line) => paint('accent', line))
+    wrap(text, width, { first: `${binnacle.tokens.glyphs.mark} `, plain: true }).map((line) => paint('userMessageText', line))
   const answer: TextLook = (text, { width }) => markdown(binnacle, text, width)
   const reasoning: TextLook = (text, { width }) =>
-    toPlainText(text) === '' ? [] : wrap(text, width, { plain: true }).map((line) => paint('dim', line))
+    toPlainText(text) === '' ? [] : wrap(text, width, { plain: true }).map((line) => paint('thinkingText', line))
   const call: CallLook = ({ name: tool, args }, { width }) => [cut(`⏺ ${oneLine(tool)}(${oneLine(args)})`, width)]
   const result: ResultLook = ({ text, failed: hasFailed }, { width }) => {
     const first = toPlainText(firstLineOf(text))
-    if (hasFailed) return [paint('error', cut(`✗ ${first === '' ? 'failed' : first}`, width))]
+    if (hasFailed) return [paint('transcript.error', cut(`✗ ${first === '' ? 'failed' : first}`, width))]
     return [cut(`⎿ ${first === '' ? '(no text)' : first}`, width)]
   }
-  const context: ContextLook = ({ producer }, { width }) => [paint('dim', cut(`· context: ${oneLine(producer)}`, width))]
+  const context: ContextLook = ({ producer }, { width }) => [paint('transcript.dim', cut(`· context: ${oneLine(producer)}`, width))]
   const notice: NoticeLook = ({ kind, text, severity }, { width }) => {
     const { tone, prefix } = SEVERITY[severity] ?? SEVERITY.info
     // A command's own name is drawn as the person typed it.
@@ -78,6 +81,7 @@ function defaults(binnacle: Binnacle) {
 
 export function apply(ctx: Context): void {
   const { binnacle } = ctx
+  binnacle.theme({ colors: OWN })
   const fallback = defaults(binnacle)
   const pieces = {
     prompt: () => binnacle.lookOf<TextLook>(['transcript.prompt'], fallback.prompt),
@@ -102,7 +106,7 @@ export function apply(ctx: Context): void {
         !folds || rest.length === 0
           ? [{ text: first }, ...rest]
           : folded
-            ? [first, binnacle.paint('muted', `${binnacle.tokens.glyphs.more} ${rest.length} more lines`)]
+            ? [first, binnacle.paint('transcript.muted', `${binnacle.tokens.glyphs.more} ${rest.length} more lines`)]
             : lines
       return blank ? [...shown, ''] : shown
     }

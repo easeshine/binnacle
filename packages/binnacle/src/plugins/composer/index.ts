@@ -73,6 +73,7 @@ const editorOwn = (action: string): boolean => action.startsWith('tui.') && acti
 
 export function apply(ctx: Context): void {
   const { binnacle } = ctx
+  binnacle.theme({ colors: { 'composer.muted': { like: 'muted' } } })
   let placed: Handle | undefined
   // The core asks for the lines and the cursor more than once in a draw; the editor renders once until it changes.
   let rendered: { width: number; lines: string[]; cursor: Point | undefined; above: boolean; below: boolean } | undefined
@@ -198,7 +199,7 @@ export function apply(ctx: Context): void {
     const after = rest ?? ' '.repeat(visibleWidth(first))
     return { first, rest: after, room: (width: number) => Math.max(1, width - Math.max(visibleWidth(first), visibleWidth(after))) }
   }
-  const muted: DraftRowLook = (row, at) => (at.more ? binnacle.paint('muted', row) : row)
+  const muted: DraftRowLook = (row, at) => (at.more ? binnacle.paint('composer.muted', row) : row)
   placed = binnacle.place(INPUT, {
     // The Looks and the paint are outside the editor's cache, so that the lines follow the Looks and the theme when they change.
     lines: (width) => {

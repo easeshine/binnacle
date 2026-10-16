@@ -1,7 +1,9 @@
 import { afterEach, test } from 'vite-plus/test'
 import assert from 'node:assert/strict'
 import type { Context } from '@deepseek-ai/cordis'
-import type { Binnacle } from '../../src/api.ts'
+import type { Binnacle, ClockState } from '../../src/api.ts'
+import { createModel } from '../../src/index.ts'
+import type { CopyState } from '../../src/plugins/copy/index.ts'
 import { STATUS_LAYOUT } from '../../src/plugins/status-line/index.ts'
 import { mount } from '../../src/testing/index.ts'
 import type { MountOptions, Mounted } from '../../src/testing/index.ts'
@@ -95,4 +97,24 @@ test("the agent's status and model are made plain before they are drawn", async 
   const shown = await booted(40, () => {}, { model: { provider: 'deepseek', model: '\x1b[31mdeep\x07seek' } })
   await shown.agent.status('running')
   assert.deepEqual([await shown.screen(), (await shown.style(10, 1)).colour], [['', 'running · deepseek'], 'default'])
+})
+
+test("a segment and a copy's notice draw in the status line's own Tones, status.text, status.success, status.muted and status.error, which an author colours alone", async () => {
+  const copy = createModel<CopyState>({})
+  const shown = await booted(60, (binnacle) => {
+    binnacle.model('copy', copy)
+    binnacle.theme({ colors: { 'status.text': 'blue', 'status.success': 'magenta', 'status.muted': 'yellow', 'status.error': 'green' } })
+  })
+  const now = shown.ctx.binnacle.modelOf<ClockState>('clock').state?.now ?? 0
+  const drawn: unknown[] = []
+  for (const outcome of ['copied', 'sent', 'failed'] as const) {
+    copy.set((state) => Object.assign(state, { last: { outcome, at: now } }))
+    const row = (await shown.screen())[1] ?? ''
+    drawn.push([row, (await shown.style(0, 1)).colour, (await shown.style(row.lastIndexOf('·') + 2, 1)).colour])
+  }
+  assert.deepEqual(drawn, [
+    ['idle · deepseek-v4 · copied', 4, 5],
+    ['idle · deepseek-v4 · sent to the terminal', 4, 3],
+    ['idle · deepseek-v4 · copy failed', 4, 2],
+  ])
 })

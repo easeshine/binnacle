@@ -57,12 +57,12 @@ const lineOf = (untrusted, width) => truncateToWidth(toPlainText(untrusted), wid
   |---|---|---|---|---|
   | `markdown.heading` | a heading | its inline text, and `{ depth }` | the text in the `mdHeading` Tone, with no `#` | `MarkdownHeadingLook` |
   | `markdown.paragraph` | a paragraph, and a token drawn as its source | its inline text | wrapped at the width | `MarkdownParagraphLook` |
-  | `markdown.code` | a code block | its lines, made plain, and `{ lang }`, `''` with none | each line indented two cells in the `mdCode` Tone, wrapped under its indent | `MarkdownCodeLook` |
-  | `markdown.item` | a list item | its blocks' lines, drawn at the width less its marker, and `{ marker, ordered, number }` | the marker, `• ` or `<number>. `, before the first line, and the other lines under the text | `MarkdownItemLook` |
-  | `markdown.quote` | a quote | its blocks' lines, drawn at the width less two | each line after `│ `, in the `muted` Tone | `MarkdownQuoteLook` |
-  | `markdown.rule` | a rule | `{ width }` alone | the `rule` glyph across the width, in the `border` Tone | `MarkdownRuleLook` |
+  | `markdown.code` | a code block | its lines, made plain, and `{ lang }`, `''` with none | each line indented two cells in the `mdCodeBlock` Tone, wrapped under its indent | `MarkdownCodeLook` |
+  | `markdown.item` | a list item | its blocks' lines, drawn at the width less its marker, and `{ marker, ordered, number }` | the marker, `• ` or `<number>. `, in the `mdListBullet` Tone before the first line, and the other lines under the text | `MarkdownItemLook` |
+  | `markdown.quote` | a quote | its blocks' lines, drawn at the width less two | each line after `│ `, the bar in the `mdQuoteBorder` Tone and the line in `mdQuote` | `MarkdownQuoteLook` |
+  | `markdown.rule` | a rule | `{ width }` alone | the `rule` glyph across the width, in the `mdHr` Tone | `MarkdownRuleLook` |
 
-  Inline, bold and italic draw as the terminal's bold and italic, code in the `mdCode` Tone, and a link as its text in the `mdLink` Tone, then ` (<destination>)` when the destination is not its text. An item's `number` counts from its list's start, and from 1 in a list that is not ordered. A nested list is a block of its item, so it draws under the item's text. A task's box draws as its source, such as `[x] `, at the start of the text, and counts toward its wrap. This draws each code block in a frame with its language in the top edge:
+  Inline, bold and italic draw as the terminal's bold and italic, code in the `mdCode` Tone, and a link as its text in the `mdLink` Tone, then ` (<destination>)` in the `mdLinkUrl` Tone when the destination is not its text. Each of these Tones of pi's is like the Tone that the piece drew in before by default, so markdown looks as it did: `mdCodeBlock` like `mdCode`, `mdQuote` and `mdQuoteBorder` like `muted`, `mdHr` like `border`, and `mdLinkUrl` and `mdListBullet` like `text`. An item's `number` counts from its list's start, and from 1 in a list that is not ordered. A nested list is a block of its item, so it draws under the item's text. A task's box draws as its source, such as `[x] `, at the start of the text, and counts toward its wrap. This draws each code block in a frame with its language in the top edge:
 
   ```js
   import { markdown } from '@easeshine/binnacle'

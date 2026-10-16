@@ -455,3 +455,47 @@ test('the readers give each piece its data from an event, so an author draws an 
   ctx.binnacle.look('transcript.event.tool/call', () => (event: Parameters<typeof callOf>[0]) => [`${callOf(event)?.name}!`])
   assert.deepEqual((await drawn()).slice(0, 3), ['ls!', '-> a.ts', ''])
 })
+
+test('a prompt draws in userMessageText and reasoning in thinkingText, and each looks as it did with no layer', async () => {
+  const { drawn, terminal, ctx } = await reading([prompt(0, 'hi'), answer(1, [{ type: 'reasoning', text: 'think' }])])
+  await drawn()
+  const before = [await terminal.colourAt(2, 0), (await terminal.styleAt(0, 2)).dim]
+  ctx.binnacle.theme({ colors: { userMessageText: 'yellow', thinkingText: { italic: true } } })
+  assert.deepEqual((await drawn()).slice(0, 3), ['› hi', '', 'think'])
+  const { dim, italic } = await terminal.styleAt(0, 2)
+  assert.deepEqual([before, await terminal.colourAt(2, 0), dim, italic], [[CYAN, true], YELLOW, false, true])
+})
+
+test("each piece that the view draws in a general Tone draws through the view's own Tone, transcript.<Tone>, which an author colours alone", async () => {
+  const { drawn, terminal, ctx } = await reading([
+    result(0, 'no such file', true),
+    at(1, 'llm/retry', { retry: 1, maxRetries: 3 }),
+    at(2, 'turn/end', { turn: 1, reason: { kind: 'error', error: { message: 'the key is wrong', code: 'X' } } }),
+    at(3, 'turn/end', { turn: 2, reason: { kind: 'aborted', reason: {} } }),
+    context(4, 'agent-instructions'),
+    result(5, 'one\ntwo'),
+  ])
+  ctx.binnacle.look<ResultLook>(
+    'transcript.result',
+    (beneath) =>
+      ({ text, failed }, where) =>
+        failed ? beneath({ text, failed }, where) : text.split('\n'),
+  )
+  stateOf(ctx).set((state) => state.folded.push('5'))
+  ctx.binnacle.theme({
+    colors: { 'transcript.error': 'yellow', 'transcript.warning': 'blue', 'transcript.muted': 'magenta', 'transcript.dim': 'green' },
+  })
+  assert.deepEqual((await drawn()).slice(0, 9), [
+    '✗ no such file',
+    '',
+    'retrying (1/3)',
+    '✗ the key is wrong',
+    '· interrupted',
+    '· context: agent-instructions',
+    'one',
+    '… 1 more lines',
+    '',
+  ])
+  const colours = await Promise.all([0, 2, 3, 4, 5, 7].map((y) => terminal.colourAt(2, y)))
+  assert.deepEqual(colours, [YELLOW, 4, YELLOW, 5, 2, 5])
+})

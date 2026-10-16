@@ -120,8 +120,9 @@ The row `binnacle-transcript` places its Part in the Place `transcript`, which t
 
 ## The transcript's view
 
-The row `binnacle-transcript-view` draws the transcript a person reads. A prompt draws as `› ` and its text, in the `accent` Tone. An answer draws its reasoning in the `dim` Tone, then its text as markdown, wrapped at the width, with `markdown`. A tool call draws as one line, `⏺ <tool>(<its arguments>)`, and its result as one line, `⎿ ` and its first line of text, or `✗ ` and its first line in the `error` Tone when it failed. Context that dsh added draws as one line in the `dim` Tone, such as `· context: agent-instructions`. A command, a retry, a compaction and how a turn ended draw one line each, such as `/compact`, `retrying (1/3): <why>` in the `warning` Tone, or `✗ <why>` in the `error` Tone. Every other event draws nothing, and takes no row.
+The row `binnacle-transcript-view` draws the transcript a person reads. A prompt draws as `› ` and its text, in the `userMessageText` Tone. An answer draws its reasoning in the `thinkingText` Tone, then its text as markdown, wrapped at the width, with `markdown`. A tool call draws as one line, `⏺ <tool>(<its arguments>)`, and its result as one line, `⎿ ` and its first line of text, or `✗ ` and its first line in the `transcript.error` Tone when it failed. Context that dsh added draws as one line in the `transcript.dim` Tone, such as `· context: agent-instructions`. A command, a retry, a compaction and how a turn ended draw one line each, such as `/compact`, `retrying (1/3): <why>` in the `transcript.warning` Tone, or `✗ <why>` in the `transcript.error` Tone. Every other event draws nothing, and takes no row.
 
+- The view's own Tones are `transcript.error`, `transcript.warning`, `transcript.muted` and `transcript.dim`. Each is like the general Tone of its name until a layer changes it, so a change to `error` reaches `transcript.error`, and a layer of `transcript.error` changes the view's errors alone. A notice draws in `transcript.muted`, `transcript.warning` or `transcript.error` by its severity. `userMessageText` is like `accent` by default, and `thinkingText` like `dim`.
 - It sets the Looks `transcript.event.<type>` of the types it draws, `transcript.event` beneath them to draw nothing, and `transcript.live`.
 - Each piece it draws is a Look of its own, given plain data and `{ width, time }`, never dsh's shapes, and returns lines. `time` is the event's, in epoch milliseconds, and `undefined` for a piece of the answer that streams, which is no event yet. The types are from `@easeshine/binnacle/plugins/transcript-view`:
 
@@ -164,7 +165,7 @@ The row `binnacle-transcript-view` draws the transcript a person reads. A prompt
   )
   ```
 
-- The type's Look joins its pieces' lines. A folded event with more than one line draws its first line, then `… <n> more lines` in the `muted` Tone. A prompt and an answer do not fold, as a person reads them whole: their first line is `{ text }`, so a click on it only Marks. Then a prompt, an answer and a tool result end with a blank line. A context, a call and a notice do not, so a call and its result stand together. Set `transcript.event.<type>` to space or fold an event your own way. This folds each answer again at a click on its first line:
+- The type's Look joins its pieces' lines. A folded event with more than one line draws its first line, then `… <n> more lines` in the `transcript.muted` Tone. A prompt and an answer do not fold, as a person reads them whole: their first line is `{ text }`, so a click on it only Marks. Then a prompt, an answer and a tool result end with a blank line. A context, a call and a notice do not, so a call and its result stand together. Set `transcript.event.<type>` to space or fold an event your own way. This folds each answer again at a click on its first line:
 
   ```js
   ctx.binnacle.look('transcript.event.assistant/message', (beneath) => (event, at) => {

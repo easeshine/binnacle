@@ -59,7 +59,7 @@ The row `binnacle-composer` sets the Layout `composer`, which the Chat draws whi
 
 - The draft's rows draw through two Looks, from `@easeshine/binnacle/plugins/composer`:
   - `composer.prefix`, `() => ({ first, rest })`, of the type `DraftPrefixLook`: `first` draws before the draft's first row, and `rest` before each row after it. With no `rest`, the rows after the first start under the draft. The draft wraps in the cells left beside the wider prefix, and the cursor moves with it. An empty draft draws `first` before its cursor. Its default draws none.
-  - `composer.row`, `(row, { index, more }) => row`, of the type `DraftRowLook`: one row of the draft, as the editor drew it, with the cursor's cell in it. `index` is the row's place among the rows shown. `more` is `true` for a row such as `↑ 3 more`, which tells the rows of a tall draft hidden above or below. Its default draws `more` rows in the `muted` Tone, and the others as they are. Add no cells to a row: it is as wide as the cells left, and a wider row wraps.
+  - `composer.row`, `(row, { index, more }) => row`, of the type `DraftRowLook`: one row of the draft, as the editor drew it, with the cursor's cell in it. `index` is the row's place among the rows shown. `more` is `true` for a row such as `↑ 3 more`, which tells the rows of a tall draft hidden above or below. Its default draws `more` rows in the composer's own Tone `composer.muted`, and the others as they are. `composer.muted` is like `muted` until a layer changes it, so `ctx.binnacle.theme({ colors: { 'composer.muted': 'cyan' } })` colours those rows alone. Add no cells to a row: it is as wide as the cells left, and a wider row wraps.
 
   This draws a `› ` before each row of the draft, and its text in the `accent` Tone:
 

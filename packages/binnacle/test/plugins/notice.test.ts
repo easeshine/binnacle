@@ -153,3 +153,54 @@ test('the test kit loads the notice with every built-in, and it asks npm nothing
   await new Promise((resolve) => setTimeout(resolve, 50))
   assert.equal(asked, 0)
 })
+
+const colourAndBold = async (x: number, y: number) => {
+  const { colour, bold } = await app!.style(x, y)
+  return [colour, bold]
+}
+
+test('the notice draws its rules and Update Available, its words, and the command and the changelog in its own Tones, notice.warning, notice.muted and notice.accent', async () => {
+  latest = '99.0.0'
+  const author = {
+    name: 'author',
+    inject: ['binnacle'],
+    apply: (ctx: Context) => {
+      ctx.binnacle.theme({ colors: { 'notice.warning': 'magenta', 'notice.muted': 'cyan', 'notice.accent': 'orange' } })
+    },
+  }
+  const shown = await settledScreen(await started([author]))
+  assert.deepEqual(shown.slice(1, 2), [' Update Available'])
+  assert.deepEqual(
+    [
+      await colourAndBold(0, 0),
+      await colourAndBold(1, 1),
+      await colourAndBold(1, 2),
+      await colourAndBold(40, 2),
+      await colourAndBold(1, 3),
+      await colourAndBold(13, 3),
+    ],
+    [
+      [5, false],
+      [5, true],
+      [6, false],
+      [208, false],
+      [6, false],
+      [208, false],
+    ],
+  )
+})
+
+test('with no layer, the notice draws in warning, muted and accent as it did', async () => {
+  latest = '99.0.0'
+  const shown = await settledScreen(await started())
+  assert.deepEqual(shown.slice(1, 2), [' Update Available'])
+  assert.deepEqual(
+    [await colourAndBold(0, 0), await colourAndBold(1, 1), await colourAndBold(1, 2), await colourAndBold(40, 2)],
+    [
+      [3, false],
+      [3, true],
+      [8, false],
+      [6, false],
+    ],
+  )
+})
