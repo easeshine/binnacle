@@ -2,10 +2,22 @@ import type { Layout, Side } from '../api.ts'
 import { sliceByColumn, truncateToWidth, visibleWidth } from '../terminal/pi/utils.ts'
 import type { Edge, Theme } from './theme.ts'
 import { toPlainText } from './view.ts'
+import { backgroundOpen } from './row-end.ts'
 import type { Cells, Hit, Placed, Reach } from './arranged.ts'
 
 export const blank = (width: number): string => ' '.repeat(Math.max(0, width))
 export const fit = (row: string, width: number): string => truncateToWidth(row, width, '', true)
+
+const RESET_STYLE = '\x1b[0m'
+
+/**
+ * A row padded to the width as the fill rule leaves its end: a row that ends with its background open fills the cells left, its other
+ * styles closed by the wrap, and any other row's padding comes after a reset, plain.
+ */
+export function filled(row: string, width: number): string {
+  if (backgroundOpen(row)) return fit(row, width) + RESET_STYLE
+  return fit(row.includes('\x1b') ? row + RESET_STYLE : row, width)
+}
 
 /** What reaches a Place inside a node: the node's own `mouse: false`, `clicks: false` and `clickFocus: false` hold for each Place in it. */
 export const reachInside = (

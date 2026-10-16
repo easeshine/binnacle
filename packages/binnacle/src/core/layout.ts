@@ -3,9 +3,9 @@ import type { Layout } from '../api.ts'
 import type { Arranged, Hit, Placed, Places, Position, Reach } from './arranged.ts'
 import { cut, joined, nestedSegment, placeSegment, segmentsOf } from './separated.ts'
 import type { Drawn, Segment } from './separated.ts'
-import { blank, bordersOf, edgeRow, fit, gapOf, hitOf, insetsOf, paddingOf, reachInside } from './box.ts'
+import { blank, bordersOf, edgeRow, filled, fit, gapOf, hitOf, insetsOf, paddingOf, reachInside } from './box.ts'
 import type { Spare } from './box.ts'
-import { withoutBlankEnd } from './row-end.ts'
+import { withoutBlankEnd, withoutFillEnd } from './row-end.ts'
 import { coverWidthOf, floatAt, floatWidthOf, grow, share, wantedOf } from './tree.ts'
 import type { Tree } from './tree.ts'
 import { edgeNamed } from './theme.ts'
@@ -260,7 +260,7 @@ class Arrangement {
           return placeSegment(child.place, line.includes('\x1b') ? line + RESET_STYLE : line, { top, left, width, height: 1 }, this.#reach)
         }
         const rows = this.#drawInner(child, width, Math.max(1, this.#innerHeight(child, width)), top, left)
-        return nestedSegment(withoutBlankEnd(rows[0] ?? ''), this.hits.splice(hitsFrom), this.placed.splice(placedFrom), top, left)
+        return nestedSegment(withoutFillEnd(rows[0] ?? ''), this.hits.splice(hitsFrom), this.placed.splice(placedFrom), top, left)
       })
     } finally {
       this.cursor = cursor
@@ -300,7 +300,7 @@ class Arrangement {
     this.#shownFrom.set(place, start)
     if (cursor !== undefined && cursor.row >= start && cursor.row < end && cursor.column < width)
       this.cursor = { row: top + cursor.row - start, column: left + cursor.column }
-    const shown = all.slice(start, end).map((row) => fit(row.includes('\x1b') ? row + RESET_STYLE : row, width))
+    const shown = all.slice(start, end).map((row) => filled(row, width))
     return [...shown, ...Array.from({ length: height - shown.length }, () => blank(width))]
   }
 

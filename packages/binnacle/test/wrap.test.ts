@@ -18,6 +18,10 @@ test('wrap carries a style that spans a wrap to the next line, after its prefix'
   assert.deepEqual(wrap('\x1b[1mone two\x1b[22m', 5, { first: '> ' }), ['> \x1b[1mone', '  \x1b[1mtwo\x1b[22m'])
 })
 
+test('wrap does not fill its indent: a filled line fills each of its rows from its text', () => {
+  assert.deepEqual(wrap('\x1b[44mone two', 5, { first: '> ' }), ['> \x1b[44mone', '  \x1b[44mtwo'])
+})
+
 test('wrap of an empty text gives first alone', () => {
   assert.deepEqual([wrap('', 10, { first: '› ' }), wrap('', 10)], [['› '], ['']])
 })

@@ -256,3 +256,7 @@ function colorAnsi(color: Color, mode: TerminalColorMode, background: boolean): 
 export function foregroundAnsi(color: Color, mode: TerminalColorMode): string {
 	return colorAnsi(color, mode, false);
 }
+
+export function backgroundAnsi(color: Color, mode: TerminalColorMode): string {
+	return colorAnsi(color, mode, true);
+}
