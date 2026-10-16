@@ -17,5 +17,5 @@
 - Read a Title: a rule across the width, with its text in it.
 - See lines drawn in a box by the Kit, with a title in its top edge, its edge in the `border` Tone or in another Tone that the author chose.
 - Type in a Line: it takes every key while it is shown, enter submits the text and escape escapes. Its text stays after a submit, an escape, or while it is hidden. A Request's typed answer is a Line.
-- Read markdown drawn by the Kit, such as an answer in the transcript: headings, bold, italic, inline code, code blocks, lists, quotes, links and rules, wrapped at the width, in the Tones `heading`, `code` and `link`.
+- Read markdown drawn by the Kit, such as an answer in the transcript: headings, bold, italic, inline code, code blocks, lists, quotes, links and rules, wrapped at the width, in the Tones `mdHeading`, `mdCode` and `mdLink`.
 - Move between Tabs: tab goes to the next and shift+tab to the one before, and they wrap at each end, even while a Line takes the keys. A click on a tab goes to it. When the Tabs are wider than the screen, the current tab shows with its neighbours that fit, and `…` marks each end where the row is cut. Nothing built-in draws Tabs yet.

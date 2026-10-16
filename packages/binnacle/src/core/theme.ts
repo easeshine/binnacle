@@ -1,4 +1,5 @@
-import type { Colour, Sixteen, Style, ThemeLayer, Tokens, Tone } from '../api.ts'
+import type { Colour, Hue, Sixteen, Style, ThemeLayer, Tokens, Tone } from '../api.ts'
+import { DEFAULT_COLORS } from './tones.ts'
 import { backgroundAnsi, foregroundAnsi, parseColor } from '../terminal/pi/colors.ts'
 import type { TerminalColorMode } from '../terminal/pi/colors.ts'
 
@@ -39,30 +40,6 @@ export interface Theme {
   paint(tone: Tone, text: string): string
 }
 
-// Each default tone is one of the sixteen, or only an attribute, so the person's palette decides how binnacle looks.
-export const DEFAULT_TOKENS: Tokens = {
-  colors: {
-    text: {},
-    accent: { color: 'cyan' },
-    muted: { color: 'bright-black' },
-    dim: { dim: true },
-    success: { color: 'green' },
-    warning: { color: 'yellow' },
-    error: { color: 'red' },
-    border: { dim: true },
-    borderAccent: { color: 'cyan' },
-    borderMuted: { dim: true },
-    heading: { color: 'cyan', bold: true },
-    code: { color: 'yellow' },
-    link: { color: 'blue', underline: true },
-    selection: { inverse: true },
-  },
-  glyphs: { mark: '›', unmarked: ' ', checked: '[x]', unchecked: '[ ]', rule: '─', separator: ' | ', divider: ' · ', more: '…' },
-  edge: 'rounded',
-  padding: 0,
-  gap: 0,
-}
-
 const SIXTEEN: readonly Sixteen[] = [
   'black',
   'red',
@@ -82,41 +59,149 @@ const SIXTEEN: readonly Sixteen[] = [
   'bright-white',
 ]
 
+const HUES: readonly Hue[] = [...SIXTEEN, 'orange']
+
+const isHue = (name: unknown): name is Hue => HUES.some((hue) => hue === name)
+
+// 208 is the orange of the 256 that every terminal of 256 colours draws alike; the sixteen have none.
+// Object.fromEntries widens its keys to strings; the entries are one for each Hue.
+const DEFAULT_HUES = Object.fromEntries(HUES.map((hue) => [hue, hue === 'orange' ? 208 : hue])) as Tokens['hues']
+
+// Renamed to pi's names before 1.0. A feature written before the rename fails where its author reads it, and does not draw plain.
+// A Map, as a Tone's name is open, and a name such as `constructor` is no rename.
+const RENAMED: ReadonlyMap<string, Tone> = new Map([
+  ['heading', 'mdHeading'],
+  ['code', 'mdCode'],
+  ['link', 'mdLink'],
+  ['selection', 'selectedBg'],
+])
+
+function checkName(tone: Tone): void {
+  const now = RENAMED.get(tone)
+  if (now !== undefined) throw new Error(`binnacle: the Tone '${tone}' is now '${now}'`)
+}
+
+const quoted = (value: unknown): string => JSON.stringify(value).replaceAll('"', "'")
+
 const styleOf = (given: Colour | Style): Style => (typeof given === 'object' ? given : { color: given })
 
-/** Throws, naming the Tone, when a layer gives a colour that is not one, so the author learns at load and not at a draw. */
-export function checkLayer(layer: ThemeLayer): void {
+/** The tokens with each Tone's Style as a layer gives it, its `like` still to read. */
+interface Laid extends Omit<Tokens, 'colors'> {
+  readonly colors: ReadonlyMap<string, Style>
+}
+
+const DEFAULTS: Laid = {
+  colors: new Map<string, Style>(Object.entries(DEFAULT_COLORS)),
+  hues: DEFAULT_HUES,
+  glyphs: { mark: '›', unmarked: ' ', checked: '[x]', unchecked: '[ ]', rule: '─', separator: ' | ', divider: ' · ', more: '…' },
+  edge: 'rounded',
+  padding: 0,
+  gap: 0,
+}
+
+/**
+ * Throws when a layer gives a colour or a Hue that is not one, names a Tone renamed to pi's name, or makes a `like` loop, so the author learns at load and not at a draw.
+ * `layers` are each layer as they would be with this one, in their order.
+ */
+export function checkLayer(layer: ThemeLayer, layers: readonly ThemeLayer[]): void {
   for (const [tone, given] of Object.entries(layer.colors ?? {})) {
+    checkName(tone)
     const style = given === undefined ? undefined : styleOf(given)
+    if (style?.like !== undefined) checkName(style.like)
     checkColour(style?.color, `the theme's ${tone}`)
     checkColour(style?.background, `the theme's ${tone}`)
   }
-}
-
-function checkColour(color: Colour | undefined, what: string): void {
-  if (color === undefined || SIXTEEN.some((sixteen) => sixteen === color)) return
-  try {
-    parseColor(color)
-  } catch {
-    throw new Error(`binnacle: ${what} is not a colour: ${JSON.stringify(color).replaceAll('"', "'")}`)
+  for (const [hue, given] of Object.entries(layer.hues ?? {})) {
+    if (!isHue(hue)) throw new Error(`binnacle: ${quoted(hue)} is not a Hue`)
+    if (given !== undefined) checkHue(hue, given)
+  }
+  const colors = laid(layers).colors
+  for (const tone of Object.keys(layer.colors ?? {})) {
+    const loop = loopFrom(tone, colors)
+    if (loop !== undefined) throw new Error(`binnacle: the theme's like makes a loop: ${loop.map(quoted).join(' like ')}`)
   }
 }
 
-/** The layers laid over the defaults, oldest first: each token is the newest layer's that names it. */
-export function layered(layers: readonly ThemeLayer[]): Tokens {
-  return layers.reduce<Tokens>((tokens, layer) => {
-    const colors = { ...tokens.colors }
-    // Object.entries widens each key to a string; a layer's colours are keyed by Tone.
-    for (const [tone, given] of Object.entries(layer.colors ?? {}) as [Tone, Colour | Style | undefined][])
-      if (given !== undefined) colors[tone] = styleOf(given)
+function checkHue(hue: Hue, given: Colour): void {
+  const own = given === hue && hue !== 'orange'
+  const fails = (): boolean => {
+    if (own) return false
+    if (isHue(given)) return true
+    try {
+      parseColor(given)
+      return false
+    } catch {
+      return true
+    }
+  }
+  if (fails()) throw new Error(`binnacle: the Hue ${quoted(hue)} takes a 256-colour index or an exact colour, not ${quoted(given)}`)
+}
+
+function checkColour(color: Colour | undefined, what: string): void {
+  if (color === undefined || isHue(color)) return
+  try {
+    parseColor(color)
+  } catch {
+    throw new Error(`binnacle: ${what} is not a colour: ${quoted(color)}`)
+  }
+}
+
+/** The Tones from `tone` through each `like` back to it, or `undefined` when the `like`s end. */
+function loopFrom(tone: string, colors: ReadonlyMap<string, Style>): readonly string[] | undefined {
+  const path = [tone]
+  for (let at = colors.get(tone)?.like; at !== undefined; at = colors.get(at)?.like) {
+    if (at === tone) return [...path, at]
+    // A loop that does not pass through `tone` is not this Tone's to report, and it ends the walk.
+    if (path.includes(at)) return undefined
+    path.push(at)
+  }
+  return undefined
+}
+
+function laid(layers: readonly ThemeLayer[]): Laid {
+  return layers.reduce<Laid>((tokens, layer) => {
+    const colors = new Map(tokens.colors)
+    for (const [tone, given] of Object.entries(layer.colors ?? {})) if (given !== undefined) colors.set(tone, styleOf(given))
+    const hues = { ...tokens.hues }
+    // Object.entries widens each key to a string; `checkLayer` refused each key that is not a Hue.
+    for (const [hue, given] of Object.entries(layer.hues ?? {}) as [Hue, Colour | undefined][]) if (given !== undefined) hues[hue] = given
     return {
       colors,
+      hues,
       glyphs: { ...tokens.glyphs, ...layer.glyphs },
       edge: layer.edge ?? tokens.edge,
       padding: layer.padding ?? tokens.padding,
       gap: layer.gap ?? tokens.gap,
     }
-  }, DEFAULT_TOKENS)
+  }, DEFAULTS)
+}
+
+const withoutLike = (style: Style): Style =>
+  Object.fromEntries(Object.entries(style).filter(([key, value]) => key !== 'like' && value !== undefined))
+
+/** The Style laid over the Tone it is like, as that Tone draws. A `like` of a Tone that no layer gives adds nothing. */
+function over(style: Style, drawn: (tone: Tone) => Style | undefined): Style {
+  const beneath = style.like === undefined ? undefined : drawn(style.like)
+  return { ...beneath, ...withoutLike(style) }
+}
+
+/** The layers laid over the defaults, oldest first: each token is the newest layer's that names it, and each Tone's `like` is read. */
+export function layered(layers: readonly ThemeLayer[]): Tokens {
+  const { colors: given, ...rest } = laid(layers)
+  const colors = new Map<string, Style>()
+  const drawn = (tone: Tone): Style | undefined => {
+    const known = colors.get(tone)
+    if (known !== undefined) return known
+    const style = given.get(tone)
+    if (style === undefined) return undefined
+    // A Tone in a loop is left by a layer that went, never by one given, so it draws its own Style alone and no draw throws.
+    const made = loopFrom(tone, given) === undefined ? over(style, drawn) : withoutLike(style)
+    colors.set(tone, made)
+    return made
+  }
+  for (const tone of given.keys()) drawn(tone)
+  // A Map keyed by Tone holds each of pi's Tones, as the defaults give each one.
+  return { ...rest, colors: Object.fromEntries(colors) as Tokens['colors'] }
 }
 
 // Each attribute is closed by the code that ends it alone, so a style drawn inside another leaves the other standing.
@@ -128,7 +213,8 @@ const ATTRIBUTES = [
   ['inverse', '7', '27'],
 ] as const
 
-function opening(color: Colour, mode: TerminalColorMode, behind = false): string {
+function opening(given: Colour, hues: Tokens['hues'], mode: TerminalColorMode, behind = false): string {
+  const color = isHue(given) ? hues[given] : given
   const index = SIXTEEN.findIndex((sixteen) => sixteen === color)
   if (index >= 0) {
     // A sixteen's background is its own code, 40 to 47 and 100 to 107, so the person's palette decides how it looks.
@@ -163,7 +249,7 @@ interface Wrap {
   readonly filled: string
 }
 
-function wrapOf(style: Style, mode: TerminalColorMode): Wrap {
+function wrapOf(style: Style, hues: Tokens['hues'], mode: TerminalColorMode): Wrap {
   let open = ''
   let close = ''
   for (const [name, on, off] of ATTRIBUTES) {
@@ -172,12 +258,12 @@ function wrapOf(style: Style, mode: TerminalColorMode): Wrap {
     close = `\x1b[${off}m${close}`
   }
   if (style.color !== undefined) {
-    open += opening(style.color, mode)
+    open += opening(style.color, hues, mode)
     close = `\x1b[39m${close}`
   }
   const filled = close
   if (style.background !== undefined) {
-    open += opening(style.background, mode, true)
+    open += opening(style.background, hues, mode, true)
     close = `\x1b[49m${close}`
   }
   return { open, close, filled }
@@ -195,15 +281,22 @@ export function filler(tokens: Tokens, mode: TerminalColorMode): (given: Tone | 
 
 function drawer(tokens: Tokens, mode: TerminalColorMode, fills: boolean): (given: Tone | Style, text: string) => string {
   const wraps = new Map<Tone, Wrap>()
-  // Object.entries widens each key to a string; the theme's colours are keyed by Tone.
-  for (const [tone, style] of Object.entries(tokens.colors) as [Tone, Style][]) wraps.set(tone, wrapOf(style, mode))
+  for (const [tone, style] of Object.entries(tokens.colors)) if (style !== undefined) wraps.set(tone, wrapOf(style, tokens.hues, mode))
   const what = fills ? 'fill' : 'paint'
   return (given, text) => {
     if (typeof given === 'object') {
+      if (given.like !== undefined) checkName(given.like)
       checkColour(given.color, `${what}'s colour`)
       checkColour(given.background, `${what}'s background`)
-    }
-    const wrap = typeof given === 'object' ? wrapOf(given, mode) : wraps.get(given)
+    } else checkName(given)
+    const wrap =
+      typeof given === 'object'
+        ? wrapOf(
+            over(given, (tone) => tokens.colors[tone]),
+            tokens.hues,
+            mode,
+          )
+        : wraps.get(given)
     if (wrap === undefined) return text
     // A fill of no text opens its background alone, so an empty line fills its row; a paint of no text gives no text.
     if (text === '') return fills && wrap.filled !== wrap.close ? wrap.open : text

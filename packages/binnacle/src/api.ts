@@ -3,6 +3,7 @@
 import '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import type { DEFAULT_COLORS } from './core/tones.ts'
 
 export interface Part {
   /** Unwrapped. A line keeps its colour and style; the core takes out every other control sequence, then wraps it at the width. */
@@ -62,22 +63,14 @@ export interface SelectionState {
   readonly selected: { readonly place: string; readonly text: string } | undefined
 }
 
-/** A colour of the theme's, named by what is drawn in it, as pi's themes name it. */
-export type Tone =
-  | 'text'
-  | 'accent'
-  | 'muted'
-  | 'dim'
-  | 'success'
-  | 'warning'
-  | 'error'
-  | 'border'
-  | 'borderAccent'
-  | 'borderMuted'
-  | 'heading'
-  | 'code'
-  | 'link'
-  | 'selection'
+/** Each colour that pi's themes name, by pi's name: the Tones that binnacle's defaults give. */
+type PiTone = keyof typeof DEFAULT_COLORS
+
+/**
+ * A colour of the theme's, named by what is drawn in it: one of pi's, or any other name, such as a feature's own, `transcript.card.error`.
+ * A Tone that no layer gives draws plain.
+ */
+export type Tone = PiTone | (string & {})
 
 export type Glyph = 'mark' | 'unmarked' | 'checked' | 'unchecked' | 'rule' | 'separator' | 'divider' | 'more'
 
@@ -100,11 +93,16 @@ export type Sixteen =
   | 'bright-cyan'
   | 'bright-white'
 
-/** One of the sixteen by name; a 256-colour index; or an exact colour, as `#rrggbb`, `#rgb`, `okhsl(h s% l%)` or `oklch(l c h)`, drawn as the nearest of 256 where the terminal has no truecolor. */
-export type Colour = Sixteen | number | (string & {})
+/** A named colour of the palette, that a Tone names: the terminal's sixteen, and `orange`. A layer gives each Hue its colour. */
+export type Hue = Sixteen | 'orange'
+
+/** A Hue by name; a 256-colour index; or an exact colour, as `#rrggbb`, `#rgb`, `okhsl(h s% l%)` or `oklch(l c h)`, drawn as the nearest of 256 where the terminal has no truecolor. */
+export type Colour = Hue | number | (string & {})
 
 /** How a Tone is drawn: a colour, the terminal's own when it has none, the colour behind it, and attributes. */
 export interface Style {
+  /** The Tone that this Style lies over, read at each draw, so that it follows that Tone. A Tone that no layer gives adds nothing. */
+  readonly like?: Tone
   readonly color?: Colour
   /** The colour behind the text. `paint` closes it at the text's end; `fill` leaves it open, so the line fills its row. */
   readonly background?: Colour
@@ -118,7 +116,10 @@ export interface Style {
 
 /** What everything binnacle draws is drawn with, as the theme's layers make it. */
 export interface Tokens {
-  readonly colors: { readonly [tone in Tone]: Style }
+  /** Each Tone's Style as it draws, its `like` read. */
+  readonly colors: { readonly [tone in PiTone]: Style } & { readonly [tone: string]: Style | undefined }
+  /** The colour of each Hue. One of the sixteen as its own Hue's colour is the terminal's own. */
+  readonly hues: { readonly [hue in Hue]: Colour }
   readonly glyphs: { readonly [glyph in Glyph]: string }
   /** The edge of a box that names none. */
   readonly edge: string
@@ -130,7 +131,9 @@ export interface Tokens {
 
 /** A layer of the theme: only the tokens it names change. A plain colour stands for `{ color }`. */
 export interface ThemeLayer {
-  readonly colors?: { readonly [tone in Tone]?: Colour | Style }
+  readonly colors?: { readonly [tone in PiTone]?: Colour | Style } & { readonly [tone: string]: Colour | Style | undefined }
+  /** A 256-colour index or an exact colour for each Hue it names; one of the sixteen, for its own Hue, is the terminal's own. */
+  readonly hues?: { readonly [hue in Hue]?: Colour }
   readonly glyphs?: { readonly [glyph in Glyph]?: string }
   readonly edge?: string
   readonly padding?: number
@@ -352,7 +355,7 @@ export interface Binnacle {
    * A page is as many rows as the Place's box shows. A Place that is not drawn, or that has no rows of room, does not scroll. It never moves the Focus.
    */
   scroll(place: string, pages: number): void
-  /** Adds a layer to the theme, and draws everything again. The newest layer wins for each token it names. It refuses a colour that is not one. */
+  /** Adds a layer to the theme, and draws everything again. The newest layer wins for each token it names. It refuses a colour that is not one, a Hue that is not one, a `like` that makes a loop, and a Tone renamed to pi's name. */
   theme(layer: ThemeLayer): Handle
   /** The theme's tokens, as its layers make them now. */
   readonly tokens: Tokens

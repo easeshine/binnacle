@@ -27,7 +27,7 @@ binnacle is built in layers, as a web app is built from a framework, a design sy
 | Layer | Holds | On the web |
 |---|---|---|
 | the core | the terminal, Layouts, Places, the Focus and gestures | React and the DOM's layout |
-| the theme | a colour for each Tone, the glyphs, a box's edge and spacing | Tailwind's tokens |
+| the theme | a colour for each Tone and each Hue, the glyphs, a box's edge and spacing | Tailwind's tokens |
 | the components: List, Title, Line and Tabs | what each one does, and the keys that do it | Radix's primitives |
 | the Looks | how each piece of a component is drawn, with the theme | shadcn's styles |
 | the features: the transcript, the composer and the rest | components and Parts put together, and the talk with dsh | an app's pages |

@@ -39,9 +39,9 @@ const TONES: readonly Tone[] = [
   'border',
   'borderAccent',
   'borderMuted',
-  'heading',
-  'code',
-  'link',
+  'mdHeading',
+  'mdCode',
+  'mdLink',
 ]
 
 test('a theme layer changes everything drawn with the tokens it names, and the tokens it does not name stay as they were', async () => {
@@ -95,13 +95,77 @@ test("with no layer, binnacle draws in its default tones, each one of the termin
         border: 'default dim',
         borderAccent: '6',
         borderMuted: 'default dim',
-        heading: '6',
-        code: '3',
-        link: '4',
+        mdHeading: '6',
+        mdCode: '3',
+        mdLink: '4',
       },
       true,
     ],
   )
+})
+
+test("with no layer, each of pi's 56 Tones has its default, as it draws", async () => {
+  const { ctx } = await mount()
+  const muted = { color: 'bright-black' }
+  const dim = { dim: true }
+  assert.deepEqual(ctx.binnacle.tokens.colors, {
+    text: {},
+    accent: { color: 'cyan' },
+    borderAccent: { color: 'cyan' },
+    muted,
+    dim,
+    border: dim,
+    borderMuted: dim,
+    success: { color: 'green' },
+    warning: { color: 'yellow' },
+    error: { color: 'red' },
+    mdHeading: { color: 'cyan', bold: true },
+    mdCode: { color: 'yellow' },
+    mdLink: { color: 'blue', underline: true },
+    selectedBg: { inverse: true },
+    searchMatchBg: { inverse: true },
+    searchMatchText: {},
+    scrollbarThumb: {},
+    toolTitle: {},
+    toolOutput: {},
+    mdLinkUrl: {},
+    mdListBullet: {},
+    scrollbarTrack: muted,
+    customMessageText: muted,
+    mdQuote: muted,
+    mdCodeBlockBorder: muted,
+    toolDiffContext: muted,
+    syntaxComment: muted,
+    syntaxOperator: muted,
+    syntaxPunctuation: muted,
+    mdQuoteBorder: muted,
+    mdCodeBlock: { color: 'yellow' },
+    mdHr: dim,
+    thinkingText: dim,
+    userMessageText: { color: 'cyan' },
+    toolDiffAdded: { color: 'green' },
+    toolDiffRemoved: { color: 'red' },
+    userMessageBg: {},
+    customMessageBg: {},
+    toolPendingBg: {},
+    toolSuccessBg: {},
+    toolErrorBg: {},
+    customMessageLabel: { color: 'magenta' },
+    syntaxType: { color: 'magenta' },
+    syntaxKeyword: { color: 'blue' },
+    syntaxFunction: { color: 'yellow' },
+    syntaxVariable: { color: 'cyan' },
+    syntaxString: { color: 'orange' },
+    syntaxNumber: { color: 'green' },
+    thinkingOff: muted,
+    thinkingMinimal: { color: 'blue' },
+    thinkingLow: { color: 'bright-blue' },
+    thinkingMedium: { color: 'magenta' },
+    thinkingHigh: { color: 'bright-magenta' },
+    thinkingXhigh: { color: 'red' },
+    thinkingMax: { color: 'orange' },
+    bashMode: { color: 'green' },
+  })
 })
 
 test("the default glyphs, edge, padding and gap hold, and the `divider` is ' · ', as the status line joined its parts", async () => {
@@ -230,7 +294,7 @@ test('a Tone painted inside another opens the other again after it ends, its col
   const { terminal } = await drawn(8, 3, (binnacle) => {
     binnacle.layout('chat', { place: 'a' })
     binnacle.place('a', {
-      lines: () => [binnacle.paint('heading', `a${binnacle.paint('warning', 'b')}c\x1b[1md\x1b[22me\x1b[1;38;5;0mf`)],
+      lines: () => [binnacle.paint('mdHeading', `a${binnacle.paint('warning', 'b')}c\x1b[1md\x1b[22me\x1b[1;38;5;0mf`)],
     })
   })
   const styles = await Promise.all([0, 1, 2, 4, 5].map((x) => terminal.styleAt(x, 0)))
@@ -253,7 +317,7 @@ test("a colour's arguments inside a Tone, as the zeroes of a truecolor green, ar
     (binnacle) => {
       binnacle.layout('chat', { place: 'a' })
       binnacle.place('a', {
-        lines: () => [binnacle.paint('heading', 'a\x1b[1;38;2;0;255;0mb\x1b[38:2::0:0:255mc\x1b[39md')],
+        lines: () => [binnacle.paint('mdHeading', 'a\x1b[1;38;2;0;255;0mb\x1b[38:2::0:0:255mc\x1b[39md')],
       })
     },
     'truecolor',
@@ -290,7 +354,7 @@ test('paint takes a Style as well as a Tone, drawn for the terminal’s colours,
 test('a Style painted inside a Tone opens the Tone again after it ends', async () => {
   const { terminal } = await drawn(8, 3, (binnacle) => {
     binnacle.layout('chat', { place: 'a' })
-    binnacle.place('a', { lines: () => [binnacle.paint('heading', `a${binnacle.paint({ color: 'red', dim: true }, 'b')}c`)] })
+    binnacle.place('a', { lines: () => [binnacle.paint('mdHeading', `a${binnacle.paint({ color: 'red', dim: true }, 'b')}c`)] })
   })
   const styles = await Promise.all([0, 1, 2].map((x) => terminal.styleAt(x, 0)))
   assert.deepEqual(

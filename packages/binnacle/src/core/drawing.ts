@@ -127,7 +127,7 @@ export class Drawing {
     this.#scroll.clamp(this.#placed)
     for (const { place, maxScroll, shownFrom } of this.#placed)
       if (view.partIn(place)?.follow === 'least') this.#scroll.keep(place, maxScroll - shownFrom)
-    const rows = this.#selecting.drawn(arranged.rows, this.#placed, this.#hits, (text) => view.paint('selection', text))
+    const rows = this.#selecting.drawn(arranged.rows, this.#placed, this.#hits, (text) => view.paint('selectedBg', text))
     this.#display.draw(rows, arranged.cursor)
     this.#held.mouse(this.#hits.some((hit) => hit.placed !== undefined))
   }

@@ -135,7 +135,11 @@ export class BinnacleService extends Service implements Binnacle {
   }
 
   theme(layer: ThemeLayer): Handle {
-    checkLayer(layer)
+    // The layer is checked where it will rank, as a built-in's goes beneath every author's.
+    const firstAuthor = builtIn(this.ctx.fiber as Fiber) ? this.layers.findIndex((other) => !other.builtIn) : -1
+    const layers = this.layers.map(({ item }) => item)
+    layers.splice(firstAuthor === -1 ? layers.length : firstAuthor, 0, layer)
+    checkLayer(layer, layers)
     const restyle = (): void => {
       delete this.themed.now
       this.drawn.forgetAll()
