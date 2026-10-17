@@ -6,7 +6,7 @@ The review is blind. You judge the Spec and the code alone: do not read `agents.
 
 ## Round 0: the Spec
 
-1. Read the Spec at the path that your prompt names, and its Intent beside it.
+1. Read the Spec at the path that your prompt names. Then read the whole of the Intent that its **Intent** line links: `intent.md` in the Spec's folder, or in the folder above it for a Spec in a folder of its own, such as `intents/palette/fill/spec.md`. Read the Stage that the Spec builds, and the outcomes it serves.
 2. If the prompt names a reply of the Lead, read it, and check each finding of the last pass first.
 3. Check each claim about dsh, pi-tui or another Reference against its source in `.refs/`, as the `research` skill says.
 4. List each decision that the build will meet and that the Spec does not answer. Walk each behaviour's edges, as *Edges* in [`writing-a-spec.md`](writing-a-spec.md) lists them.

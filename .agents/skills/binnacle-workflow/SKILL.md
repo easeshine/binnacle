@@ -45,6 +45,10 @@ The Task tool's folders, states and commands are in [`task.md`](task.md). Read i
 15. After the last Part merges, set the Spec's Status to `built`, in its Intent's list of Specs too, in a PR that you merge, and hand the Maintainer the try, as *The Maintainer's try* says.
 16. When the try's fixes and ADRs merge, run `pnpm task stop <slug>`.
 
+## The workflow's own issues
+
+When a skill, a script of the Task tool or the setup slows a Task, or lets a mistake through, file an issue with the label `workflow`, in the shape of `.github/ISSUE_TEMPLATE/workflow.yml`. File it when you meet it, or at the latest after the Maintainer's try. Examples: an agent's run that fails and wakes nobody, a step that the Maintainer must do for you, and a mistake of a Spec that Round 0 passed. Say what it cost, and the change that you want. Such an issue is not a problem of binnacle, so it never takes the label `bug` or `gap`.
+
 ## Roles
 
 The Maintainer names the role of each agent at the start of a session, or before a builder starts. For example: "a Claude subagent builds, pi on gpt-6.1-sol reviews". With no name, take the roles in `.agents/roles.json` and `~/.binnacle/roles.json` without asking.
@@ -71,7 +75,7 @@ The Maintainer names the role of each agent at the start of a session, or before
 
 1. Pull `main`, run `vp install` and `vp run @easeshine/binnacle#build`, then run `node packages/binnacle/dist/cli.mjs` once, so that the `binnacle` profile runs what merged.
 2. Tell the Maintainer what to try: `binnacle`, then each Journey of the Spec, and what each one should draw.
-3. List the candidate ADRs: each decision of the Spec that binds more than one change, in one line each.
+3. List the candidate ADRs: each decision of the Spec that binds more than one change, in one line each. An ADR records why: the reasons and the options that lost. The decisions of one Intent go in one ADR.
 4. File each problem that the Maintainer finds as an issue, for the `fix` skill, with the label of its template in `.github/ISSUE_TEMPLATE/`: `bug` or `gap`. If one is too large for a fix, or the Intent was wrong, grill again.
 5. Write each ADR that the Maintainer picks, in a PR of its own.
 
@@ -80,4 +84,5 @@ The Maintainer names the role of each agent at the start of a session, or before
 - Each Task in flight has its state in the Task tool: `pnpm task status` shows each one.
 - Each subagent in flight has ended its turn, and its Task is in a state that the tool holds.
 - Each try that you handed the Maintainer has its answer: its issues filed, and its ADRs written.
+- Each problem of the workflow that you met in the session is filed, with the label `workflow`.
 - If the Maintainer asks for it, the `handoff` skill writes what the next Lead needs.
