@@ -20,15 +20,18 @@ The Task tool's folders, states and commands are in [`task.md`](task.md). Read i
 2. Write `intents/<slug>/intent.md` in the Maintainer's words: the title, the metadata, Problem, Proposed outcome, Affected users and systems, Constraints, and Open questions. It holds no design.
 3. Change the Intent until the Maintainer approves it. Each open question is answered by an edit to the Intent.
 4. Write `intents/<slug>/spec.md`, as [`writing-a-spec.md`](writing-a-spec.md) says. An Intent with several Specs, such as one for each Stage, holds each in a folder of its own, `intents/<slug>/<name>/spec.md`, with the Task `<slug>/<name>`.
-5. Run `pnpm task start <slug>`, with the Reviewer of *Roles* below. It sends the Reviewer Round 0.
-6. Run `pnpm task watch` in the background. When it exits, act on its line, then run it again.
-7. For each pass with findings, edit the Spec, and write `reply.md` in the Spec's Task folder: your answer to each finding.
-8. After the first pass with findings, run `pnpm task set <slug> spec`.
-9. After each later pass with findings, decide each finding that is still open. Correct the Spec, or add the finding to the text of the Part that it falls in.
-10. Write each decision in `reply.md`.
-11. Run `pnpm task set <slug> approved`. If a finding changes the design, run `pnpm task set <slug> spec` in its place, for one more pass.
-12. Answer each finding against the Intent as it was approved. Where the Intent cannot hold as written, or leaves a gap, decide, write the decision under **Decisions**, and file an issue with the label `gap` that names it, so the Maintainer can change the Intent.
-13. When Round 0 is `approved`, open a PR of the Spec, with the Status `agreed`: `docs: the Spec of <feature>`. Merge it when its checks pass, then build the Parts: a Part is built only from a Spec that `origin/main` holds.
+5. Drive each Journey of the Spec under dsh on `main`, as *A try* says, as far as binnacle goes now.
+6. Find each step where binnacle draws other than the Journey says, though no behaviour changes it.
+7. Correct the Spec at each step that you found.
+8. Run `pnpm task start <slug>`, with the Reviewer of *Roles* below. It sends the Reviewer Round 0.
+9. Run `pnpm task watch` in the background. When it exits, act on its line, then run it again.
+10. For each pass with findings, edit the Spec, and write `reply.md` in the Spec's Task folder: your answer to each finding.
+11. After the first pass with findings, run `pnpm task set <slug> spec`.
+12. After each later pass with findings, decide each finding that is still open. Correct the Spec, or add the finding to the text of the Part that it falls in.
+13. Write each decision in `reply.md`.
+14. Run `pnpm task set <slug> approved`. If a finding changes the design, run `pnpm task set <slug> spec` in its place, for one more pass.
+15. Answer each finding against the Intent as it was approved. Where the Intent cannot hold as written, or leaves a gap, decide, write the decision under **Decisions**, and file an issue with the label `gap` that names it, so the Maintainer can change the Intent.
+16. When Round 0 is `approved`, open a PR of the Spec, with the Status `agreed`: `docs: the Spec of <feature>`. Merge it when its checks pass, then build the Parts: a Part is built only from a Spec that `origin/main` holds.
 
 ## Each Part
 
@@ -46,7 +49,7 @@ The Task tool's folders, states and commands are in [`task.md`](task.md). Read i
 12. Run `pnpm task land <slug>/<k>` to open the PR, and merge it when its checks pass.
 13. If `task land` says that the branch does not hold `origin/main`, send the Part back to its builder to rebase. Rebase it yourself only when you built it.
 14. After the PR merges or closes, run `pnpm task stop <slug>/<k>`.
-15. After the last Part merges, set the Spec's Status to `built`, in its Intent's list of Specs too, in a PR that you merge, and hand the Maintainer the try, as *The Maintainer's try* says.
+15. After the last Part merges, hand the Maintainer the try, as *The Maintainer's try* says. The last Part's PR set the Spec's Status `built`, and its row in the Intent's list of Specs. If it did not, set them in a PR of your own.
 16. When the try's fixes and ADRs merge, run `pnpm task stop <slug>`.
 
 ## The workflow's own issues
