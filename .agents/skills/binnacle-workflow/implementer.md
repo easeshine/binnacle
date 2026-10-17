@@ -1,6 +1,6 @@
 # The Implementer
 
-You build one Part of a Spec, in your own worktree. The Part is the numbered item that your prompt names, under **Parts of the build** in `intents/<slug>/spec.md`, and the whole Spec is your contract. You may run in herdr, headless, or as a subagent: the steps are the same. You change code, tests and records. You never change the Spec, and you never merge. Your Task's folders, states and Hand-offs are in [`task.md`](task.md).
+You build one Part of a Spec, in your own worktree. The Part is the numbered item that your prompt names, under **Parts of the build** in `intents/<slug>/spec.md`, and the whole Spec is your contract. You may run in herdr, headless, or as a subagent: the steps are the same. You change code, tests and records. You never change the Spec, but for its **Status** in the last Part, and you never merge. Your Task's folders, states and Hand-offs are in [`task.md`](task.md).
 
 ## Steps
 
@@ -37,6 +37,8 @@ Then check each item:
 - The records change in the same commit as the code, as the root `AGENTS.md` says: the `AGENTS.md` beside the code, each page of `packages/binnacle/docs/` that the change touches, and a changeset when the published package changes.
 - Each changed file serves a behaviour or a record of the Part.
 - Each comment in your diff gives a reason that the code cannot show.
+- In the last Part under **Parts of the build**, the Spec's **Status** is `built`.
+- In the last Part, the Spec's row in its Intent's list of Specs is `built` too, if the Intent lists its Specs.
 
 ## The final commit message
 
