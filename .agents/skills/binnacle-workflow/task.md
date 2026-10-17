@@ -24,7 +24,7 @@ The files of a Task:
 | `agents/<role>/` | The agent's session folder, and for a headless agent its queue, its run and its output | the Task tool, and the agent's tool |
 | `question.md` | The open question | the role that asks |
 | `answer.md` | The answer | the Lead |
-| `reply.md` | The Lead's answer to each finding of the last pass of Round 0. `task set <slug> spec` renames it `reply-<p>.md`. | the Lead |
+| `reply.md` | The Lead's answer to each finding of the last pass of Round 0. `task set <slug> spec` renames it `reply-<p>.md`, and so does the Lead's `task set <slug> approved`. | the Lead |
 | `review-<r>.md` | The report of Round `<r>`. Round 0 has passes: its first pass is `review-0.md`, and pass `<p>` is `review-0-<p>.md`. The prompt names the file. | the Reviewer |
 | `try-<r>.md` | What the Lead's try of approved Round `<r>` found, with each finding written as a review report writes it. `task set <slug>/<k> changes` needs it. | the Lead |
 | `checked.md` | Optional: what the builder checked by hand, which `task land` puts in the PR | the builder |
@@ -83,7 +83,7 @@ A **role** is `<runner>:<tool>:<model>@<thinking>`:
 |---|---|---|---|
 | `spec` | Lead, or `task start` as a Spec's first line | `changes` and `approved` at Round 0, on a Spec | sends the Reviewer its next pass, with `reply-<p>.md` |
 | `changes` | Reviewer, or the Lead after `approved` on a Part | `spec`, `ready`, and `approved` after Round 0 on a Part | on a Spec, wakes the Lead to edit the Spec. On a Part, sends the report to the Implementer: the Lead's `try-<r>.md` after `approved`. The Round stays, and the next Round checks the try's findings first. |
-| `approved` | Reviewer, or `task build` as a Part's first line | `spec`, `ready` | on a Spec, wakes the Lead. On a Part, also asks the Implementer for `message.md` and `pr.md`. |
+| `approved` | Reviewer; the Lead on a Spec after two passes with findings, with `reply.md`; or `task build` as a Part's first line | `spec`, `ready`, and `changes` at Round 0 on a Spec | on a Spec, wakes the Lead. On a Part, also asks the Implementer for `message.md` and `pr.md`. |
 | `building` | Implementer | `approved` at Round 0, and `changes`, on a Part | nothing |
 | `ready` | Implementer | `building`, and `changes` on a Part | sends the Reviewer the tip, and the commits since the last Round |
 | `blocked` | any role, with `task ask` | each state except `blocked` and `stopped` | wakes the Lead |

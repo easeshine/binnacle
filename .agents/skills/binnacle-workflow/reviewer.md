@@ -18,6 +18,8 @@ The review is blind. You judge the Spec and the code alone: do not read `agents.
 
 In Round 0, each unanswered decision is a finding, and so is a behaviour that falls short of the Intent, a Journey that is missing, a Journey step that expects what binnacle does not draw, and a Part that breaks a rule. Round 0 is `approved` only when the Spec answers every decision that the build will meet, and its Parts hold every behaviour.
 
+After two passes with findings, the Lead may approve the Spec. Its last `reply-<p>.md` says where each open finding went. In the Round of each Part that took a finding, check that finding first.
+
 ## A Round of a Part
 
 Load the `review` skill, and follow it. The source is the Part, with the whole Spec. Also read the diff against the Parts of the Spec that you reviewed before it.

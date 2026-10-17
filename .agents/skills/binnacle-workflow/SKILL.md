@@ -25,9 +25,13 @@ The Task tool's folders, states and commands are in [`task.md`](task.md). Read i
 7. Correct the Spec at each step that you found.
 8. Run `pnpm task start <slug>`, with the Reviewer of *Roles* below. It sends the Reviewer Round 0.
 9. Run `pnpm task watch` in the background. When it exits, act on its line, then run it again.
-10. For each pass with findings, edit the Spec, and write `reply.md` in the Spec's Task folder: your answer to each finding. Then run `pnpm task set <slug> spec`.
-11. Answer each finding against the Intent as it was approved. Where the Intent cannot hold as written, or leaves a gap, decide, write the decision under **Decisions**, and file an issue with the label `gap` that names it, so the Maintainer can change the Intent.
-12. When Round 0 is `approved`, open a PR of the Spec, with the Status `agreed`: `docs: the Spec of <feature>`. Merge it when its checks pass, then build the Parts: a Part is built only from a Spec that `origin/main` holds.
+10. For each pass with findings, edit the Spec, and write `reply.md` in the Spec's Task folder: your answer to each finding.
+11. After the first pass with findings, run `pnpm task set <slug> spec`.
+12. After each later pass with findings, decide each finding that is still open. Correct the Spec, or add the finding to the text of the Part that it falls in.
+13. Write each decision in `reply.md`.
+14. Run `pnpm task set <slug> approved`. If a finding changes the design, run `pnpm task set <slug> spec` in its place, for one more pass.
+15. Answer each finding against the Intent as it was approved. Where the Intent cannot hold as written, or leaves a gap, decide, write the decision under **Decisions**, and file an issue with the label `gap` that names it, so the Maintainer can change the Intent.
+16. When Round 0 is `approved`, open a PR of the Spec, with the Status `agreed`: `docs: the Spec of <feature>`. Merge it when its checks pass, then build the Parts: a Part is built only from a Spec that `origin/main` holds.
 
 ## Each Part
 
