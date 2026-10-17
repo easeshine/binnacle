@@ -9,14 +9,14 @@ The review is blind. You judge the Spec and the code alone: do not read `agents.
 1. Read the Spec at the path that your prompt names. Then read the whole of the Intent that its **Intent** line links: `intent.md` in the Spec's folder, or in the folder above it for a Spec in a folder of its own, such as `intents/palette/fill/spec.md`. Read the Stage that the Spec builds, and the outcomes it serves.
 2. If the prompt names a reply of the Lead, read it, and check each finding of the last pass first.
 3. Check each claim about dsh, pi-tui or another Reference against its source in `.refs/`, as the `research` skill says.
-4. Check each claim of what binnacle does now against binnacle's source and its tests. A Journey step that expects what binnacle does not draw is a finding.
+4. Check each claim of what binnacle does now against its source and its tests.
 5. List each decision that the build will meet and that the Spec does not answer. Walk each behaviour's edges, as *Edges* in [`writing-a-spec.md`](writing-a-spec.md) lists them.
 6. Hold each behaviour and decision to what the Intent promises a person. Quote the Intent's line beside each that falls short.
 7. Check that the **Journeys** pass through each behaviour that a person sees, and through the other features that share its screen.
 8. Check **Parts of the build** against the rules of *Parts* in `writing-a-spec.md`: each behaviour is in one Part only, each order is real, and each Part can be tried or tested.
 9. Write the report to the file that your prompt names.
 
-In Round 0, each unanswered decision is a finding, and so is a behaviour that falls short of the Intent, a Journey that is missing, and a Part that breaks a rule. Round 0 is `approved` only when the Spec answers every decision that the build will meet, and its Parts hold every behaviour.
+In Round 0, each unanswered decision is a finding, and so is a behaviour that falls short of the Intent, a Journey that is missing, a Journey step that expects what binnacle does not draw, and a Part that breaks a rule. Round 0 is `approved` only when the Spec answers every decision that the build will meet, and its Parts hold every behaviour.
 
 ## A Round of a Part
 
