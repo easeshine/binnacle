@@ -303,3 +303,58 @@ test('`task status` shows a task whose events or agents cannot be read as one li
     if (kept !== undefined) writeFileSync(join(folder, file), kept)
   }
 })
+
+test("`task resend <task>` sends a hand-off again when its agent's run failed after it took the prompt, unless the agent is at work", async () => {
+  const world = makeWorld()
+  onTestFinished(() => world.remove())
+  await building(world)
+  commit(world, PART, 'one')
+  await steps(world, ['set', PART, 'building', '--as', 'implementer'], ['set', PART, 'ready', '--as', 'implementer'])
+  const sent = world.runner.prompts.at(-1)
+  assert.equal(sent.role, 'reviewer')
+  const none = await run(['resend', PART], world.deps)
+  assert.equal(none.code, 1)
+  assert.match(none.stderr, /task cards\/1 has no hand-off to resend/)
+
+  // The Part's Reviewer is the Spec's agent, so its supervisor writes the run's end in the Spec's folder.
+  world.tick()
+  const failed = { at: world.deps.now().toISOString(), event: 'run-failed', role: 'reviewer', detail: { prompt: 'p.txt', error: 'ended' } }
+  appendFileSync(join(world.home, 'tasks', SPEC, 'events.ndjson'), `${JSON.stringify(failed)}\n`)
+  world.tick()
+  world.runner.states.reviewer = { state: 'working' }
+  const busy = await run(['resend', PART], world.deps)
+  assert.equal(busy.code, 1)
+  assert.match(busy.stderr, /task cards\/1: the reviewer is at work; resend when its run ends/)
+
+  delete world.runner.states.reviewer
+  const resent = await run(['resend', PART], world.deps)
+  assert.equal(resent.code, 0, resent.stderr)
+  assert.match(resent.stdout, /^task cards\/1: resend h\d+ to the reviewer\n$/)
+  assert.equal(world.runner.prompts.at(-1).text, sent.text)
+  const again = await run(['resend', PART], world.deps)
+  assert.equal(again.code, 1)
+  assert.match(again.stderr, /has no hand-off to resend/)
+
+  // The Spec's Round 0 is done: a failed run of its Reviewer on the Part does not send Round 0 again.
+  const spec = await run(['resend', SPEC], world.deps)
+  assert.equal(spec.code, 1)
+  assert.match(spec.stderr, /task cards has no hand-off to resend/)
+})
+
+test('`task resend <task>` does not send a hand-off again when the failed run left another Task waiting', async () => {
+  const world = makeWorld()
+  onTestFinished(() => world.remove())
+  world.spec(SPEC)
+  await steps(world, ['start', SPEC])
+  world.tick()
+  const failed = {
+    at: world.deps.now().toISOString(),
+    event: 'run-failed',
+    role: 'reviewer',
+    detail: { prompt: 'p.txt', task: 'menus', error: 'ended' },
+  }
+  appendFileSync(join(world.home, 'tasks', SPEC, 'events.ndjson'), `${JSON.stringify(failed)}\n`)
+  const other = await run(['resend', SPEC], world.deps)
+  assert.equal(other.code, 1)
+  assert.match(other.stderr, /task cards has no hand-off to resend/)
+})

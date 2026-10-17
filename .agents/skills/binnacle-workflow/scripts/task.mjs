@@ -8,6 +8,7 @@ import { familiesSetUp, familyOf, loadRoles, parseRole, roleText } from '../../.
 import { handoffFor } from './handoffs.mjs'
 import { marker, messageOf, PR_SECTIONS, prBody, reportComment, reportsOf, withTrailers } from './land.mjs'
 import { locked } from './lock.mjs'
+import { WAITS } from './runners/supervise.mjs'
 import { makeHeadless } from './runners/headless.mjs'
 import { makeHerdr } from './runners/herdr.mjs'
 import { doorOf, partsOf, specPath, titleOf } from './spec.mjs'
@@ -545,13 +546,38 @@ async function resend(id, deps, say) {
     readTask(folder)
     const events = readEvents(folder)
     const landed = new Set(events.filter((event) => ['prompted', 'for-lead'].includes(event.event)).map((event) => event.detail.id))
-    const open = events.findLast((event) => event.event === 'handoff' && !landed.has(event.detail.id))
+    const open =
+      events.findLast((event) => event.event === 'handoff' && !landed.has(event.detail.id)) ?? (await failedRun(id, folder, events, deps))
     if (open === undefined) throw new Refusal(`task ${id} has no hand-off to resend`)
     const { id: hid, start: starts, text, ...extra } = open.detail
     say(`task ${id}: resend ${hid} to the ${open.role}`)
     await tryHandoff(id, folder, hid, { role: open.role, start: starts, text }, deps, extra)
     return 0
   })
+}
+
+// The last hand-off that an agent took, when a run of that agent failed or timed out after it: the run ended without the work.
+// A Part's Reviewer may be its Spec's agent, whose supervisor writes in the Spec's folder.
+async function failedRun(id, folder, events, deps) {
+  const prompted = events.findLast((event) => event.event === 'prompted')
+  if (prompted === undefined) return undefined
+  const handoff = events.findLast((event) => event.event === 'handoff' && event.detail.id === prompted.detail.id)
+  const of = readAgents(folder)[handoff.role]?.of
+  const owner = of === undefined ? folder : folderOf(deps.home, of)
+  const ends = owner === folder ? events : readEvents(owner)
+  const failed = ends.some(
+    (event) =>
+      ['run-failed', 'timed-out'].includes(event.event) &&
+      event.role === handoff.role &&
+      event.at > prompted.at &&
+      (event.detail?.task ?? id) === id,
+  )
+  // A Task that has moved on, such as a Spec whose Reviewer now serves its Parts, does not take its old hand-off again.
+  if (!failed || !WAITS[handoff.role]?.(readLog(folder).at(-1))) return undefined
+  const agent = readAgents(owner)[handoff.role]
+  if (agent?.handle !== undefined && (await runnerOf(agent.runner, deps).activity(agent.handle)).state === 'working')
+    throw new Refusal(`task ${id}: the ${handoff.role} is at work; resend when its run ends`)
+  return handoff
 }
 
 function appendLine(log, change) {
