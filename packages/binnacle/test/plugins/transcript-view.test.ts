@@ -208,7 +208,7 @@ test('a folded event with more than one line draws its first line, then … <n> 
       ({ text }) =>
         text.split('\n'),
   )
-  stateOf(ctx).set((state) => state.folded.push('0', '1'))
+  stateOf(ctx).set((state) => Object.assign(state.folded, { '0': true, '1': true }))
   assert.deepEqual((await drawn()).slice(0, 4), ['one', '… 2 more lines', '', '⏺ ls({})'])
   assert.equal(await terminal.colourAt(0, 1), BRIGHT_BLACK)
   terminal.type(ENTER)
@@ -228,7 +228,7 @@ test("a click on the first line of an event that the view draws folds it, as the
   await drawn()
   terminal.type(clickAt(0, 1))
   await drawn()
-  assert.deepEqual(stateOf(ctx).state?.folded, [])
+  assert.deepEqual({ ...stateOf(ctx).state?.folded }, {})
   terminal.type(clickAt(0, 0))
   assert.deepEqual((await drawn()).slice(0, 3), ['one', '… 1 more lines', ''])
 })
@@ -242,12 +242,12 @@ test("a click on an agent's answer folds nothing, and the answer Marked draws wh
   ])
   await drawn()
   terminal.type(clickAt(0, 0))
-  const clicked = [(await drawn()).slice(0, 4), [...(stateOf(ctx).state?.folded ?? [])]]
+  const clicked = [(await drawn()).slice(0, 4), { ...stateOf(ctx).state?.folded }]
   terminal.type(ENTER)
   assert.deepEqual(
     [clicked, (await drawn()).slice(0, 4)],
     [
-      [['think', 'one', 'two', ''], []],
+      [['think', 'one', 'two', ''], {}],
       ['think', 'one', 'two', ''],
     ],
   )
@@ -271,13 +271,13 @@ test('a click on a prompt folds nothing, and a prompt Marked draws whole at ente
   const { drawn, ctx, terminal } = await reading([prompt(0, 'one\ntwo')])
   await drawn()
   terminal.type(clickAt(2, 0))
-  const clicked = [(await drawn()).slice(0, 3), [...(stateOf(ctx).state?.folded ?? [])]]
+  const clicked = [(await drawn()).slice(0, 3), { ...stateOf(ctx).state?.folded }]
   terminal.type(ENTER)
   const entered = (await drawn()).slice(0, 3)
   assert.deepEqual(
     [clicked, entered],
     [
-      [['› one', '  two', ''], []],
+      [['› one', '  two', ''], {}],
       ['› one', '  two', ''],
     ],
   )
@@ -289,7 +289,7 @@ test('a click on an event of one line folds nothing', async () => {
   terminal.type(clickAt(0, 0))
   terminal.type(clickAt(0, 2))
   await drawn()
-  assert.deepEqual(stateOf(ctx).state?.folded, [])
+  assert.deepEqual({ ...stateOf(ctx).state?.folded }, {})
 })
 
 test('the answer that streams draws its reasoning, its text, a blank line, then each tool call with the arguments so far', async () => {
@@ -481,7 +481,7 @@ test("each piece that the view draws in a general Tone draws through the view's 
       ({ text, failed }, where) =>
         failed ? beneath({ text, failed }, where) : text.split('\n'),
   )
-  stateOf(ctx).set((state) => state.folded.push('5'))
+  stateOf(ctx).set((state) => (state.folded['5'] = true))
   ctx.binnacle.theme({
     colors: { 'transcript.error': 'yellow', 'transcript.warning': 'blue', 'transcript.muted': 'magenta', 'transcript.dim': 'green' },
   })

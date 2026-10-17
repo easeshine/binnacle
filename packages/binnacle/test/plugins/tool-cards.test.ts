@@ -275,7 +275,7 @@ test('a running call with no view draws its arguments as key: value lines cut at
   assert.deepEqual((await drawn()).slice(0, 5), ['⏺ read', '  ⎿ path: a/very/long/path/to/a/file.ts', '', '⏺ Quiet', ''])
   terminal.type(clickAt(0, 3))
   await drawn()
-  assert.deepEqual(stateOf(ctx).state?.folded, [])
+  assert.deepEqual({ ...stateOf(ctx).state?.folded }, {})
 })
 
 test('enter on a Marked card folds its body, its first line alone ending with (<n> lines), and again unfolds it', async () => {
@@ -283,9 +283,26 @@ test('enter on a Marked card folds its body, its first line alone ending with (<
   await drawn()
   terminal.type(ENTER)
   assert.deepEqual((await drawn()).slice(0, 2), ['⏺ ls · 1.0s (2 lines)', ''])
-  assert.deepEqual(stateOf(ctx).state?.folded, ['0/body'])
+  assert.deepEqual({ ...stateOf(ctx).state?.folded }, { '0/body': true })
   terminal.type(ENTER)
   assert.deepEqual((await drawn()).slice(0, 3), ['⏺ ls · 1.0s', '  ⎿ a', '    b'])
+})
+
+test('a Look of transcript.card that reads the body with startsFolded: true starts each card folded, and enter and a click unfold and fold it', async () => {
+  const { drawn, terminal, ctx } = await reading([call(0, 'ls', '{}'), result(1, 'c0', 'a\nb'), call(2, 'pwd', '{}'), result(3, 'c2', '/')])
+  ctx.binnacle.look<CardLook>(
+    'transcript.card',
+    (beneath) => (card, where) =>
+      beneath(card, { ...where, isFolded: (region) => where.isFolded(region, { startsFolded: region === `${card.seq}/body` }) }),
+  )
+  assert.deepEqual((await drawn()).slice(0, 4), ['⏺ ls · 1.0s (2 lines)', '', '⏺ pwd · 1.0s (1 line)', ''])
+  terminal.type(ENTER)
+  assert.deepEqual((await drawn()).slice(0, 5), ['⏺ ls · 1.0s (2 lines)', '', '⏺ pwd · 1.0s', '  ⎿ /', ''])
+  terminal.type(clickAt(3, 0))
+  assert.deepEqual((await drawn()).slice(0, 5), ['⏺ ls · 1.0s', '  ⎿ a', '    b', '', '⏺ pwd · 1.0s'])
+  terminal.type(clickAt(7, 0))
+  assert.deepEqual((await drawn()).slice(0, 2), ['⏺ ls · 1.0s (2 lines)', ''])
+  assert.deepEqual({ ...stateOf(ctx).state?.folded }, { '0/body': true, '2/body': false })
 })
 
 test("a click on a card's first line folds its body, and the Mark moves between cards as between events", async () => {
@@ -555,7 +572,7 @@ test('an ask card draws its first line alone while it waits, as the Request show
   const { drawn, ctx, terminal } = await reading([call(0, 'ask_user_question', QUESTIONS)])
   const waiting = (await drawn()).slice(0, 2)
   terminal.type(clickAt(0, 0))
-  assert.deepEqual([waiting, (await drawn()).slice(0, 2), stateOf(ctx).state?.folded], [['⏺ ask_user_question', ''], waiting, []])
+  assert.deepEqual([waiting, (await drawn()).slice(0, 2), { ...stateOf(ctx).state?.folded }], [['⏺ ask_user_question', ''], waiting, {}])
 })
 
 test('an answered ask card draws each question then → its choices and its text', async () => {
@@ -583,7 +600,7 @@ test('a click on the first line of a todo or an ask card folds nothing, and the 
   const before = (await drawn()).slice(0, 8)
   terminal.type(clickAt(2, 0))
   terminal.type(clickAt(2, 5))
-  assert.deepEqual([(await drawn()).slice(0, 8), stateOf(ctx).state?.folded], [before, []])
+  assert.deepEqual([(await drawn()).slice(0, 8), { ...stateOf(ctx).state?.folded }], [before, {}])
 })
 
 test('a generic result whose text is JSON draws a line for each key, a list of values joined, anything deeper as compact JSON, and at most transcript.card.most lines', async () => {

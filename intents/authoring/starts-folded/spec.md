@@ -1,7 +1,7 @@
 # Spec: a region that starts folded
 
 - **Intent:** [Authoring](../intent.md), Stage 3, *Tool cards*. It serves outcome 2: a change of how one piece behaves "touches only that kind", and constraint 4: a change that an author cannot make in a small change is a gap.
-- **Status:** agreed
+- **Status:** built
 
 ## Problem
 

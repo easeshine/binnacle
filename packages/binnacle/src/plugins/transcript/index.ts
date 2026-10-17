@@ -25,8 +25,11 @@ export interface TranscriptState {
   events: readonly SessionEvent[]
   /** The blocks of the answer that streams, in the answer's order, or `undefined` while none streams. */
   live: readonly LiveBlock[] | undefined
-  /** The folded regions: an event's own, its seq as a string such as `'12'`, or a part of it, such as `'12/body'`. */
-  folded: string[]
+  /**
+   * Each region's state, by its name: an event's own, its seq as a string such as `'12'`, or a part of it, such as `'12/body'`.
+   * `true` for a region that is folded, `false` for one that is unfolded. A region not in it draws as its Look says it starts.
+   */
+  folded: Record<string, boolean>
   /** The seq of the Marked event. */
   marked: number | undefined
 }
@@ -38,12 +41,19 @@ export interface TranscriptState {
  */
 export type Line = string | { readonly text: string; readonly fold?: string; readonly run?: string; readonly from?: number }
 
+/** How a Look reads a region: `startsFolded` makes it folded until it is unfolded. */
+export interface FoldStart {
+  readonly startsFolded?: boolean
+}
+
+/** Whether a region is folded, such as `'12/body'`: its state in `folded`, else how the read says it starts, unfolded by default. */
+export type IsFolded = (region: string, start?: FoldStart) => boolean
+
 /** What an event's Look is given beside the event. */
 export interface EventAt {
-  /** Whether the event's own region is folded. */
+  /** Whether the event's own region is folded. It starts unfolded. */
   readonly folded: boolean
-  /** Whether a region is folded, such as `'12/body'`. */
-  readonly isFolded: (region: string) => boolean
+  readonly isFolded: IsFolded
   readonly width: number
 }
 
@@ -97,17 +107,30 @@ interface Drawn {
   readonly actingAt: ReadonlyMap<number, Acting>
   /** The first region that each event marks on a line it draws. */
   readonly firstFoldOf: ReadonlyMap<number, string>
+  /** Whether each region that this draw read starts folded: whether any read of it said so. */
+  readonly startOf: ReadonlyMap<string, boolean>
   readonly mark: number | undefined
 }
 
 const regionOf = (seq: number): string => String(seq)
+
+const stateOf = (folded: Readonly<Record<string, boolean>>, region: string): boolean | undefined =>
+  Object.hasOwn(folded, region) ? folded[region] : undefined
+
+// A region is any string, and `__proto__` is one: on an object with no prototype, an author's `folded[region] = false` makes an entry for it too.
+const noFolds = (): Record<string, boolean> => Object.create(null) as Record<string, boolean>
+
+// An author can replace `folded` with an object that has `Object.prototype`, whose `__proto__` setter would take an assignment, so the fold defines the entry.
+const setState = (folded: Record<string, boolean>, region: string, state: boolean): void => {
+  Object.defineProperty(folded, region, { value: state, writable: true, enumerable: true, configurable: true })
+}
 
 export function apply(plugin: Context): void {
   // The session opens after dsh's plugins settle; a plugin that waited for it at load would be reported as never active.
   plugin.inject(['binnacleSession'], (ctx) => {
     const { binnacle } = ctx
     const chat = ctx.binnacleSession
-    const model = createModel<TranscriptState>({ events: [], live: undefined, folded: [], marked: undefined })
+    const model = createModel<TranscriptState>({ events: [], live: undefined, folded: noFolds(), marked: undefined })
     // The transcript's own, so that an author who sets `events` or `live` has them replaced at the next event or frame.
     const events: SessionEvent[] = []
     let live: Map<number, Glued> | undefined
@@ -149,7 +172,11 @@ export function apply(plugin: Context): void {
       const ownerAt = new Map<number, number>()
       const actingAt = new Map<number, Acting>()
       const firstFoldOf = new Map<number, string>()
-      const isFolded = (region: string): boolean => folded.includes(region)
+      const startOf = new Map<string, boolean>()
+      const isFolded: IsFolded = (region, { startsFolded = false } = {}) => {
+        startOf.set(region, startsFolded || startOf.get(region) === true)
+        return stateOf(folded, region) ?? startsFolded
+      }
       const push = (own: readonly Line[], seq: number | undefined): void => {
         for (const line of own) {
           if (seq !== undefined) ownerAt.set(lines.length, seq)
@@ -175,18 +202,17 @@ export function apply(plugin: Context): void {
       const at = mark === undefined ? undefined : firstOf.get(mark)
       if (hasFocus && at !== undefined) lines[at] = inverse(lines[at] ?? '')
       if (blocks !== undefined) push(binnacle.lookOf<LiveLook>(['transcript.live'], liveLinesOf)(blocks, width), undefined)
-      drawn = { width, lines, drawing, firstOf, ownerAt, actingAt, firstFoldOf, mark }
+      drawn = { width, lines, drawing, firstOf, ownerAt, actingAt, firstFoldOf, startOf, mark }
       return drawn
     }
     const again = (): Drawn => draw(drawn?.width ?? 0)
 
     const mark = (seq: number): void => model.set((state) => (state.marked = seq))
-    const fold = (region: string): void =>
-      model.set((state) => {
-        const at = state.folded.indexOf(region)
-        if (at === -1) state.folded.push(region)
-        else state.folded.splice(at, 1)
-      })
+    // A key or a click lands on what the person sees, so the region's start is the one of the draw shown. A region that it did not read takes the start of the draw found now.
+    const fold = (region: string, shown: Drawn | undefined, now: Drawn): void => {
+      const start = shown?.startOf.get(region) ?? now.startOf.get(region) ?? false
+      model.set((state) => setState(state.folded, region, !(stateOf(state.folded, region) ?? start)))
+    }
     // A line acts only from its `from`. Before it, a click is on the line as on a plain one that is not its event's first, so it Marks alone.
     const actingAtCell = ({ line, column }: Point): Acting | undefined => {
       const acting = (drawn ?? again()).actingAt.get(line)
@@ -226,12 +252,13 @@ export function apply(plugin: Context): void {
       run: (at) => {
         if (at !== undefined) {
           const region = regionAt(at)
-          if (region !== undefined) fold(region)
+          if (region !== undefined) fold(region, drawn, drawn ?? again())
           return
         }
-        // The event where the Mark is drawn, which a person sees Marked.
-        const { mark: seq, firstFoldOf } = again()
-        if (seq !== undefined) fold(firstFoldOf.get(seq) ?? regionOf(seq))
+        // The event where the Mark is drawn, which a person sees Marked, found again as up and down can move it before a draw.
+        const shown = drawn
+        const now = again()
+        if (now.mark !== undefined) fold(now.firstFoldOf.get(now.mark) ?? regionOf(now.mark), shown, now)
       },
     })
     binnacle.action('transcript.click', {
