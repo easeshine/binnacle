@@ -7,7 +7,9 @@ export const standalone = /scripts[/\\]task[/\\]task\.mjs$/.test(process.argv[1]
 export const OWNERS = { spec: 'lead', changes: 'reviewer', approved: 'reviewer', building: 'implementer', ready: 'implementer' }
 
 // After a later Round's approval, the Lead's try can still find a bug: the Lead sends it back to the builder as `changes`.
-export const ownerOf = (state, from) => (state === 'changes' && from === 'approved' ? 'lead' : OWNERS[state])
+// After passes of Round 0 with findings, the Lead may approve the Spec: the later passes find little that a Part's Round misses.
+export const ownerOf = (state, from) =>
+  (state === 'changes' && from === 'approved') || (state === 'approved' && from === 'changes') ? 'lead' : OWNERS[state]
 
 export function readLog(folder) {
   const path = join(folder, 'log.ndjson')
@@ -69,6 +71,7 @@ export function followers(kind, from, round) {
       case 'spec':
         return ['changes', 'approved']
       case 'changes':
+        return ['spec', 'approved']
       case 'approved':
         return ['spec']
       default:

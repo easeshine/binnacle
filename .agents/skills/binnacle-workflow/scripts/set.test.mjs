@@ -1,5 +1,5 @@
 import { onTestFinished, test } from 'vite-plus/test'
-import { writeFileSync } from 'node:fs'
+import { existsSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import assert from 'node:assert/strict'
 import { built, logLines, makeWorld } from './world.mjs'
@@ -110,7 +110,7 @@ test('A state that cannot follow the current state is refused, and the error nam
   await run(['set', 'menus', 'changes', '--as', 'reviewer'], world.deps)
   const fromChanges = await run(['set', 'menus', 'building', '--as', 'implementer'], world.deps)
   assert.equal(fromChanges.code, 1)
-  assert.match(fromChanges.stderr, /building cannot follow changes; spec can follow it/)
+  assert.match(fromChanges.stderr, /building cannot follow changes; spec, approved can follow it/)
 
   // A Ticket has no Round 0 of its own, so `spec` never follows on it.
   await built(world, 2)
@@ -190,4 +190,65 @@ test("The Lead's `spec` is refused while the Lead has no reply to the last pass,
   assert.equal(bare.code, 1)
   assert.match(bare.stderr, /task tables: no reply\.md in .*tables; answer each finding there, then set spec again/)
   assert.deepEqual(stateOf(world, 'tables'), { state: 'changes', round: 0 })
+})
+
+test('After two passes with findings, the Lead sets the Spec `approved` with its reply, which is kept beside the passes', async () => {
+  const world = makeWorld()
+  onTestFinished(() => world.remove())
+  assert.equal((await started(world, 'tables')).code, 0)
+  await run(['set', 'tables', 'changes', '--as', 'reviewer'], world.deps)
+  world.reply('tables')
+  await run(['set', 'tables', 'spec'], world.deps)
+  await run(['set', 'tables', 'changes', '--as', 'reviewer'], world.deps)
+
+  const bare = await run(['set', 'tables', 'approved'], world.deps)
+  assert.equal(bare.code, 1)
+  assert.match(bare.stderr, /task tables: no reply\.md in .*tables; answer each open finding there, then set approved again/)
+
+  world.reply('tables')
+  const approved = await run(['set', 'tables', 'approved'], world.deps)
+  assert.equal(approved.code, 0)
+  assert.equal(approved.stdout, 'task tables: approved round 0\n')
+  assert.deepEqual(stateOf(world, 'tables'), { state: 'approved', round: 0 })
+  assert.equal(logLines(world, 'tables').at(-1).role, 'lead')
+  assert.equal(existsSync(join(world.home, 'tasks', 'tables', 'reply-3.md')), true)
+  assert.equal(world.runner.prompts.length, 2)
+})
+
+test('The Lead cannot set the Spec `approved` after one pass with findings, nor the Reviewer after `changes`', async () => {
+  const world = makeWorld()
+  onTestFinished(() => world.remove())
+  assert.equal((await started(world, 'tables')).code, 0)
+  await run(['set', 'tables', 'changes', '--as', 'reviewer'], world.deps)
+  world.reply('tables')
+
+  const early = await run(['set', 'tables', 'approved'], world.deps)
+  assert.equal(early.code, 1)
+  assert.match(
+    early.stderr,
+    /task tables: the Reviewer approves the Spec; the Lead may after two passes with findings, and this is the first/,
+  )
+  assert.deepEqual(stateOf(world, 'tables'), { state: 'changes', round: 0 })
+
+  const byReviewer = await run(['set', 'tables', 'approved', '--as', 'reviewer'], world.deps)
+  assert.equal(byReviewer.code, 1)
+  assert.match(byReviewer.stderr, /the reviewer cannot set approved after changes; the lead sets it/)
+})
+
+test("A pass is the Reviewer's `changes`: the state that `task answer` puts back does not count as a second pass", async () => {
+  const world = makeWorld()
+  onTestFinished(() => world.remove())
+  assert.equal((await started(world, 'tables')).code, 0)
+  await run(['set', 'tables', 'changes', '--as', 'reviewer'], world.deps)
+  const folder = join(world.home, 'tasks', 'tables')
+  writeFileSync(join(folder, 'question.md'), 'Is the spec right?\n')
+  await run(['ask', 'tables', '--as', 'lead'], world.deps)
+  writeFileSync(join(folder, 'answer.md'), 'Yes.\n')
+  await run(['answer', 'tables'], world.deps)
+  assert.deepEqual(stateOf(world, 'tables'), { state: 'changes', round: 0 })
+  world.reply('tables')
+
+  const early = await run(['set', 'tables', 'approved'], world.deps)
+  assert.equal(early.code, 1)
+  assert.match(early.stderr, /the Lead may after two passes with findings, and this is the first/)
 })
