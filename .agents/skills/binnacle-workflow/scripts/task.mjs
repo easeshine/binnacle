@@ -581,6 +581,13 @@ async function setState(id, state, read, deps, say) {
         throw new Refusal(`task ${id}: no reply.md in ${folder}; answer each finding there, then set spec again`)
       renameSync(join(folder, 'reply.md'), join(folder, `reply-${pass}.md`))
     }
+    if (kind === 'spec' && state === 'approved' && read.as === 'lead') {
+      if (readLog(folder).filter((line) => line.to === 'changes' && line.round === 0).length < 2)
+        throw new Refusal(`task ${id}: the Reviewer approves the Spec; the Lead may after two passes with findings, and this is the first`)
+      if (!existsSync(join(folder, 'reply.md')))
+        throw new Refusal(`task ${id}: no reply.md in ${folder}; answer each open finding there, then set approved again`)
+      renameSync(join(folder, 'reply.md'), join(folder, `reply-${pass}.md`))
+    }
     // The Lead's `changes` after an approval sends the builder what the Lead's try found, as a report of its own.
     const tried = state === 'changes' && last.to === 'approved'
     if (tried && !existsSync(join(folder, `try-${last.round}.md`)))
