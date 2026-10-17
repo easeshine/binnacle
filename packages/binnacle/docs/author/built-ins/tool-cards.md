@@ -71,3 +71,11 @@ The row `binnacle-tool-cards` draws each tool call and its result as one card, w
   ```
 
 - The default card's first line is `{ text, fold: '<seq>/body' }`. So enter on the Marked card, or a click on its first line, folds its body. The folded card draws its first line alone, ending with `(1 line)` or `(<n> lines)`. A card with no body has nothing to fold: its first line is `{ text }`, a Line that folds nothing. Set `transcript.card` to put the fold on another line, as [The transcript](transcript.md) says of a `Line`.
+- Each card starts unfolded. The `isFolded` that `transcript.card` is given reads a region as the transcript's does, `isFolded(region, { startsFolded })`. So a Look that gives the default an `isFolded` that reads the body with `startsFolded: true` starts each card folded, and enter or a click unfolds it:
+
+  ```js
+  ctx.binnacle.look('transcript.card', (beneath) => (card, at) =>
+    beneath(card, { ...at, isFolded: (region) => at.isFolded(region, { startsFolded: region === `${card.seq}/body` }) }),
+  )
+  ```
+

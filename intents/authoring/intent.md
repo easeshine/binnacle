@@ -78,7 +78,7 @@ Stage 2:
 Stage 3:
 
 - The transcript a person reads, made of pieces an author changes one at a time.
-- [A region that starts folded](starts-folded/spec.md), so an author folds a card's details until a person opens them: agreed.
+- [A region that starts folded](starts-folded/spec.md), so an author folds a card's details until a person opens them: built.
 - Tool cards: each call and its result as a card from dsh's views, with folds an author moves and times an author shows or takes out.
 - `/` commands: a command line runs as a command, and typing `/` offers the commands in a List an author moves, draws and takes out.
 - An author needs only what binnacle exports: built-ins on the API, the turn's start, a test kit, and each name written down.

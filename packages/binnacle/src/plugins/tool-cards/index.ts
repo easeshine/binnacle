@@ -4,7 +4,7 @@ import type { ToolCallView, ToolDefinition, ToolResultView } from '@deepseek-ai/
 import { toPlainText, truncateToWidth, visibleWidth } from '../../index.ts'
 import type { Tone } from '../../index.ts'
 import { callFor, callOf, failed, resultFor, textOf } from '../transcript/index.ts'
-import type { EventLook, Line, TranscriptState } from '../transcript/index.ts'
+import type { EventLook, IsFolded, Line, TranscriptState } from '../transcript/index.ts'
 import { asWritten, fields, readable } from './json.ts'
 
 export type { ToolCallView, ToolResultView } from '@deepseek-ai/dsh-tools'
@@ -35,8 +35,8 @@ export interface Card {
 /** What `transcript.card` is given beside the card. */
 export interface CardAt {
   readonly width: number
-  /** Whether a region is folded, such as the card's body, `'<seq>/body'`. */
-  readonly isFolded: (region: string) => boolean
+  /** Whether a region is folded, such as the card's body, `'<seq>/body'`, as the transcript's `isFolded` reads it. */
+  readonly isFolded: IsFolded
 }
 
 /** The Look `transcript.card`: a card's lines. */

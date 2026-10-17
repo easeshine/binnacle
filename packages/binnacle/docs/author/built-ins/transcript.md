@@ -5,18 +5,18 @@ The row `binnacle-transcript` places its Part in the Place `transcript`, which t
 - Its state is the model `transcript`, of the type `TranscriptState` from `@easeshine/binnacle/plugins/transcript`:
   - `events`: the committed events, in order.
   - `live`: the blocks of the answer that streams, in the answer's order, or `undefined` while none streams. Each block, of the type `LiveBlock`, has a `kind` (`text`, `reasoning` or `tool-call`), its `text`, and a tool call's `name` once dsh gives it. The blocks end when the answer commits.
-  - `folded`: the folded regions, as strings, empty at first. An event's own region is its seq, such as `'12'`, and a part of it is a region such as `'12/body'`, which a Look names on a line it draws. An event that draws no line keeps its regions folded.
+  - `folded`: each region's state, by its name, empty at first: `true` for a region that is folded, and `false` for one that is unfolded. A region that is not in it draws as its Look says it starts: unfolded, unless the Look reads it with `startsFolded: true`. An event's own region is its seq, such as `'12'`, and a part of it is a region such as `'12/body'`, which a Look names on a line it draws. An event that draws no line keeps its regions in `folded`. A region keeps its entry when its state returns to its start, so it keeps the state that the person gave it when a Look later reads it with another start.
   - `marked`: the seq of the Marked event, or `undefined`.
 - The transcript sets `events` and `live`. Read them. If you set them, the transcript replaces them at the next event or frame.
-- Set `folded` and `marked` to change what is drawn. This plugin folds each tool result when it comes:
+- Set `folded` and `marked` to change what is drawn. Set `folded[region] = true` to fold a region, `false` to unfold it, and delete `folded[region]` to draw it as it starts. `folded` has no prototype, so read an entry with `Object.hasOwn(folded, region)`. This plugin folds each tool result when it comes, and leaves each that the person unfolded:
 
   ```js
   const transcript = ctx.binnacle.modelOf('transcript')
   ctx.effect(() =>
     transcript.watch(() => {
       const { events, folded } = transcript.state
-      const fresh = events.filter((event) => event.type === 'tool/result' && !folded.includes(String(event.seq)))
-      if (fresh.length > 0) transcript.set((state) => state.folded.push(...fresh.map((event) => String(event.seq))))
+      const fresh = events.filter((event) => event.type === 'tool/result' && !Object.hasOwn(folded, String(event.seq)))
+      if (fresh.length > 0) transcript.set((state) => fresh.forEach((event) => (state.folded[String(event.seq)] = true)))
     }),
   )
   ```
@@ -29,13 +29,13 @@ The row `binnacle-transcript` places its Part in the Place `transcript`, which t
   ```
 
 - Set one of them by its id to change what it does, and run `beneath()` to keep the default.
-- Every fold goes through `transcript.fold`. Given no cell, at a key, it folds the Marked event's first region marked `fold` on a line it draws, else the event's own region. Given a cell, it folds the region of the line there when the line is marked `fold`, the event's own region when the line is the event's first and a plain string, and nothing else. `transcript.click` Marks the event clicked, then runs the action of the line clicked when it is marked `run`, else `transcript.fold`, each with the cell. So an empty `transcript.fold` stops every fold, by a key and by a click:
+- Every fold goes through `transcript.fold`. A fold sets `folded[region]` to the opposite of the state that the last draw showed, so it unfolds a folded region and folds an unfolded one. Given no cell, at a key, it folds the Marked event's first region marked `fold` on a line it draws, else the event's own region. Given a cell, it folds the region of the line there when the line is marked `fold`, the event's own region when the line is the event's first and a plain string, and nothing else. `transcript.click` Marks the event clicked, then runs the action of the line clicked when it is marked `run`, else `transcript.fold`, each with the cell. So an empty `transcript.fold` stops every fold, by a key and by a click:
 
   ```js
   ctx.binnacle.action('transcript.fold', { run: () => {} })
   ```
 
-- Each event draws through the Look `transcript.event.<type>`, such as `transcript.event.tool/call`, and beneath it `transcript.event`, which draws every type. Its type is `EventLook` from `@easeshine/binnacle/plugins/transcript`: `(event, { folded, isFolded, width }) => Line[]`. It is given the event, whether the event's own region is folded, `isFolded(region)` for any region, and the transcript's width, and returns the event's lines. The transcript's own default draws the header, the JSON and a blank line, or the header with its count while folded. Make an event's text plain with `toPlainText` before you draw it, and cut a line at `width` to keep it to one row: the core wraps a wider one. This draws each tool call as one line:
+- Each event draws through the Look `transcript.event.<type>`, such as `transcript.event.tool/call`, and beneath it `transcript.event`, which draws every type. Its type is `EventLook` from `@easeshine/binnacle/plugins/transcript`: `(event, { folded, isFolded, width }) => Line[]`. It is given the event, whether the event's own region is folded, `isFolded(region, { startsFolded })` for any region, and the transcript's width, and returns the event's lines. The transcript's own default draws the header, the JSON and a blank line, or the header with its count while folded. Make an event's text plain with `toPlainText` before you draw it, and cut a line at `width` to keep it to one row: the core wraps a wider one. This draws each tool call as one line:
 
   ```js
   import { toPlainText, truncateToWidth } from '@easeshine/binnacle'
@@ -65,6 +65,18 @@ The row `binnacle-transcript` places its Part in the Place `transcript`, which t
     const name = `⏺ ${toPlainText(event.data.name)} `
     const head = { text: name + (isFolded(body) ? '[+]' : '[-]'), fold: body, from: visibleWidth(name) }
     return isFolded(body) ? [head] : [head, truncateToWidth(toPlainText(event.data.arguments), width)]
+  })
+  ```
+
+- A region starts unfolded. Read it with `isFolded(region, { startsFolded: true })` to make it start folded, `isFolded` of the type `IsFolded` and its second argument of the type `FoldStart`, each from `@easeshine/binnacle/plugins/transcript`: it draws folded until the person or an author unfolds it. The fold takes a region's start from the last draw: a region that a read of that draw gave `startsFolded: true` starts folded, and each other region starts unfolded. Two reads of one region with different starts each draw their own, and the fold takes the region as folded when either said so. An event's own region, `folded`, starts unfolded, as it is read before the Look runs: to start an event folded, read `isFolded(String(event.seq), { startsFolded: true })`, and mark its first line `{ text, fold: String(event.seq) }`. This draws each tool call's arguments folded until the person unfolds them:
+
+  ```js
+  import { toPlainText, truncateToWidth } from '@easeshine/binnacle'
+  ctx.binnacle.look('transcript.event.tool/call', () => (event, { isFolded, width }) => {
+    const body = `${event.seq}/body`
+    const folded = isFolded(body, { startsFolded: true })
+    const head = { text: `⏺ ${toPlainText(event.data.name)} ${folded ? '[+]' : '[-]'}`, fold: body }
+    return folded ? [head] : [head, truncateToWidth(toPlainText(event.data.arguments), width)]
   })
   ```
 
