@@ -28,7 +28,7 @@ A Spec is the design of one feature, in `intents/<slug>/spec.md`, beside its Int
 | **Parts of the build** | The Parts, numbered, as *Parts* says |
 | **Door** | One-way or two-way, as [`.agents/doors.md`](../../doors.md) says, and why |
 
-- The design goes in the Spec, not in the Intent. A decision that binds more than one change is a candidate ADR: offer it to the Maintainer after the try.
+- The design goes in the Spec, not in the Intent. A decision that binds more than one change is a candidate ADR: offer it to the Maintainer after the try. The ADR keeps why the decision was taken, and the Spec keeps how it is built.
 - Order the behaviours so that each builds on the one before. The first is the thinnest one that crosses every seam.
 - Cite code by its path and symbol, such as `src/core/AGENTS.md` or `kit/index.ts#wrap`. A line number goes stale. A Spec cites no Reference path.
 

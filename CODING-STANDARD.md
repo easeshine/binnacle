@@ -18,12 +18,13 @@ These rules apply to every file that is committed, and to issues and PRs. `vp ru
 | How a part of the code is built so far | the `AGENTS.md` beside it |
 | What a person can do, and what an author can change | the docs, `packages/binnacle/docs/` |
 | One change to make | its GitHub issue |
-| A decision that binds more than one change | an ADR in `adr/` |
+| Why a decision that binds more than one change was taken | an ADR in `adr/` |
 | What one change did, and why | its commit message, in Conventional Commits |
 | The proof of each test, and where the change fits | its PR |
 
 - Each fact has one home. Everywhere else links to it.
 - An ADR stands on its own. It cites nothing, and it links only other ADRs.
+- An ADR holds the decision, its reasons, the options that lost, and what follows. It holds no design: no file, no function, and no step of a build.
 
 ## Prose
 

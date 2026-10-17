@@ -16,7 +16,7 @@ tools/oxlint/anti-slop/     binnacle's own lint rules, from anti-slop
 packages/binnacle/docs/     the docs for a person (use/) and an author (author/), and the glossary. The website shows them, and the package carries them
 packages/binnacle/skills/   the skill that the package gives an author's agent
 packages/binnacle/src/**/AGENTS.md  how the code beside it is built so far: the second source, after the code
-adr/                        the decisions that bind more than one change
+adr/                        why each decision that binds more than one change was taken
 .agents/skills/             the shared skills, and the scripts that a skill runs
 .agents/roles.json          the Maintainer's roles for the agents of a fix or a Task, which .agents/roles.mjs reads
 .agents/doors.md            what makes a PR one-way
@@ -33,7 +33,7 @@ Each is capitalized wherever it is used in this meaning. binnacle's own words ar
 - **Stage**: a part of an Intent that ends in a behaviour the Maintainer can try under dsh.
 - **Spec**: the design of one feature of a Stage, in `intents/<slug>/spec.md` beside its Intent, or in `intents/<slug>/<name>/spec.md` when its Intent has several: its behaviours, its seams, its decisions and the parts it is built in. Its Intent links it. It is for the agents that build and review it. Once it is built, it stays as a record, the docs say what it does, and the `AGENTS.md` beside its code says how.
 - **Journey**: what a person does with a feature in a real session, from start to end, as a Spec writes it. It crosses several behaviours, and the features beside them.
-- **ADR**: a decision that binds more than one change, in `adr/`, written once the Maintainer picks it.
+- **ADR**: why a decision that binds more than one change was taken, and the options that lost, in `adr/`, written once the Maintainer picks it. It holds the reasons, and no design: an Intent holds what a feature does, and a Spec holds how it is built.
 - **Reference**: another repository, fetched at its pin into `.refs/`, to read and never to write. [`CODING-STANDARD.md`](CODING-STANDARD.md) says how to use one.
 - **Fix**: a small change for one issue, built by one agent and reviewed by an agent of another model family when one is set up, as the `fix` skill says.
 - **Lead**: the agent that runs the `binnacle-workflow` skill with the Maintainer: it writes a Spec, starts each Task, and checks what comes back.
