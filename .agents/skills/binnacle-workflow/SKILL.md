@@ -20,11 +20,12 @@ The Task tool's folders, states and commands are in [`task.md`](task.md). Read i
 2. Write `intents/<slug>/intent.md` in the Maintainer's words: the title, the metadata, Problem, Proposed outcome, Affected users and systems, Constraints, and Open questions. It holds no design.
 3. Change the Intent until the Maintainer approves it. Each open question is answered by an edit to the Intent.
 4. Write `intents/<slug>/spec.md`, as [`writing-a-spec.md`](writing-a-spec.md) says. An Intent with several Specs, such as one for each Stage, holds each in a folder of its own, `intents/<slug>/<name>/spec.md`, with the Task `<slug>/<name>`.
-5. Run `pnpm task start <slug>`, with the Reviewer of *Roles* below. It sends the Reviewer Round 0.
-6. Run `pnpm task watch` in the background. When it exits, act on its line, then run it again.
-7. For each pass with findings, edit the Spec, and write `reply.md` in the Spec's Task folder: your answer to each finding. Then run `pnpm task set <slug> spec`.
-8. Answer each finding against the Intent as it was approved. Where the Intent cannot hold as written, or leaves a gap, decide, write the decision under **Decisions**, and file an issue with the label `gap` that names it, so the Maintainer can change the Intent.
-9. When Round 0 is `approved`, open a PR of the Spec, with the Status `agreed`: `docs: the Spec of <feature>`. Merge it when its checks pass, then build the Parts: a Part is built only from a Spec that `origin/main` holds.
+5. Drive each Journey of the Spec under dsh, on `main`, as far as binnacle already goes, as *A try* says. Where binnacle draws other than the Journey says, and no behaviour of the Spec changes it, correct the Spec. Round 0 reads the Spec and does not run binnacle, so it cannot find this.
+6. Run `pnpm task start <slug>`, with the Reviewer of *Roles* below. It sends the Reviewer Round 0.
+7. Run `pnpm task watch` in the background. When it exits, act on its line, then run it again.
+8. For each pass with findings, edit the Spec, and write `reply.md` in the Spec's Task folder: your answer to each finding. Then run `pnpm task set <slug> spec`.
+9. Answer each finding against the Intent as it was approved. Where the Intent cannot hold as written, or leaves a gap, decide, write the decision under **Decisions**, and file an issue with the label `gap` that names it, so the Maintainer can change the Intent.
+10. When Round 0 is `approved`, open a PR of the Spec, with the Status `agreed`: `docs: the Spec of <feature>`. Merge it when its checks pass, then build the Parts: a Part is built only from a Spec that `origin/main` holds.
 
 ## Each Part
 

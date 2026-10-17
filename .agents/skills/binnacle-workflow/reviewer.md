@@ -8,7 +8,7 @@ The review is blind. You judge the Spec and the code alone: do not read `agents.
 
 1. Read the Spec at the path that your prompt names. Then read the whole of the Intent that its **Intent** line links: `intent.md` in the Spec's folder, or in the folder above it for a Spec in a folder of its own, such as `intents/palette/fill/spec.md`. Read the Stage that the Spec builds, and the outcomes it serves.
 2. If the prompt names a reply of the Lead, read it, and check each finding of the last pass first.
-3. Check each claim about dsh, pi-tui or another Reference against its source in `.refs/`, as the `research` skill says.
+3. Check each claim about dsh, pi-tui or another Reference against its source in `.refs/`, as the `research` skill says. Check each claim of what binnacle does now, before the Spec changes it, against binnacle's source and the tests that drive it. A Journey step that expects what binnacle does not draw is a finding.
 4. List each decision that the build will meet and that the Spec does not answer. Walk each behaviour's edges, as *Edges* in [`writing-a-spec.md`](writing-a-spec.md) lists them.
 5. Hold each behaviour and decision to what the Intent promises a person. Quote the Intent's line beside each that falls short.
 6. Check that the **Journeys** pass through each behaviour that a person sees, and through the other features that share its screen.
