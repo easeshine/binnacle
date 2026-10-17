@@ -42,7 +42,7 @@ The Task tool's folders, states and commands are in [`task.md`](task.md). Read i
 12. Run `pnpm task land <slug>/<k>` to open the PR, and merge it when its checks pass.
 13. If `task land` says that the branch does not hold `origin/main`, send the Part back to its builder to rebase. Rebase it yourself only when you built it.
 14. After the PR merges or closes, run `pnpm task stop <slug>/<k>`.
-15. After the last Part merges, set the Spec's Status to `built`, in its Intent's list of Specs too, in a PR that you merge, and hand the Maintainer the try, as *The Maintainer's try* says.
+15. After the last Part merges, hand the Maintainer the try, as *The Maintainer's try* says. The last Part's PR set the Spec's Status `built`, and its row in the Intent's list of Specs. If it did not, set them in a PR of your own.
 16. When the try's fixes and ADRs merge, run `pnpm task stop <slug>`.
 
 ## The workflow's own issues
