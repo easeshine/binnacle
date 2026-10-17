@@ -234,3 +234,21 @@ test('The Lead cannot set the Spec `approved` after one pass with findings, nor 
   assert.equal(byReviewer.code, 1)
   assert.match(byReviewer.stderr, /the reviewer cannot set approved after changes; the lead sets it/)
 })
+
+test("A pass is the Reviewer's `changes`: the state that `task answer` puts back does not count as a second pass", async () => {
+  const world = makeWorld()
+  onTestFinished(() => world.remove())
+  assert.equal((await started(world, 'tables')).code, 0)
+  await run(['set', 'tables', 'changes', '--as', 'reviewer'], world.deps)
+  const folder = join(world.home, 'tasks', 'tables')
+  writeFileSync(join(folder, 'question.md'), 'Is the spec right?\n')
+  await run(['ask', 'tables', '--as', 'lead'], world.deps)
+  writeFileSync(join(folder, 'answer.md'), 'Yes.\n')
+  await run(['answer', 'tables'], world.deps)
+  assert.deepEqual(stateOf(world, 'tables'), { state: 'changes', round: 0 })
+  world.reply('tables')
+
+  const early = await run(['set', 'tables', 'approved'], world.deps)
+  assert.equal(early.code, 1)
+  assert.match(early.stderr, /the Lead may after two passes with findings, and this is the first/)
+})
