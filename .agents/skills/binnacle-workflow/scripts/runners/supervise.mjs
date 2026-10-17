@@ -6,13 +6,53 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { printCommand } from '../../../../roles.mjs'
 import { locked } from '../lock.mjs'
-import { alive, appendEvent, writeJson } from '../state.mjs'
+import { alive, appendEvent, readAgents, readTasks, writeJson } from '../state.mjs'
 
 export const LIMIT = 45 * 60_000
 
 export const GRACE = 10_000
 
 export const IDLE = 10 * 60_000
+
+// The states in which a Task waits on each role to move it.
+const WAITS = {
+  reviewer: (line) => line.to === 'spec' || line.to === 'ready',
+  implementer: (line) => line.to === 'building' || line.to === 'changes' || (line.to === 'approved' && line.round === 0),
+}
+
+// A run can end without its work, as when the tool's quota runs out. Each Task that the agent serves, and that still waits on it, says so.
+function stillWaiting(agent, folder) {
+  const waits = WAITS[agent.role]
+  if (waits === undefined) return undefined
+  let tasks
+  try {
+    tasks = readTasks(agent.home).tasks
+  } catch {
+    // The run's end is still recorded; only the check is lost.
+    return undefined
+  }
+  const owner = [...tasks.values()].find((task) => task.folder === folder)
+  if (owner === undefined) return undefined
+  for (const task of tasks.values()) {
+    let of
+    try {
+      of = readAgents(task.folder)[agent.role]?.of
+    } catch {
+      continue
+    }
+    if (task.folder !== folder && of !== owner.id) continue
+    if (waits(task.lines.at(-1))) return task
+  }
+  return undefined
+}
+
+function lastLine(path) {
+  try {
+    return readFileSync(path, 'utf8').trim().split('\n').at(-1).slice(0, 300)
+  } catch {
+    return ''
+  }
+}
 
 export function waiting(dir) {
   const queue = join(dir, 'queue')
@@ -80,7 +120,15 @@ export async function supervise(dir, deps) {
       await child.exited
       event('timed-out', { prompt: next, minutes: LIMIT / 60_000 })
     } else if (child.error !== undefined) event('run-failed', { prompt: next, error: child.error })
-    else event('run-ended', { prompt: next, code: ended.code })
+    else {
+      const left = waiting(dir).length === 1 ? stillWaiting(agent, folder) : undefined
+      if (left === undefined) event('run-ended', { prompt: next, code: ended.code })
+      else
+        event('run-failed', {
+          prompt: next,
+          error: `ended, and ${left.id} still waits on the ${agent.role} at ${left.state}: ${lastLine(join(dir, 'out.log'))}; run task resend ${left.id}`,
+        })
+    }
     rmSync(path, { force: true })
     rmSync(join(dir, 'run.json'), { force: true })
     idleSince = deps.now()

@@ -42,7 +42,7 @@ The log governs the state: its last line is the current state and Round. If the 
 | `pnpm task set <task> <state>` | the role that owns the state | Sets `spec`, `building`, `ready`, `changes` or `approved`, as the table below allows, and sends its Hand-off |
 | `pnpm task ask <task>` | any role | Sets `blocked` |
 | `pnpm task answer <task>` | Lead | Sets the state from before `blocked`, and sends the answer to the role that asked |
-| `pnpm task resend <task>` | Lead | Sends the newest Hand-off that did not land again, and starts its agent first if it is not running |
+| `pnpm task resend <task>` | Lead | Sends the newest Hand-off that did not land again. When each one landed, sends again the newest that an agent took, if a run of that agent failed or timed out after it. Starts its agent first if it is not running, and refuses while the agent is at work. |
 | `pnpm task status [<task>]` | any role | Shows the Tasks, and each agent with the time since its session last changed |
 | `pnpm task watch` | Lead | Exits when the Lead must act |
 | `pnpm task land <slug>/<k>` | Lead | After a Round of the Part is `approved`, squashes the branch with `message.md` and its trailers, pushes it, and opens the PR |
@@ -107,8 +107,9 @@ A **role** is `<runner>:<tool>:<model>@<thinking>`:
 | `cards/2 implementer stalled: no session record for 20 min` | The agent works, but its session did not change for 20 minutes |
 | `cards/2 implementer stalled: ...; busy 48370 node ..., cpu 4:50 in 5 min` | A process under the agent used the CPU for at least 4 of the last 5 minutes |
 | `cards/2 implementer waits in its pane` | The agent waits for a person in its herdr pane |
-| `cards/2 reviewer run timed out after 45 min` | A headless run hit its time limit, and was stopped with its children |
-| `cards/2 reviewer run failed: spawn pi ENOENT` | A headless run could not start. Fix the cause, then send the prompt again by hand. |
+| `cards/2 reviewer run timed out after 45 min` | A headless run hit its time limit, and was stopped with its children. Run `task resend cards/2` to send its prompt again. |
+| `cards/2 reviewer run failed: spawn pi ENOENT` | A headless run could not start. Fix the cause, then run `task resend cards/2`. |
+| `cards reviewer run failed: ended, and cards/2 still waits on the reviewer at ready: Codex error: The usage limit has been reached; run task resend cards/2` | A headless run ended, and a Task that its agent serves still waits on it, as when the tool's quota runs out. The line ends with the run's last line of output. When the cause is gone, run `task resend`. |
 
 A tool writes its session when a message ends, not while it streams, so a long message can show as a stall. Read the pane, or the busy process, before you act. The tool stops no agent by itself.
 

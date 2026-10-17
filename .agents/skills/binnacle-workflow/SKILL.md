@@ -32,7 +32,7 @@ The Task tool's folders, states and commands are in [`task.md`](task.md). Read i
 ## Each Part
 
 1. For each Part whose earlier Parts are merged, run `pnpm task build <slug>/<k>`, with the builder of *Roles* below.
-2. If a command exits 3, or the watch says that a Hand-off failed or was not sent, run `pnpm task resend <task>`.
+2. If a command exits 3, run `pnpm task resend <task>`. Do the same when the watch says that a Hand-off failed or was not sent, or that a run failed or timed out.
 3. If the watch reports a stall, read the pane or the busy process first. Decide what to do: the tool stops no agent.
 4. If the watch prints a prompt for a subagent, start the subagent with it, in the background. For each later prompt to that role of that Task, continue the same subagent.
 5. If a subagent Reviewer gives its report as its final message, write it to the file that its prompt names, then set its state with `--as reviewer`.

@@ -545,13 +545,33 @@ async function resend(id, deps, say) {
     readTask(folder)
     const events = readEvents(folder)
     const landed = new Set(events.filter((event) => ['prompted', 'for-lead'].includes(event.event)).map((event) => event.detail.id))
-    const open = events.findLast((event) => event.event === 'handoff' && !landed.has(event.detail.id))
+    const open =
+      events.findLast((event) => event.event === 'handoff' && !landed.has(event.detail.id)) ?? (await failedRun(id, folder, events, deps))
     if (open === undefined) throw new Refusal(`task ${id} has no hand-off to resend`)
     const { id: hid, start: starts, text, ...extra } = open.detail
     say(`task ${id}: resend ${hid} to the ${open.role}`)
     await tryHandoff(id, folder, hid, { role: open.role, start: starts, text }, deps, extra)
     return 0
   })
+}
+
+// The last hand-off that an agent took, when a run of that agent failed or timed out after it: the run ended without the work.
+// A Part's Reviewer may be its Spec's agent, whose supervisor writes in the Spec's folder.
+async function failedRun(id, folder, events, deps) {
+  const prompted = events.findLast((event) => event.event === 'prompted')
+  if (prompted === undefined) return undefined
+  const handoff = events.findLast((event) => event.event === 'handoff' && event.detail.id === prompted.detail.id)
+  const of = readAgents(folder)[handoff.role]?.of
+  const owner = of === undefined ? folder : folderOf(deps.home, of)
+  const ends = owner === folder ? events : readEvents(owner)
+  const failed = ends.some(
+    (event) => ['run-failed', 'timed-out'].includes(event.event) && event.role === handoff.role && event.at > prompted.at,
+  )
+  if (!failed) return undefined
+  const agent = readAgents(owner)[handoff.role]
+  if (agent?.handle !== undefined && (await runnerOf(agent.runner, deps).activity(agent.handle)).state === 'working')
+    throw new Refusal(`task ${id}: the ${handoff.role} is at work; resend when its run ends`)
+  return handoff
 }
 
 function appendLine(log, change) {

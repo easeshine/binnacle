@@ -188,3 +188,54 @@ test('a claude or codex run starts its session at the first prompt, and continue
     assert.match(spawned[1].command, later, tool)
   }
 })
+
+function task(home, name, record, line, agents) {
+  const folder = join(home, 'tasks', name)
+  mkdirSync(folder, { recursive: true })
+  writeFileSync(join(folder, 'task.json'), JSON.stringify(record))
+  writeFileSync(
+    join(folder, 'log.ndjson'),
+    `${JSON.stringify({ at: '2026-10-05T09:00:00.000Z', role: 'lead', from: null, round: 0, ...line })}\n`,
+  )
+  if (agents !== undefined) writeFileSync(join(folder, 'agents.json'), JSON.stringify(agents))
+}
+
+test('a run that ends while a Task it serves still waits on it is recorded as `run-failed`, with its last line of output', async () => {
+  const { home, dir, deps, events } = world(['round 1'], () => {
+    writeFileSync(join(dir, 'out.log'), 'Working.\nCodex error: The usage limit has been reached\n\n')
+    return { pid: 9001, exited: Promise.resolve(0) }
+  })
+  task(home, '140', { id: 'cards', kind: 'spec', slug: 'cards' }, { to: 'approved' })
+  task(
+    home,
+    'cards.1',
+    { id: 'cards/1', kind: 'part', slug: 'cards', part: 1 },
+    { to: 'ready', round: 1 },
+    { reviewer: { role: 'reviewer', of: 'cards' } },
+  )
+  task(home, 'menus', { id: 'menus', kind: 'spec', slug: 'menus' }, { to: 'spec' })
+  await supervise(dir, deps)
+  assert.deepEqual(
+    events().map((event) => `${event.event} ${event.detail.prompt} ${event.detail.error ?? event.detail.code}`),
+    [
+      'run-failed 0.txt ended, and cards/1 still waits on the reviewer at ready: Codex error: The usage limit has been reached; run task resend cards/1',
+    ],
+  )
+})
+
+test('a run that moved each Task it serves is recorded as `run-ended`', async () => {
+  const { home, dir, deps, events } = world(['round 1'], () => ({ pid: 9001, exited: Promise.resolve(0) }))
+  task(home, '140', { id: 'cards', kind: 'spec', slug: 'cards' }, { to: 'approved' })
+  task(
+    home,
+    'cards.1',
+    { id: 'cards/1', kind: 'part', slug: 'cards', part: 1 },
+    { to: 'changes', round: 1 },
+    { reviewer: { role: 'reviewer', of: 'cards' } },
+  )
+  await supervise(dir, deps)
+  assert.deepEqual(
+    events().map((event) => `${event.event} ${event.detail.prompt} ${event.detail.code}`),
+    ['run-ended 0.txt 0'],
+  )
+})
