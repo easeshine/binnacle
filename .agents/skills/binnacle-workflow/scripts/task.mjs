@@ -8,6 +8,7 @@ import { familiesSetUp, familyOf, loadRoles, parseRole, roleText } from '../../.
 import { handoffFor } from './handoffs.mjs'
 import { marker, messageOf, PR_SECTIONS, prBody, reportComment, reportsOf, withTrailers } from './land.mjs'
 import { locked } from './lock.mjs'
+import { WAITS } from './runners/supervise.mjs'
 import { makeHeadless } from './runners/headless.mjs'
 import { makeHerdr } from './runners/herdr.mjs'
 import { doorOf, partsOf, specPath, titleOf } from './spec.mjs'
@@ -565,9 +566,14 @@ async function failedRun(id, folder, events, deps) {
   const owner = of === undefined ? folder : folderOf(deps.home, of)
   const ends = owner === folder ? events : readEvents(owner)
   const failed = ends.some(
-    (event) => ['run-failed', 'timed-out'].includes(event.event) && event.role === handoff.role && event.at > prompted.at,
+    (event) =>
+      ['run-failed', 'timed-out'].includes(event.event) &&
+      event.role === handoff.role &&
+      event.at > prompted.at &&
+      (event.detail?.task ?? id) === id,
   )
-  if (!failed) return undefined
+  // A Task that has moved on, such as a Spec whose Reviewer now serves its Parts, does not take its old hand-off again.
+  if (!failed || !WAITS[handoff.role]?.(readLog(folder).at(-1))) return undefined
   const agent = readAgents(owner)[handoff.role]
   if (agent?.handle !== undefined && (await runnerOf(agent.runner, deps).activity(agent.handle)).state === 'working')
     throw new Refusal(`task ${id}: the ${handoff.role} is at work; resend when its run ends`)

@@ -334,4 +334,27 @@ test("`task resend <task>` sends a hand-off again when its agent's run failed af
   const again = await run(['resend', PART], world.deps)
   assert.equal(again.code, 1)
   assert.match(again.stderr, /has no hand-off to resend/)
+
+  // The Spec's Round 0 is done: a failed run of its Reviewer on the Part does not send Round 0 again.
+  const spec = await run(['resend', SPEC], world.deps)
+  assert.equal(spec.code, 1)
+  assert.match(spec.stderr, /task cards has no hand-off to resend/)
+})
+
+test('`task resend <task>` does not send a hand-off again when the failed run left another Task waiting', async () => {
+  const world = makeWorld()
+  onTestFinished(() => world.remove())
+  world.spec(SPEC)
+  await steps(world, ['start', SPEC])
+  world.tick()
+  const failed = {
+    at: world.deps.now().toISOString(),
+    event: 'run-failed',
+    role: 'reviewer',
+    detail: { prompt: 'p.txt', task: 'menus', error: 'ended' },
+  }
+  appendFileSync(join(world.home, 'tasks', SPEC, 'events.ndjson'), `${JSON.stringify(failed)}\n`)
+  const other = await run(['resend', SPEC], world.deps)
+  assert.equal(other.code, 1)
+  assert.match(other.stderr, /task cards has no hand-off to resend/)
 })

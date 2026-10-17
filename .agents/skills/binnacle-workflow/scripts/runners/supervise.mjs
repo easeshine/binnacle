@@ -15,7 +15,7 @@ export const GRACE = 10_000
 export const IDLE = 10 * 60_000
 
 // The states in which a Task waits on each role to move it.
-const WAITS = {
+export const WAITS = {
   reviewer: (line) => line.to === 'spec' || line.to === 'ready',
   implementer: (line) => line.to === 'building' || line.to === 'changes' || (line.to === 'approved' && line.round === 0),
 }
@@ -126,6 +126,7 @@ export async function supervise(dir, deps) {
       else
         event('run-failed', {
           prompt: next,
+          task: left.id,
           error: `ended, and ${left.id} still waits on the ${agent.role} at ${left.state}: ${lastLine(join(dir, 'out.log'))}; run task resend ${left.id}`,
         })
     }
