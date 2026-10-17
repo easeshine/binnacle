@@ -37,7 +37,8 @@ Then check each item:
 - The records change in the same commit as the code, as the root `AGENTS.md` says: the `AGENTS.md` beside the code, each page of `packages/binnacle/docs/` that the change touches, and a changeset when the published package changes.
 - Each changed file serves a behaviour or a record of the Part.
 - Each comment in your diff gives a reason that the code cannot show.
-- If your Part is the last under **Parts of the build**, the Spec's **Status** is `built`, and so is the Spec's row in its Intent's list of Specs, when the Intent has one.
+- In the last Part under **Parts of the build**, the Spec's **Status** is `built`.
+- In the last Part, the Spec's row in its Intent's list of Specs is `built` too, if the Intent lists its Specs.
 
 ## The final commit message
 
