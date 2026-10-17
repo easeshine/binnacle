@@ -1,6 +1,6 @@
 {
   "name": "@easeshine/binnacle",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "A terminal app for DeepSeek Harness, mounted as a dsh bundle.",
   "license": "MIT",
   "repository": {
