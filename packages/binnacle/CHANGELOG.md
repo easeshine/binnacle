@@ -1,0 +1,31 @@
+# @easeshine/binnacle
+
+## 0.1.0
+
+### Minor Changes
+
+- 79b460c: Each of pi's 56 colours is a Tone, so an author paints in `mdQuote`, `toolDiffAdded` or `thinkingText`, and a palette made for pi has a place for each of its colours. A Tone's name is open, so a feature gives Tones of its own. A Style can be `like` another Tone, and follows it. A Tone in a Hue, the terminal's sixteen or `orange`, follows a layer's `hues`. Break: the Tones `heading`, `code`, `link` and `selection` are now `mdHeading`, `mdCode`, `mdLink` and `selectedBg`, and the old names throw.
+- d366c32: The first release of binnacle, a terminal app for dsh. Install it with `npm install -g @easeshine/binnacle`, and start it with `binnacle`. Its peers on dsh are optional, so npm installs none of dsh's packages with it: dsh supplies them.
+- 90eb382: A Look reads a region with `isFolded(region, { startsFolded: true })` to make it start folded, until the person or an author unfolds it. The model `transcript`'s `folded` is now an object of regions, `true` for a region that is folded and `false` for one that is unfolded, in place of the list of folded regions: set `folded[region] = true` where you pushed the region. `CardAt.isFolded` of the tool cards takes the same second argument. Every built-in region still starts unfolded.
+
+### Patch Changes
+
+- ef7f11e: `binnacle` starts binnacle. It checks that dsh is a version it runs on, installs itself into its own dsh profile on the first run, keeps that profile at its own version, and says each version that disagrees.
+- 4edbec2: Each built-in draws in pi's Tone for what it draws, and in Tones of its own, so a theme colours one piece alone and a palette made for pi reaches it. Markdown draws a code block in `mdCodeBlock`, a quote in `mdQuote` and `mdQuoteBorder`, a rule in `mdHr`, a link's address in `mdLinkUrl` and a list's bullet in `mdListBullet`. A tool card draws its counts in `toolDiffAdded` and `toolDiffRemoved`, its title in `toolTitle` and a shell's output in `toolOutput`, and a prompt draws in `userMessageText` and reasoning in `thinkingText`. The tool cards, the transcript's view, the composer, the status line and the notice each give their own Tones, such as `transcript.card.error`, which look like the general Tone until a layer changes them. Nothing looks different with no layer.
+- 004db8e: `callFor` and `resultFor` from `@easeshine/binnacle/plugins/transcript` pair a tool result with its call, without dsh's shapes.
+- 5a6588a: A Layout node with `clicks: false` turns off clicks inside it, and keeps the wheel.
+- a1b78cf: Esc on the offer of commands runs `commands.dismiss`, so an author tells a person's esc from the offer closing as the draft changes. `commands.close` has no keys now.
+- 0875cb6: The Looks `composer.prefix` and `composer.row` draw the draft's rows, so an author puts a mark beside each row, or paints the draft's text, and keeps the editor.
+- a55d3c6: The docs come with the package, in `docs/`: what a person can do, and what an author can change, page by page. `AUTHORING.md` is gone; its pages are in `docs/author/`. A skill in `skills/binnacle/` tells an author's agent where to read.
+- 30cc70a: `binnacle.fill(given, text)` fills a line with a colour to the end of its row, on each row that it wraps to, and a Style takes a `background`. A theme layer can give a Tone a background.
+- 25150fb: A float over a filled row in a box leaves the box's padding and edge as they were.
+- c5dddf0: `indented(look, cells)` draws a Look's `beneath` indented, so an author does no width arithmetic.
+- 7686eee: An edit `{ move, over, at }` floats a node over another, and leaves no empty node in its old place.
+- aaae7ca: binnacle tells each new version once, above the transcript's first event, with the command that installs it and where its changes are. The row `binnacle-notice` draws it through the Look `notice.update`, and turned off, asks npm nothing. The transcript draws lines above its first event through the new Look `transcript.head`.
+- 9605a75: binnacle needs Node 24.11.0 or later, as Vitest 5 and Vite+ do.
+- 0e7122d: A person writes their own colours in `palette.json`, in binnacle's profile: a Tone's colour or Style under `colors`, and a Hue's colour under `hues`. binnacle reads it at the start and at each save, and the person's colours win over every plugin's layer. A file with a mistake keeps the colours that binnacle drew, and the status line says what is wrong, in its new segment `status.palette`. An author reads the file's state from `binnacle.palette`, and a test gives the mount a profile folder with `profile`.
+- faffe5e: A person runs `/palette`, and picks a palette from a List above the composer: `Terminal`, pi's `dark` and `light`, and their own pi themes. binnacle draws each palette as the mark moves to it, with the person's own colours over it, enter keeps it in `palette.json`, and esc goes back to the palette that the file names. A file that names a palette that is not there draws in the terminal's colours, and the status line says why. An author adds a source of palettes with `binnacle.palettes(source)`, and shows or picks one with `binnacle.showPalette(id)` and `binnacle.pickPalette(id)`. The new row is `binnacle-palette`.
+- d3c03ce: The Chat's agent has binnacle's skill in every session, from the new row `binnacle-skill`. Ask it for a colour, such as "make the errors on tool cards orange", and it writes the colour in your `palette.json`.
+- 339496b: `screen(binnacle, { name, title })` shows a Screen of one Place, framed, with the Focus in it, and esc goes back.
+- a075a22: Select and copy with the mouse. A drag selects in the part of the screen where it began, a double click selects a word, and a triple click a line. Letting go copies the Selection to the clipboard, through the system's own tool, or OSC 52 over SSH, and the status line says how it went. A click now acts when the button is let go. An author reads the model `selection`, binds or replaces the action `copy.selection` of the new row `binnacle-copy`, paints the Tone `selection`, and gives the mouse back to the terminal with `mouse: false` on a Screen's root. The test kit adds `drag` and `copied`.
+- eda8d8b: `wrap(text, width, { plain: true })` makes Untrusted Text plain and keeps its line breaks.
