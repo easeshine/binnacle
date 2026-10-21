@@ -136,7 +136,7 @@ The Chat's agent does not know binnacle. A person who asks it for "the errors on
 - A search in the List: a few palettes need none, and Stage 3's many themes bring it.
 - Glyphs, edges and spacing in `palette.json`: a palette holds only colours.
 - A watch of a pi theme's file: a change to one is read at the next mark on it, or the next start.
-- Asking for a change from inside binnacle with an author agent of its own, `/preset`: the authoring Intent's Stage 4.
+- Asking for a change from inside binnacle with an author agent of its own, `/preset`: the authoring Intent's Stage 5.
 
 ## Parts of the build
 
