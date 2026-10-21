@@ -2,7 +2,7 @@
 
 - **Author:** Patrick Xin
 - **Role:** Maintainer
-- **Status:** Stages 1 to 3 are approved, while authoring is prototyped: every decision here may change. Stages 4 to 7 wait for the Maintainer's approval.
+- **Status:** approved, while authoring is prototyped: every decision here may change
 - **Date:** 2026-10-08, revised 2026-10-20
 
 ## Problem
